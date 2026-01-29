@@ -1,0 +1,172 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: 
+      - master
+      - develop
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  API_IMAGE: ghcr.io/rmurier/omnia-api
+  FRONT_IMAGE: ghcr.io/rmurier/omnia-front
+
+jobs:
+  # ==========================================
+  # ÉTAPE 1 : BUILD & PUSH (Docker)
+  # ==========================================
+  build-and-push:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.sha.outputs.sha }}
+      branch: ${{ steps.branch.outputs.branch }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set SHA and branch
+        id: sha
+        run: |
+          echo "sha=${GITHUB_SHA::8}" >> $GITHUB_OUTPUT
+          echo "branch=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.TOKEN_GITHUB }}
+
+      - name: Build and push API image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./api
+          file: ./api/Dockerfile
+          push: true
+          tags: |
+            ${{ env.API_IMAGE }}:${{ steps.sha.outputs.sha }}
+            ${{ env.API_IMAGE }}:${{ github.ref_name }}-latest
+            ${{ env.API_IMAGE }}:latest
+
+      - name: Build and push FRONT image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./front
+          file: ./front/Dockerfile
+          push: true
+          tags: |
+            ${{ env.FRONT_IMAGE }}:${{ steps.sha.outputs.sha }}
+            ${{ env.FRONT_IMAGE }}:${{ github.ref_name }}-latest
+            ${{ env.FRONT_IMAGE }}:latest
+
+  # ==========================================
+  # ÉTAPE 2 : DÉPLOIEMENT & MIGRATION (DEV)
+  # ==========================================
+  deploy-dev:
+    name: Deploy & Migrate (Dev)
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.ref == 'refs/heads/develop'
+    environment: dev
+    env:
+      NAMESPACE: omnia-dev
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Migration Database
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Install EF tool
+        run: dotnet tool install --global dotnet-ef
+
+      - name: Run Database Migrations
+        run: |
+          cd api
+          dotnet restore
+          dotnet ef database update --connection "${{ secrets.CONNECTION_STRING_DEV }}"
+
+      # Déploiement K8s
+      - name: Setup kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG_DEV }}" | base64 -d > $HOME/.kube/config
+
+      - name: Create or update secrets in K8s
+        run: |
+          kubectl create secret generic omnia-secrets \
+            --from-literal=connection-string="${{ secrets.CONNECTION_STRING_DEV }}" \
+            --namespace=${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Apply Kubernetes manifests
+        run: kubectl apply -k k8s/overlays/dev
+
+      - name: Force update images to SHA
+        run: |
+          kubectl set image deployment/omnia-api api=${{ env.API_IMAGE }}:${{ needs.build-and-push.outputs.sha }} -n ${{ env.NAMESPACE }}
+          kubectl set image deployment/omnia-front front=${{ env.FRONT_IMAGE }}:${{ needs.build-and-push.outputs.sha }} -n ${{ env.NAMESPACE }}
+          kubectl rollout status deployment/omnia-api -n ${{ env.NAMESPACE }} --timeout=3m
+          kubectl rollout status deployment/omnia-front -n ${{ env.NAMESPACE }} --timeout=3m
+
+  # ==========================================
+  # ÉTAPE 3 : DÉPLOIEMENT & MIGRATION (PROD)
+  # ==========================================
+  deploy-prod:
+    name: Deploy & Migrate (Prod)
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.ref == 'refs/heads/master'
+    environment: prod
+    env:
+      NAMESPACE: omnia
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Migration Database
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Install EF tool
+        run: dotnet tool install --global dotnet-ef
+
+      - name: Run Database Migrations
+        run: |
+          cd api
+          dotnet restore
+          dotnet ef database update --connection "${{ secrets.CONNECTION_STRING_PROD }}"
+
+      # Déploiement K8s
+      - name: Setup kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG_PROD }}" | base64 -d > $HOME/.kube/config
+
+      - name: Create or update secrets in K8s
+        run: |
+          kubectl create secret generic omnia-secrets \
+            --from-literal=connection-string="${{ secrets.CONNECTION_STRING_PROD }}" \
+            --namespace=${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Apply Kubernetes manifests
+        run: kubectl apply -k k8s/overlays/prod
+
+      - name: Force update images to SHA
+        run: |
+          kubectl set image deployment/omnia-api api=${{ env.API_IMAGE }}:${{ needs.build-and-push.outputs.sha }} -n ${{ env.NAMESPACE }}
+          kubectl set image deployment/omnia-front front=${{ env.FRONT_IMAGE }}:${{ needs.build-and-push.outputs.sha }} -n ${{ env.NAMESPACE }}
+          kubectl rollout status deployment/omnia-api -n ${{ env.NAMESPACE }} --timeout=3m
+          kubectl rollout status deployment/omnia-front -n ${{ env.NAMESPACE }} --timeout=3m

@@ -1,0 +1,75 @@
+name: omnia
+
+networks:
+  omnia-net:
+
+volumes:
+  omnia-db-data:
+
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: omnia_db
+    user: "0:0"
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "__YOUR_STRONG_PASSWORD__"
+      MSSQL_PID: "Developer"
+    volumes:
+      - omnia-db-data:/var/opt/mssql
+    ports:
+      - "1433:1433"
+    networks:
+      - omnia-net
+    restart: always
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    image: omnia/api:latest
+    container_name: omnia_api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: "http://0.0.0.0:8080"
+      ConnectionStrings__DefaultConnection: "Server=db,1433;Database=Omnia;User Id=sa;Password=__YOUR_STRONG_PASSWORD__;TrustServerCertificate=True;MultipleActiveResultSets=True"
+    depends_on:
+      - db
+    networks:
+      - omnia-net
+    expose:
+      - "8080"
+    restart: always
+
+  front:
+    build:
+      context: ./front
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: "/api"
+    image: omnia/front:latest
+    container_name: omnia_front
+    depends_on:
+      - api
+    networks:
+      - omnia-net
+    expose:
+      - "80"
+    restart: always
+
+  gateway:
+    image: nginx:alpine
+    container_name: omnia_gateway
+    depends_on:
+      - front
+      - api
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/prod.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certs/prod/fullchain.pem:/etc/nginx/certs/fullchain.pem:ro
+      - ./certs/prod/privkey.pem:/etc/nginx/certs/privkey.pem:ro
+    networks:
+      - omnia-net
+    restart: always

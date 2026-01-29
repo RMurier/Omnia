@@ -1,0 +1,24 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: omnia
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - match: Host(`omnia-monitoring.com`) && PathPrefix(`/api`)
+      kind: Rule
+      services:
+        - name: api
+          port: 8080
+    - match: Host(`omnia-monitoring.com`)
+      kind: Rule
+      priority: 1
+      services:
+        - name: front
+          port: 80
+  tls:
+    secretName: omnia-tls

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: db
+  labels:
+    app: omnia-db
+spec:
+  ports:
+    - name: mssql
+      port: 1433
+      targetPort: 1433
+  selector:
+    app: omnia-db
