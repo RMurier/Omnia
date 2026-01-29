@@ -9,13 +9,13 @@ namespace api.Provider.Implementation
 
         public ApplicationSecretProtector(IConfiguration config)
         {
-            var masterB64 = config["Security:AppSecretMasterKeyBase64"];
+            var masterB64 = config["Security:MasterKeyEncrypt"];
             if (string.IsNullOrWhiteSpace(masterB64))
-                throw new InvalidOperationException("Security:AppSecretMasterKeyBase64 manquant");
+                throw new InvalidOperationException("Security:MasterKeyEncrypt manquant");
 
             _masterKey = Convert.FromBase64String(masterB64);
             if (_masterKey.Length != 32)
-                throw new InvalidOperationException("Security:AppSecretMasterKeyBase64 doit être une clé AES-256 (32 bytes Base64).");
+                throw new InvalidOperationException("Security:MasterKeyEncrypt doit être une clé AES-256 (32 bytes Base64).");
         }
 
         public string Protect(string secretPlain, int version)
