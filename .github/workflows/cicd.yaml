@@ -81,17 +81,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # --- Infisical CLI Setup and Secret Export ---
       - name: Install Infisical CLI
         run: |
-          curl -fsSL https://infisical.com/cli/install | bash
+          curl -fsSL https://infisical.com/cli/install | sudo bash
+          infisical --version # Verify installation
       
       - name: Authenticate Infisical CLI and Export Secrets
         env:
           INFISICAL_TOKEN: ${{ secrets.INFISICAL_TOKEN }}
-          INFISCAL_PROJET_ID: ${{ secrets.INFISCAL_PROJECT_ID }}
         run: |
           infisical login --token=$INFISICAL_TOKEN
-          infisical export --project="$INFISCAL_PROJET_ID" --environment="dev" --format=dotenv > .env
+          infisical export --project="${{ secrets.INFISICAL_PROJECT_ID }}" --environment="dev" --format=dotenv > .env
           cat .env >> $GITHUB_ENV # Load .env into current shell session
 
       # Migration Database
@@ -150,15 +151,15 @@ jobs:
       # --- Infisical CLI Setup and Secret Export ---
       - name: Install Infisical CLI
         run: |
-          curl -fsSL https://infisical.com/cli/install | bash
+          curl -fsSL https://infisical.com/cli/install | sudo bash
+          infisical --version # Verify installation
       
       - name: Authenticate Infisical CLI and Export Secrets
         env:
-          INFISICAL_TOKEN: ${{ secrets.INFISICAL_TOKEN }}
-          INFISCAL_PROJET_ID: ${{ secrets.INFISCAL_PROJECT_ID }}
+          INFISICAL_TOKEN: ${{ secrets.INFISICAL_TOKEN }} 
         run: |
           infisical login --token=$INFISICAL_TOKEN
-          infisical export --project="$INFISCAL_PROJET_ID" --environment="prod" --format=dotenv > .env
+          infisical export --project="${{ secrets.INFISICAL_PROJECT_ID }}" --environment="prod" --format=dotenv > .env
           cat .env >> $GITHUB_ENV # Load .env into current shell session
 
       # Migration Database
@@ -185,7 +186,7 @@ jobs:
       - name: Create or update secrets in K8s
         run: |
           kubectl create secret generic omnia-secrets \
-            --from-literal=connection-string=\"${{ env.ConnectionStrings__DefaultConnection }}\" \
+            --from-literal=connection-string="${{ env.ConnectionStrings__DefaultConnection }}" \
             --namespace=${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -"
 
       - name: Apply Kubernetes manifests
