@@ -87,6 +87,8 @@ jobs:
       - name: Run Database Migrations
         run: |
           cd api
+          # Create dummy appsettings to satisfy non-optional configuration requirements
+          echo '{"Logging":{"LogLevel":{"Default":"Information"}}}' > appsettings.json
           dotnet restore
           dotnet ef database update --connection "${{ env.DB_CONNECTION }}"
 
@@ -108,6 +110,7 @@ jobs:
         run: |
           kubectl set image deployment/omnia-api api=${{ env.API_IMAGE }}:${{ needs.build-and-push.outputs.sha }} -n ${{ env.NAMESPACE }}
           kubectl set image deployment/omnia-front front=${{ env.FRONT_IMAGE }}:${{ needs.build-and-push.outputs.sha }} -n ${{ env.NAMESPACE }}
+          kubectl rollout status deployment/omnia-api -n ${{ env.NAMESPACE }} --timeout=3m
 
   # ==========================================
   # ÉTAPE 3 : DÉPLOIEMENT & MIGRATION (PROD)
@@ -137,6 +140,8 @@ jobs:
       - name: Run Database Migrations
         run: |
           cd api
+          # Create dummy appsettings to satisfy non-optional configuration requirements
+          echo '{"Logging":{"LogLevel":{"Default":"Information"}}}' > appsettings.json
           dotnet restore
           dotnet ef database update --connection "${{ env.DB_CONNECTION }}"
 
@@ -158,3 +163,4 @@ jobs:
         run: |
           kubectl set image deployment/omnia-api api=${{ env.API_IMAGE }}:${{ needs.build-and-push.outputs.sha }} -n ${{ env.NAMESPACE }}
           kubectl set image deployment/omnia-front front=${{ env.FRONT_IMAGE }}:${{ needs.build-and-push.outputs.sha }} -n ${{ env.NAMESPACE }}
+          kubectl rollout status deployment/omnia-api -n ${{ env.NAMESPACE }} --timeout=3m
