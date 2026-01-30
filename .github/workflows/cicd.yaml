@@ -24,17 +24,13 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       sha: ${{ steps.sha.outputs.sha }}
-      branch: ${{ steps.branch.outputs.branch }}
-    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set SHA and branch
+      - name: Set SHA
         id: sha
-        run: |
-          echo "sha=${GITHUB_SHA::8}" >> $GITHUB_OUTPUT
-          echo "branch=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+        run: echo "sha=${GITHUB_SHA::8}" >> $GITHUB_OUTPUT
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
@@ -51,7 +47,6 @@ jobs:
           push: true
           tags: |
             ${{ env.API_IMAGE }}:${{ steps.sha.outputs.sha }}
-            ${{ env.API_IMAGE }}:${{ github.ref_name }}-latest
             ${{ env.API_IMAGE }}:latest
 
       - name: Build and push FRONT image
@@ -62,7 +57,6 @@ jobs:
           push: true
           tags: |
             ${{ env.FRONT_IMAGE }}:${{ steps.sha.outputs.sha }}
-            ${{ env.FRONT_IMAGE }}:${{ github.ref_name }}-latest
             ${{ env.FRONT_IMAGE }}:latest
 
   # ==========================================
@@ -76,24 +70,12 @@ jobs:
     environment: dev
     env:
       NAMESPACE: omnia-dev
+      DB_CONNECTION: ${{ secrets.CONNECTION_STRING_DEV }}
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Infisical CLI
-        run: |
-          npm install -g @infisical/cli
-          infisical --version
-      
-      - name: Authenticate Infisical CLI and Export Secrets
-        env:
-          INFISICAL_TOKEN: ${{ secrets.INFISICAL_TOKEN }}
-        run: |
-          infisical export --projectId="${{ secrets.INFISICAL_PROJECT_ID }}" --env="dev" --format=dotenv > .env
-          cat .env >> $GITHUB_ENV
-
-      # Migration Database
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
@@ -106,9 +88,8 @@ jobs:
         run: |
           cd api
           dotnet restore
-          dotnet ef database update --connection "${{ env.ConnectionStrings__DefaultConnection }}"
+          dotnet ef database update --connection "${{ env.DB_CONNECTION }}"
 
-      # Déploiement K8s
       - name: Setup kubeconfig
         run: |
           mkdir -p $HOME/.kube
@@ -117,18 +98,16 @@ jobs:
       - name: Create or update secrets in K8s
         run: |
           kubectl create secret generic omnia-secrets \
-            --from-literal=connection-string="${{ env.ConnectionStrings__DefaultConnection }}" \
+            --from-literal=connection-string="${{ env.DB_CONNECTION }}" \
             --namespace=${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Apply Kubernetes manifests
         run: kubectl apply -k k8s/overlays/dev
 
-      - name: Force update images to SHA
+      - name: Force update images
         run: |
           kubectl set image deployment/omnia-api api=${{ env.API_IMAGE }}:${{ needs.build-and-push.outputs.sha }} -n ${{ env.NAMESPACE }}
           kubectl set image deployment/omnia-front front=${{ env.FRONT_IMAGE }}:${{ needs.build-and-push.outputs.sha }} -n ${{ env.NAMESPACE }}
-          kubectl rollout status deployment/omnia-api -n ${{ env.NAMESPACE }} --timeout=3m
-          kubectl rollout status deployment/omnia-front -n ${{ env.NAMESPACE }} --timeout=3m
 
   # ==========================================
   # ÉTAPE 3 : DÉPLOIEMENT & MIGRATION (PROD)
@@ -141,24 +120,12 @@ jobs:
     environment: prod
     env:
       NAMESPACE: omnia
+      DB_CONNECTION: ${{ secrets.CONNECTION_STRING_PROD }}
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Infisical CLI
-        run: |
-          npm install -g @infisical/cli
-          infisical --version
-      
-      - name: Authenticate Infisical CLI and Export Secrets
-        env:
-          INFISICAL_TOKEN: ${{ secrets.INFISICAL_TOKEN }} 
-        run: |
-          infisical export --projectId="${{ secrets.INFISICAL_PROJECT_ID }}" --env="prod" --format=dotenv > .env
-          cat .env >> $GITHUB_ENV
-
-      # Migration Database
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
@@ -171,9 +138,8 @@ jobs:
         run: |
           cd api
           dotnet restore
-          dotnet ef database update --connection "${{ env.ConnectionStrings__DefaultConnection }}"
+          dotnet ef database update --connection "${{ env.DB_CONNECTION }}"
 
-      # Déploiement K8s
       - name: Setup kubeconfig
         run: |
           mkdir -p $HOME/.kube
@@ -182,15 +148,13 @@ jobs:
       - name: Create or update secrets in K8s
         run: |
           kubectl create secret generic omnia-secrets \
-            --from-literal=connection-string="${{ env.ConnectionStrings__DefaultConnection }}" \
-            --namespace=${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -"
+            --from-literal=connection-string="${{ env.DB_CONNECTION }}" \
+            --namespace=${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Apply Kubernetes manifests
         run: kubectl apply -k k8s/overlays/prod
 
-      - name: Force update images to SHA
+      - name: Force update images
         run: |
           kubectl set image deployment/omnia-api api=${{ env.API_IMAGE }}:${{ needs.build-and-push.outputs.sha }} -n ${{ env.NAMESPACE }}
           kubectl set image deployment/omnia-front front=${{ env.FRONT_IMAGE }}:${{ needs.build-and-push.outputs.sha }} -n ${{ env.NAMESPACE }}
-          kubectl rollout status deployment/omnia-api -n ${{ env.NAMESPACE }} --timeout=3m
-          kubectl rollout status deployment/omnia-front -n ${{ env.NAMESPACE }} --timeout=3m
