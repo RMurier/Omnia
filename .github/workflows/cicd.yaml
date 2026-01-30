@@ -81,6 +81,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install Infisical CLI
+        run: |
+          curl -fsSL https://infisical.com/cli/install | bash
+      
+      - name: Authenticate Infisical CLI and Export Secrets
+        env:
+          INFISICAL_TOKEN: ${{ secrets.INFISICAL_TOKEN }}
+          INFISCAL_PROJET_ID: ${{ secrets.INFISCAL_PROJECT_ID }}
+        run: |
+          infisical login --token=$INFISICAL_TOKEN
+          infisical export --project="$INFISCAL_PROJET_ID" --environment="dev" --format=dotenv > .env
+          cat .env >> $GITHUB_ENV # Load .env into current shell session
+
       # Migration Database
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
@@ -94,7 +107,7 @@ jobs:
         run: |
           cd api
           dotnet restore
-          dotnet ef database update --connection "${{ secrets.CONNECTION_STRING_DEV }}"
+          dotnet ef database update --connection "${{ env.ConnectionStrings__DefaultConnection }}"
 
       # Déploiement K8s
       - name: Setup kubeconfig
@@ -105,7 +118,7 @@ jobs:
       - name: Create or update secrets in K8s
         run: |
           kubectl create secret generic omnia-secrets \
-            --from-literal=connection-string="${{ secrets.CONNECTION_STRING_DEV }}" \
+            --from-literal=connection-string="${{ env.ConnectionStrings__DefaultConnection }}" \
             --namespace=${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Apply Kubernetes manifests
@@ -134,6 +147,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # --- Infisical CLI Setup and Secret Export ---
+      - name: Install Infisical CLI
+        run: |
+          curl -fsSL https://infisical.com/cli/install | bash
+      
+      - name: Authenticate Infisical CLI and Export Secrets
+        env:
+          INFISICAL_TOKEN: ${{ secrets.INFISICAL_TOKEN }}
+          INFISCAL_PROJET_ID: ${{ secrets.INFISCAL_PROJECT_ID }}
+        run: |
+          infisical login --token=$INFISICAL_TOKEN
+          infisical export --project="$INFISCAL_PROJET_ID" --environment="prod" --format=dotenv > .env
+          cat .env >> $GITHUB_ENV # Load .env into current shell session
+
       # Migration Database
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
@@ -147,7 +174,7 @@ jobs:
         run: |
           cd api
           dotnet restore
-          dotnet ef database update --connection "${{ secrets.CONNECTION_STRING_PROD }}"
+          dotnet ef database update --connection "${{ env.ConnectionStrings__DefaultConnection }}"
 
       # Déploiement K8s
       - name: Setup kubeconfig
@@ -158,8 +185,8 @@ jobs:
       - name: Create or update secrets in K8s
         run: |
           kubectl create secret generic omnia-secrets \
-            --from-literal=connection-string="${{ secrets.CONNECTION_STRING_PROD }}" \
-            --namespace=${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+            --from-literal=connection-string=\"${{ env.ConnectionStrings__DefaultConnection }}\" \
+            --namespace=${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -"
 
       - name: Apply Kubernetes manifests
         run: kubectl apply -k k8s/overlays/prod
