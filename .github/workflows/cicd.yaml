@@ -81,11 +81,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # --- Infisical CLI Setup and Secret Export ---
       - name: Install Infisical CLI
         run: |
-          curl -fsSL https://infisical.com/cli/install | sudo bash
-          infisical --version # Verify installation
+          npm install -g @infisical/cli
+          infisical --version
       
       - name: Authenticate Infisical CLI and Export Secrets
         env:
@@ -93,7 +92,7 @@ jobs:
         run: |
           infisical login --token=$INFISICAL_TOKEN
           infisical export --project="${{ secrets.INFISICAL_PROJECT_ID }}" --environment="dev" --format=dotenv > .env
-          cat .env >> $GITHUB_ENV # Load .env into current shell session
+          cat .env >> $GITHUB_ENV
 
       # Migration Database
       - name: Setup .NET SDK
@@ -148,11 +147,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # --- Infisical CLI Setup and Secret Export ---
       - name: Install Infisical CLI
         run: |
-          curl -fsSL https://infisical.com/cli/install | sudo bash
-          infisical --version # Verify installation
+          npm install -g @infisical/cli
+          infisical --version
       
       - name: Authenticate Infisical CLI and Export Secrets
         env:
@@ -160,7 +158,7 @@ jobs:
         run: |
           infisical login --token=$INFISICAL_TOKEN
           infisical export --project="${{ secrets.INFISICAL_PROJECT_ID }}" --environment="prod" --format=dotenv > .env
-          cat .env >> $GITHUB_ENV # Load .env into current shell session
+          cat .env >> $GITHUB_ENV
 
       # Migration Database
       - name: Setup .NET SDK
