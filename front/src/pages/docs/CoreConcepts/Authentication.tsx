@@ -23,7 +23,6 @@ export default function Authentication() {
     <DocSection id="authentication" title={t("docs.coreConcepts.authentication")}>
       <p style={styles.paragraph}>{t("docs.coreConcepts.authText1")}</p>
       <ul style={styles.list}>
-        <li style={styles.listItem}><strong>JWT</strong>: {t("docs.coreConcepts.authJwt")}</li>
         <li style={styles.listItem}><strong>HMAC</strong>: {t("docs.coreConcepts.authHmac")}</li>
       </ul>
       <div style={styles.note}>

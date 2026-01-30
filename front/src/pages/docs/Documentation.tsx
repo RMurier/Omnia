@@ -44,7 +44,6 @@ const categories: Category[] = [
     labelKey: "docs.categories.apiReference",
     component: ApiReferenceIndex,
     sections: [
-      { id: "auth-endpoints", labelKey: "docs.apiReference.authEndpoints" },
       { id: "application-endpoints", labelKey: "docs.apiReference.applicationEndpoints" },
       { id: "log-endpoints", labelKey: "docs.apiReference.logEndpoints" },
       { id: "activity-endpoints", labelKey: "docs.apiReference.activityEndpoints" },
