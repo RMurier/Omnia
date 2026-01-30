@@ -90,7 +90,6 @@ jobs:
         env:
           INFISICAL_TOKEN: ${{ secrets.INFISICAL_TOKEN }}
         run: |
-          infisical login --token=$INFISICAL_TOKEN
           infisical export --project="${{ secrets.INFISICAL_PROJECT_ID }}" --environment="dev" --format=dotenv > .env
           cat .env >> $GITHUB_ENV
 
@@ -156,7 +155,6 @@ jobs:
         env:
           INFISICAL_TOKEN: ${{ secrets.INFISICAL_TOKEN }} 
         run: |
-          infisical login --token=$INFISICAL_TOKEN
           infisical export --project="${{ secrets.INFISICAL_PROJECT_ID }}" --environment="prod" --format=dotenv > .env
           cat .env >> $GITHUB_ENV
 
