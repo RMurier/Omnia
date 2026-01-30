@@ -90,7 +90,7 @@ jobs:
         env:
           INFISICAL_TOKEN: ${{ secrets.INFISICAL_TOKEN }}
         run: |
-          infisical export --project="${{ secrets.INFISICAL_PROJECT_ID }}" --environment="dev" --format=dotenv > .env
+          infisical export --projectId="${{ secrets.INFISICAL_PROJECT_ID }}" --env="dev" --format=dotenv > .env
           cat .env >> $GITHUB_ENV
 
       # Migration Database
@@ -155,7 +155,7 @@ jobs:
         env:
           INFISICAL_TOKEN: ${{ secrets.INFISICAL_TOKEN }} 
         run: |
-          infisical export --project="${{ secrets.INFISICAL_PROJECT_ID }}" --environment="prod" --format=dotenv > .env
+          infisical export --projectId="${{ secrets.INFISICAL_PROJECT_ID }}" --env="prod" --format=dotenv > .env
           cat .env >> $GITHUB_ENV
 
       # Migration Database
