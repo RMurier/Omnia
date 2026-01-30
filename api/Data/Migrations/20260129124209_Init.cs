@@ -226,6 +226,11 @@ namespace api.Data.Migrations
                 values: new object[] { new Guid("6932a69e-eaa0-4e9c-b4cf-d7a9c6524e4c"), new DateTime(2026, 1, 9, 17, 0, 0, 0, DateTimeKind.Unspecified), "Application centrale", true, "Omnia", new Guid("1c7850fa-2cf8-4716-9991-b26d4f169d21"), null });
 
             migrationBuilder.InsertData(
+                table: "T_APPLICATION_ENCRYPTION_KEY",
+                columns: new[] { "ID", "CREATED_AT", "KEY_ENC", "REF_APPLICATION" },
+                values: new object[] { new Guid("a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d"), new DateTime(2026, 1, 9, 17, 0, 0, 0, DateTimeKind.Utc), "IQfYMxIc4RqfMOeZyj/1wtpyS/8EB0kMHkuKF4f40tXzEAXDCpaVLpCfuVHkXmtXQKl8TEa6VCTaZUOv", new Guid("6932a69e-eaa0-4e9c-b4cf-d7a9c6524e4c") });
+
+            migrationBuilder.InsertData(
                 table: "T_APPLICATION_MEMBER",
                 columns: new[] { "ID", "CREATED_AT", "REF_APPLICATION", "REF_ROLE_APPLICATION", "REF_USER" },
                 values: new object[] { new Guid("e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b"), new DateTime(2026, 1, 9, 17, 0, 0, 0, DateTimeKind.Unspecified), new Guid("6932a69e-eaa0-4e9c-b4cf-d7a9c6524e4c"), new Guid("a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"), new Guid("1c7850fa-2cf8-4716-9991-b26d4f169d21") });

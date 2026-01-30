@@ -168,17 +168,20 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
       </div>
 
       <nav style={styles.nav} aria-label={t("header.mainNav")}>
-        {isAuthenticated && (
-          <ul style={styles.list}>
-            {navItems.map((item) => (
-              <li key={item.href}>
-                <a href={item.href} style={styles.link}>
-                  {item.label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        )}
+        <ul style={styles.list}>
+          {isAuthenticated && navItems.map((item) => (
+            <li key={item.href}>
+              <a href={item.href} style={styles.link}>
+                {item.label}
+              </a>
+            </li>
+          ))}
+          <li>
+            <a href="/docs" style={styles.link}>
+              {t("nav.docs")}
+            </a>
+          </li>
+        </ul>
 
         {!isAuthenticated ? (
           <a href="/signin" style={styles.primaryButton}>

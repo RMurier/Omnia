@@ -124,6 +124,15 @@ namespace api.Data.Migrations
                         .HasDatabaseName("UX_APPLICATION_ENCRYPTION_KEY_REF_APPLICATION");
 
                     b.ToTable("T_APPLICATION_ENCRYPTION_KEY", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d"),
+                            CreatedAt = new DateTime(2026, 1, 9, 17, 0, 0, 0, DateTimeKind.Utc),
+                            KeyEnc = "IQfYMxIc4RqfMOeZyj/1wtpyS/8EB0kMHkuKF4f40tXzEAXDCpaVLpCfuVHkXmtXQKl8TEa6VCTaZUOv",
+                            RefApplication = new Guid("6932a69e-eaa0-4e9c-b4cf-d7a9c6524e4c")
+                        });
                 });
 
             modelBuilder.Entity("api.Data.Models.ApplicationMember", b =>

@@ -131,6 +131,8 @@ builder.Services.AddDataProtection();
 
 builder.Services.AddAuthorization();
 
+builder.Services.AddMemoryCache();
+
 builder.Services.AddScoped<IAuth, AuthService>();
 builder.Services.AddScoped<IApplication, ApplicationService>();
 builder.Services.AddScoped<IApplicationSecretProtector, ApplicationSecretProtector>();
@@ -138,6 +140,8 @@ builder.Services.AddScoped<IActivity, ActivityService>();
 builder.Services.AddScoped<ILog, LogService>();
 
 builder.Services.AddScoped<IApplicationSecretProvider, EfApplicationSecretProvider>();
+builder.Services.AddScoped<IApplicationEncryptionKeyProvider, ApplicationEncryptionKeyProvider>();
+builder.Services.AddScoped<IDataEncryptor, DataEncryptor>();
 builder.Services.AddScoped<IHmacNonceStore, EfHmacNonceStore>();
 builder.Services.AddScoped<HmacValidator>();
 

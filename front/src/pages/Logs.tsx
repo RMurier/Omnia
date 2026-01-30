@@ -29,9 +29,50 @@ function safeParseJson(s?: string | null): any | null {
 
 function extractStack(payloadJson?: string | null): string | null {
   const j = safeParseJson(payloadJson);
-  const stack = j?.error?.stack ?? j?.error?.stackTrace ?? j?.stack ?? j?.stackTrace ?? null;
-  if (!stack) return null;
-  return String(stack);
+  if (!j) return null;
+
+  // Common stack trace field names across languages
+  const stackFields = [
+    // JavaScript/Node.js
+    "stack",
+    "stackTrace",
+    // Python
+    "traceback",
+    "tb",
+    "exc_info",
+    // Ruby
+    "backtrace",
+    // PHP/Java
+    "trace",
+    // Go
+    "stacktrace",
+    // Generic
+    "exception",
+    "frames",
+  ];
+
+  // Check root level
+  for (const field of stackFields) {
+    if (j[field]) return String(j[field]);
+  }
+
+  // Check inside error/exception object
+  const errorObj = j.error ?? j.exception ?? j.err ?? j.exc ?? null;
+  if (errorObj && typeof errorObj === "object") {
+    for (const field of stackFields) {
+      if (errorObj[field]) return String(errorObj[field]);
+    }
+  }
+
+  // Check for array of frames (Sentry-style)
+  if (Array.isArray(j.frames)) {
+    return j.frames.map((f: any) => `  at ${f.function || f.method || "?"} (${f.filename || f.file || "?"}:${f.lineno || f.line || "?"})`).join("\n");
+  }
+  if (Array.isArray(errorObj?.frames)) {
+    return errorObj.frames.map((f: any) => `  at ${f.function || f.method || "?"} (${f.filename || f.file || "?"}:${f.lineno || f.line || "?"})`).join("\n");
+  }
+
+  return null;
 }
 
 function categoryLabel(t: (key: string) => string, c?: string | null) {

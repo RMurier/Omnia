@@ -3,6 +3,7 @@ using api.DTOs.Application;
 using api.Factories;
 using api.Helper;
 using api.Interfaces;
+using api.Provider.Interface;
 using Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,11 +15,13 @@ namespace api.Services
     {
         private readonly AppDbContext _db;
         private readonly IApplicationSecretProtector _protector;
+        private readonly IApplicationEncryptionKeyProvider _encryptionKeyProvider;
 
-        public ApplicationService(AppDbContext db, IApplicationSecretProtector protector)
+        public ApplicationService(AppDbContext db, IApplicationSecretProtector protector, IApplicationEncryptionKeyProvider encryptionKeyProvider)
         {
             _db = db;
             _protector = protector;
+            _encryptionKeyProvider = encryptionKeyProvider;
         }
 
         public async Task<IEnumerable<ApplicationDto>> GetAll(Guid userId, CancellationToken ct)
@@ -110,6 +113,8 @@ namespace api.Services
             await _db.ApplicationMember.AddAsync(member, ct);
             await _db.ApplicationSecret.AddAsync(secret, ct);
             await _db.SaveChangesAsync(ct);
+
+            await _encryptionKeyProvider.CreateKeyAsync(app.Id, ct);
 
             await tx.CommitAsync(ct);
 

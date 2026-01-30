@@ -10,6 +10,7 @@ import NotFound from "./pages/NotFound.tsx";
 import Home from "./pages/Home.tsx";
 import LogsPage from "./pages/Logs.tsx";
 import AdminActivityPage from "./pages/Activity.tsx";
+import Documentation from "./pages/docs/Documentation.tsx";
 import { useAuthStore } from "./stores/authStore";
 import MePage from "./pages/Me.tsx";
 
@@ -31,6 +32,7 @@ function Root() {
           <Route path="/activity" element={<AdminActivityPage />} />
           <Route path="/applications" element={<AdminApplicationsPage />} />
           <Route path="/logs" element={<LogsPage />} />
+          <Route path="/docs" element={<Documentation />} />
           <Route path="/*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
