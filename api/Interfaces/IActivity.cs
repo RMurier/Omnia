@@ -4,8 +4,6 @@ namespace api.Interfaces
 {
     public interface IActivity
     {
-        Task<IReadOnlyList<ActivityDto>> GetAll(Guid? applicationId, DateTime? fromUtc, DateTime? toUtc, Guid userId, CancellationToken ct);
-
         Task<IReadOnlyList<SeriesPointActivityDto>> GetSeries(
             Granularity granularity,
             Guid? applicationId,

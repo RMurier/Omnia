@@ -28,22 +28,6 @@ namespace api.Controllers
             return Guid.TryParse(userIdStr, out var userId) ? userId : null;
         }
 
-        [HttpGet]
-        [Authorize(AuthenticationSchemes = "Bearer")]
-        public async Task<ActionResult<IReadOnlyList<ActivityDto>>> GetAll(
-            [FromQuery] Guid? applicationId,
-            [FromQuery] DateTime? fromUtc,
-            [FromQuery] DateTime? toUtc,
-            CancellationToken ct)
-        {
-            var userId = GetUserIdFromClaims();
-            if (userId is null)
-                return Unauthorized(new { message = _t["Errors.Unauthorized"].Value });
-
-            var items = await _activity.GetAll(applicationId, fromUtc, toUtc, userId.Value, ct);
-            return Ok(items);
-        }
-
         [HttpGet("series")]
         [Authorize(AuthenticationSchemes = "Bearer")]
         public async Task<ActionResult<IReadOnlyList<SeriesPointActivityDto>>> GetSeries(
@@ -80,7 +64,7 @@ namespace api.Controllers
             try
             {
                 var created = await _activity.Create(dto, ct);
-                return CreatedAtAction(nameof(GetAll), new { }, created);
+                return CreatedAtAction(nameof(GetSeries), new { }, created);
             }
             catch (ApiException ex)
             {

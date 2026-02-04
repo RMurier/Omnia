@@ -9,16 +9,7 @@ import { t } from "i18next";
 type AppsMode = "all" | "select";
 
 type SeriesPointActivityMulti = SeriesPointActivity & {
-  applicationId?: string | null;
   refApplication?: string | null;
-  REF_APPLICATION?: string | null;
-  RefApplication?: string | null;
-  PeriodStartUtc?: string | null;
-  Connections?: number | null;
-  UniqueUsers?: number | null;
-  periodStartUtc?: string | null;
-  connections?: number | null;
-  uniqueUsers?: number | null;
 };
 
 function pad2(n: number) {
@@ -491,20 +482,6 @@ export default function AdminActivityPage() {
     return m;
   }, [apps]);
 
-  function getSeriesAppId(p: any) {
-    return p?.refApplication ?? p?.RefApplication ?? p?.REF_APPLICATION ?? p?.applicationId ?? p?.ApplicationId ?? "";
-  }
-
-  function getSeriesPeriod(p: any) {
-    return p?.periodStartUtc ?? p?.PeriodStartUtc ?? p?.PERIOD_START_UTC ?? "";
-  }
-
-  function getSeriesConnections(p: any) {
-    const v = p?.connections ?? p?.Connections ?? 0;
-    const n = Number(v);
-    return Number.isFinite(n) ? n : 0;
-  }
-
   async function loadApps() {
     setLoadingApps(true);
     try {
@@ -575,11 +552,11 @@ export default function AdminActivityPage() {
     const fromBucket = getBucketStartUtcMs(fromMsRaw, spacingUnit, step);
     const toBucket = getBucketStartUtcMs(toMsRaw, spacingUnit, step);
 
-    const hasAppId = (seriesRaw ?? []).some((x) => Boolean(normalizeGuid(getSeriesAppId(x))));
+    const hasAppId = (seriesRaw ?? []).some((x) => Boolean(normalizeGuid(x.refApplication ?? "")));
     const allIdsInSeries = Array.from(
       new Set(
         (seriesRaw ?? [])
-          .map((p) => normalizeGuid(getSeriesAppId(p)))
+          .map((p) => normalizeGuid(p.refApplication ?? ""))
           .filter(Boolean)
       )
     );
@@ -596,19 +573,19 @@ export default function AdminActivityPage() {
     const bucketByApp = new Map<number, Map<string, number>>();
 
     for (const p of seriesRaw ?? []) {
-      const periodStr = String(getSeriesPeriod(p));
+      const periodStr = String(p.periodStartUtc ?? "");
       const periodTs = parseUtcMs(periodStr);
       if (!Number.isFinite(periodTs)) continue;
 
       const bucketTs = getBucketStartUtcMs(periodTs, spacingUnit, step);
-      const c = getSeriesConnections(p);
+      const c = p.connections ?? 0;
 
       if (!hasAppId) {
         bucketTotals.set(bucketTs, (bucketTotals.get(bucketTs) ?? 0) + c);
         continue;
       }
 
-      const appId = normalizeGuid(getSeriesAppId(p));
+      const appId = normalizeGuid(p.refApplication ?? "");
       if (!appId) continue;
       if (ids.length && !ids.includes(appId)) continue;
 

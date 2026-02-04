@@ -4,7 +4,6 @@
     {
         public DateTime PeriodStartUtc { get; set; }
         public long Connections {  get; set; }
-        public long UniqueUsers { get;set; }
         public Guid? RefApplication { get; set; }
     }
 }
