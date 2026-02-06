@@ -77,6 +77,13 @@
     "currentLanguage": "Langue actuelle :",
     "error": "Erreur"
   },
+  "settings": {
+    "title": "Paramètres",
+    "theme": "Thème",
+    "themeLight": "Clair",
+    "themeDark": "Sombre",
+    "language": "Langue"
+  },
   "common": {
     "yes": "Oui",
     "no": "Non",

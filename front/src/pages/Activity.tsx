@@ -179,13 +179,13 @@ type ChartLine = { id: string; name: string; key: string };
 
 function SkeletonChart({ height = 360 }: { height?: number }) {
   const styles: Record<string, React.CSSProperties> = {
-    wrap: { border: "1px solid #e5e7eb", borderRadius: 14, background: "#fff", padding: 12 },
-    bar: { height: 14, borderRadius: 999, background: "#eef2f7", width: "42%" },
-    bar2: { height: 12, borderRadius: 999, background: "#eef2f7", width: "28%" },
-    box: { height, borderRadius: 12, background: "#f8fafc", border: "1px solid #eef2f7" },
+    wrap: { border: "1px solid var(--color-border)", borderRadius: 14, background: "var(--color-surface)", padding: 12 },
+    bar: { height: 14, borderRadius: 999, background: "var(--color-skeleton)", width: "42%" },
+    bar2: { height: 12, borderRadius: 999, background: "var(--color-skeleton)", width: "28%" },
+    box: { height, borderRadius: 12, background: "var(--color-skeleton-box)", border: "1px solid var(--color-skeleton)" },
     row: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
     right: { display: "flex", gap: 10, alignItems: "center" },
-    dot: { width: 10, height: 10, borderRadius: 999, background: "#eef2f7" },
+    dot: { width: 10, height: 10, borderRadius: 999, background: "var(--color-skeleton)" },
   };
 
   return (
@@ -317,25 +317,25 @@ function LineChart({
   }, [hoverIdx, rows, lines, xStep, w]);
 
   const styles: Record<string, React.CSSProperties> = {
-    wrap: { border: "1px solid #e5e7eb", borderRadius: 14, background: "#fff", padding: 12, position: "relative" },
+    wrap: { border: "1px solid var(--color-border)", borderRadius: 14, background: "var(--color-surface)", padding: 12, position: "relative" },
     header: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 10 },
-    title: { fontWeight: 900, color: "#111827" },
+    title: { fontWeight: 900, color: "var(--color-text-primary)" },
     legend: { display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" },
-    legendItem: { display: "flex", gap: 8, alignItems: "center", fontSize: 12, color: "#374151", fontWeight: 700 },
+    legendItem: { display: "flex", gap: 8, alignItems: "center", fontSize: 12, color: "var(--color-text-secondary)", fontWeight: 700 },
     dot: { width: 10, height: 10, borderRadius: 999 },
     svg: { display: "block", width: "100%", height, touchAction: "none" },
     tooltip: {
       position: "absolute",
       minWidth: 240,
       maxWidth: 360,
-      border: "1px solid #e5e7eb",
-      background: "#ffffff",
+      border: "1px solid var(--color-border)",
+      background: "var(--color-surface)",
       borderRadius: 12,
       padding: 12,
-      boxShadow: "0 18px 60px rgba(0,0,0,0.14)",
+      boxShadow: "0 18px 60px var(--color-shadow-tooltip)",
       pointerEvents: "none",
       fontSize: 12,
-      color: "#111827",
+      color: "var(--color-text-primary)",
       lineHeight: 1.35,
       top: 52,
     },
@@ -347,12 +347,12 @@ function LineChart({
       position: "absolute",
       inset: 0,
       borderRadius: 14,
-      background: "rgba(255,255,255,0.65)",
+      background: "var(--color-loading-mask)",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
       fontWeight: 900,
-      color: "#374151",
+      color: "var(--color-text-secondary)",
     },
   };
 
@@ -377,15 +377,15 @@ function LineChart({
               const y = yAt(v);
               return (
                 <g key={i}>
-                  <line x1={padding.l} x2={w - padding.r} y1={y} y2={y} stroke="#e5e7eb" strokeWidth="1" />
-                  <text x={padding.l - 10} y={y + 4} textAnchor="end" fontSize="11" fill="#6b7280" fontWeight="700">
+                  <line x1={padding.l} x2={w - padding.r} y1={y} y2={y} stroke="var(--color-border)" strokeWidth="1" />
+                  <text x={padding.l - 10} y={y + 4} textAnchor="end" fontSize="11" fill="var(--color-text-muted)" fontWeight="700">
                     {Math.round(v)}
                   </text>
                 </g>
               );
             })}
-            <line x1={padding.l} x2={padding.l} y1={padding.t} y2={height - padding.b} stroke="#d1d5db" />
-            <line x1={padding.l} x2={w - padding.r} y1={height - padding.b} y2={height - padding.b} stroke="#d1d5db" />
+            <line x1={padding.l} x2={padding.l} y1={padding.t} y2={height - padding.b} stroke="var(--color-border-strong)" />
+            <line x1={padding.l} x2={w - padding.r} y1={height - padding.b} y2={height - padding.b} stroke="var(--color-border-strong)" />
           </g>
 
           <g>
@@ -396,8 +396,8 @@ function LineChart({
               const x = xAt(i);
               return (
                 <g key={String(r.ts)}>
-                  <line x1={x} x2={x} y1={height - padding.b} y2={height - padding.b + 6} stroke="#d1d5db" />
-                  <text x={x} y={height - padding.b + 22} textAnchor="middle" fontSize="11" fill="#6b7280" fontWeight="700">
+                  <line x1={x} x2={x} y1={height - padding.b} y2={height - padding.b + 6} stroke="var(--color-border-strong)" />
+                  <text x={x} y={height - padding.b + 22} textAnchor="middle" fontSize="11" fill="var(--color-text-muted)" fontWeight="700">
                     {fmtXTick(r.ts, tickGranularity)}
                   </text>
                 </g>
@@ -413,10 +413,10 @@ function LineChart({
 
           {hoverIdx !== null && rows[hoverIdx] ? (
             <g>
-              <line x1={xAt(hoverIdx)} x2={xAt(hoverIdx)} y1={padding.t} y2={height - padding.b} stroke="#111827" strokeOpacity="0.18" strokeWidth="2" />
+              <line x1={xAt(hoverIdx)} x2={xAt(hoverIdx)} y1={padding.t} y2={height - padding.b} stroke="var(--color-text-primary)" strokeOpacity="0.18" strokeWidth="2" />
               {lines.map((ln, li) => {
                 const v = Number(rows[hoverIdx][ln.key] ?? 0);
-                return <circle key={ln.id} cx={xAt(hoverIdx)} cy={yAt(v)} r="4.2" fill={colorForLine(li)} stroke="#ffffff" strokeWidth="2" />;
+                return <circle key={ln.id} cx={xAt(hoverIdx)} cy={yAt(v)} r="4.2" fill={colorForLine(li)} stroke="var(--color-surface)" strokeWidth="2" />;
               })}
             </g>
           ) : null}
@@ -616,27 +616,27 @@ export default function AdminActivityPage() {
   const styles: Record<string, React.CSSProperties> = {
     page: { padding: 24, maxWidth: 1280, margin: "0 auto" },
     topBar: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 16, flexWrap: "wrap" },
-    title: { margin: 0, fontSize: 22, fontWeight: 900, color: "#111827" },
-    subtitle: { margin: "6px 0 0 0", color: "#6b7280", fontSize: 14 },
+    title: { margin: 0, fontSize: 22, fontWeight: 900, color: "var(--color-text-primary)" },
+    subtitle: { margin: "6px 0 0 0", color: "var(--color-text-muted)", fontSize: 14 },
     actions: { display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" },
-    btn: { padding: "10px 12px", borderRadius: 10, border: "1px solid #d1d5db", background: "#fff", cursor: "pointer", fontWeight: 800 },
+    btn: { padding: "10px 12px", borderRadius: 10, border: "1px solid var(--color-border-strong)", background: "var(--color-surface)", cursor: "pointer", fontWeight: 800 },
 
-    section: { border: "1px solid #e5e7eb", borderRadius: 14, background: "#fff", overflow: "hidden", marginBottom: 16 },
-    sectionHeader: { padding: "12px 14px", borderBottom: "1px solid #e5e7eb", background: "#fafafa", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" },
-    sectionTitle: { margin: 0, fontSize: 13, fontWeight: 900, color: "#111827", textTransform: "uppercase", letterSpacing: 0.4 },
+    section: { border: "1px solid var(--color-border)", borderRadius: 14, background: "var(--color-surface)", overflow: "hidden", marginBottom: 16 },
+    sectionHeader: { padding: "12px 14px", borderBottom: "1px solid var(--color-border)", background: "var(--color-surface-raised)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" },
+    sectionTitle: { margin: 0, fontSize: 13, fontWeight: 900, color: "var(--color-text-primary)", textTransform: "uppercase", letterSpacing: 0.4 },
     sectionBody: { padding: 14 },
 
     grid3: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 },
     grid2: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 },
     field: { display: "grid", gap: 6, minWidth: 0 },
-    label: { fontSize: 12, fontWeight: 900, color: "#374151" },
-    input: { height: 42, borderRadius: 10, border: "1px solid #d1d5db", padding: "0 12px", outline: "none", fontSize: 14, background: "#fff", width: "100%", boxSizing: "border-box" },
-    help: { fontSize: 12, color: "#6b7280" },
-    err: { border: "1px solid #ef4444", background: "#fef2f2", color: "#991b1b", padding: 12, borderRadius: 12, marginBottom: 12, fontSize: 13, fontWeight: 800 },
+    label: { fontSize: 12, fontWeight: 900, color: "var(--color-text-secondary)" },
+    input: { height: 42, borderRadius: 10, border: "1px solid var(--color-border-strong)", padding: "0 12px", outline: "none", fontSize: 14, background: "var(--color-surface)", width: "100%", boxSizing: "border-box" },
+    help: { fontSize: 12, color: "var(--color-text-muted)" },
+    err: { border: "1px solid var(--color-error)", background: "var(--color-error-bg)", color: "var(--color-error-text)", padding: 12, borderRadius: 12, marginBottom: 12, fontSize: 13, fontWeight: 800 },
 
-    multiselect: { border: "1px solid #d1d5db", borderRadius: 12, background: "#fff", padding: 10, maxHeight: 190, overflow: "auto" },
+    multiselect: { border: "1px solid var(--color-border-strong)", borderRadius: 12, background: "var(--color-surface)", padding: 10, maxHeight: 190, overflow: "auto" },
     checkRow: { display: "flex", alignItems: "center", gap: 10, padding: "6px 6px", borderRadius: 10 },
-    pill: { display: "inline-flex", alignItems: "center", gap: 8, padding: "4px 10px", borderRadius: 999, fontSize: 12, fontWeight: 900, border: "1px solid #e5e7eb", background: "#fff", color: "#111827" },
+    pill: { display: "inline-flex", alignItems: "center", gap: 8, padding: "4px 10px", borderRadius: 999, fontSize: 12, fontWeight: 900, border: "1px solid var(--color-border)", background: "var(--color-surface)", color: "var(--color-text-primary)" },
   };
 
   const showChartSkeleton = loadingSeries || pendingSeries;
@@ -732,11 +732,11 @@ export default function AdminActivityPage() {
               <div style={styles.field}>
                 <label style={styles.label}>{t("activity.curves")}</label>
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", height: 42 }}>
-                  <label style={{ display: "flex", gap: 8, alignItems: "center", fontWeight: 800, color: "#374151" }}>
+                  <label style={{ display: "flex", gap: 8, alignItems: "center", fontWeight: 800, color: "var(--color-text-secondary)" }}>
                     <input type="radio" checked={appsMode === "all"} onChange={() => setAppsMode("all")} />
                     {t("activity.curvesAll")}
                   </label>
-                  <label style={{ display: "flex", gap: 8, alignItems: "center", fontWeight: 800, color: "#374151" }}>
+                  <label style={{ display: "flex", gap: 8, alignItems: "center", fontWeight: 800, color: "var(--color-text-secondary)" }}>
                     <input type="radio" checked={appsMode === "select"} onChange={() => setAppsMode("select")} />
                     {t("activity.curvesSelect")}
                   </label>

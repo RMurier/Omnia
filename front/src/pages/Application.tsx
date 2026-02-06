@@ -243,53 +243,53 @@ export default function AdminApplicationsPage() {
   const styles: Record<string, React.CSSProperties> = {
     page: { padding: 24, maxWidth: 1100, margin: "0 auto" },
     topBar: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 16 },
-    title: { margin: 0, fontSize: 22, fontWeight: 700, color: "#111827" },
-    subtitle: { margin: "6px 0 0 0", color: "#6b7280", fontSize: 14 },
+    title: { margin: 0, fontSize: 22, fontWeight: 700, color: "var(--color-text-primary)" },
+    subtitle: { margin: "6px 0 0 0", color: "var(--color-text-muted)", fontSize: 14 },
     actions: { display: "flex", gap: 10, alignItems: "center" },
-    btn: { padding: "10px 12px", borderRadius: 8, border: "1px solid #d1d5db", background: "#fff", cursor: "pointer", fontWeight: 600 },
-    btnPrimary: { padding: "10px 12px", borderRadius: 8, border: "none", background: "#6366f1", color: "#fff", cursor: "pointer", fontWeight: 700 },
+    btn: { padding: "10px 12px", borderRadius: 8, border: "1px solid var(--color-border-strong)", background: "var(--color-surface)", cursor: "pointer", fontWeight: 600 },
+    btnPrimary: { padding: "10px 12px", borderRadius: 8, border: "none", background: "var(--color-primary)", color: "var(--color-surface)", cursor: "pointer", fontWeight: 700 },
     btnDisabled: { opacity: 0.7, cursor: "not-allowed" },
 
-    card: { border: "1px solid #e5e7eb", borderRadius: 12, background: "#fff", overflow: "hidden" },
+    card: { border: "1px solid var(--color-border)", borderRadius: 12, background: "var(--color-surface)", overflow: "hidden" },
     table: { width: "100%", borderCollapse: "collapse" },
-    th: { textAlign: "left", fontSize: 12, letterSpacing: 0.4, textTransform: "uppercase", color: "#6b7280", padding: "12px 14px", borderBottom: "1px solid #e5e7eb", background: "#fafafa" },
-    td: { padding: "12px 14px", borderBottom: "1px solid #f1f5f9", verticalAlign: "top", color: "#111827", fontSize: 14 },
-    tdMuted: { color: "#6b7280", fontSize: 13, marginTop: 4 },
+    th: { textAlign: "left", fontSize: 12, letterSpacing: 0.4, textTransform: "uppercase", color: "var(--color-text-muted)", padding: "12px 14px", borderBottom: "1px solid var(--color-border)", background: "var(--color-surface-raised)" },
+    td: { padding: "12px 14px", borderBottom: "1px solid var(--color-border-td)", verticalAlign: "top", color: "var(--color-text-primary)", fontSize: 14 },
+    tdMuted: { color: "var(--color-text-muted)", fontSize: 13, marginTop: 4 },
 
     rowActions: { display: "flex", gap: 10, justifyContent: "flex-end", flexWrap: "wrap" },
-    smallBtn: { padding: "8px 10px", borderRadius: 8, border: "1px solid #d1d5db", background: "#fff", cursor: "pointer", fontWeight: 600, fontSize: 13 },
-    dangerBtn: { padding: "8px 10px", borderRadius: 8, border: "1px solid #ef4444", background: "#fff", cursor: "pointer", fontWeight: 700, color: "#b91c1c", fontSize: 13 },
+    smallBtn: { padding: "8px 10px", borderRadius: 8, border: "1px solid var(--color-border-strong)", background: "var(--color-surface)", cursor: "pointer", fontWeight: 600, fontSize: 13 },
+    dangerBtn: { padding: "8px 10px", borderRadius: 8, border: "1px solid var(--color-error)", background: "var(--color-surface)", cursor: "pointer", fontWeight: 700, color: "var(--color-error-text)", fontSize: 13 },
 
-    badge: { display: "inline-flex", alignItems: "center", gap: 8, padding: "4px 10px", borderRadius: 999, fontSize: 12, fontWeight: 700, border: "1px solid #e5e7eb", background: "#fff" },
+    badge: { display: "inline-flex", alignItems: "center", gap: 8, padding: "4px 10px", borderRadius: 999, fontSize: 12, fontWeight: 700, border: "1px solid var(--color-border)", background: "var(--color-surface)" },
 
-    error: { border: "1px solid #ef4444", background: "#fef2f2", color: "#991b1b", padding: 12, borderRadius: 10, marginBottom: 12, fontSize: 14 },
-    empty: { padding: 18, color: "#6b7280" },
+    error: { border: "1px solid var(--color-error)", background: "var(--color-error-bg)", color: "var(--color-error-text)", padding: 12, borderRadius: 10, marginBottom: 12, fontSize: 14 },
+    empty: { padding: 18, color: "var(--color-text-muted)" },
 
-    overlay: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.25)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, zIndex: 50 },
-    modal: { width: "100%", maxWidth: 620, background: "#fff", borderRadius: 12, border: "1px solid #e5e7eb", boxShadow: "0 18px 60px rgba(0,0,0,0.25)", overflow: "hidden" },
-    modalHeader: { padding: "14px 16px", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, background: "#fafafa" },
-    modalTitle: { margin: 0, fontSize: 16, fontWeight: 800, color: "#111827" },
+    overlay: { position: "fixed", inset: 0, background: "var(--color-overlay)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, zIndex: 50 },
+    modal: { width: "100%", maxWidth: 620, background: "var(--color-surface)", borderRadius: 12, border: "1px solid var(--color-border)", boxShadow: "0 18px 60px var(--color-shadow-heavy)", overflow: "hidden" },
+    modalHeader: { padding: "14px 16px", borderBottom: "1px solid var(--color-border)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, background: "var(--color-surface-raised)" },
+    modalTitle: { margin: 0, fontSize: 16, fontWeight: 800, color: "var(--color-text-primary)" },
     modalBody: { padding: 16 },
     form: { display: "grid", gap: 12 },
     field: { display: "grid", gap: 6 },
-    label: { fontSize: 13, fontWeight: 700, color: "#374151" },
-    input: { height: 42, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 12px", outline: "none", fontSize: 14 },
-    textarea: { minHeight: 90, borderRadius: 8, border: "1px solid #d1d5db", padding: "10px 12px", outline: "none", fontSize: 14, resize: "vertical" },
+    label: { fontSize: 13, fontWeight: 700, color: "var(--color-text-secondary)" },
+    input: { height: 42, borderRadius: 8, border: "1px solid var(--color-border-strong)", padding: "0 12px", outline: "none", fontSize: 14 },
+    textarea: { minHeight: 90, borderRadius: 8, border: "1px solid var(--color-border-strong)", padding: "10px 12px", outline: "none", fontSize: 14, resize: "vertical" },
     row: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 },
     checkboxRow: { display: "flex", alignItems: "center", gap: 10, marginTop: 6 },
 
-    footer: { padding: 16, borderTop: "1px solid #e5e7eb", display: "flex", justifyContent: "flex-end", gap: 10, background: "#fafafa" },
+    footer: { padding: 16, borderTop: "1px solid var(--color-border)", display: "flex", justifyContent: "flex-end", gap: 10, background: "var(--color-surface-raised)" },
 
-    versionsWrap: { background: "#fafafa", borderTop: "1px solid #e5e7eb" },
+    versionsWrap: { background: "var(--color-surface-raised)", borderTop: "1px solid var(--color-border)" },
     versionsInner: { padding: 14 },
     versionsTitleRow: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 10, flexWrap: "wrap" },
-    versionsTitle: { margin: 0, fontSize: 14, fontWeight: 800, color: "#111827" },
-    versionsTable: { width: "100%", borderCollapse: "collapse", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, overflow: "hidden" },
-    versionsTh: { textAlign: "left", fontSize: 12, letterSpacing: 0.4, textTransform: "uppercase", color: "#6b7280", padding: "10px 12px", borderBottom: "1px solid #e5e7eb", background: "#fafafa" },
-    versionsTd: { padding: "10px 12px", borderBottom: "1px solid #f1f5f9", fontSize: 13, color: "#111827", verticalAlign: "top" },
+    versionsTitle: { margin: 0, fontSize: 14, fontWeight: 800, color: "var(--color-text-primary)" },
+    versionsTable: { width: "100%", borderCollapse: "collapse", background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 12, overflow: "hidden" },
+    versionsTh: { textAlign: "left", fontSize: 12, letterSpacing: 0.4, textTransform: "uppercase", color: "var(--color-text-muted)", padding: "10px 12px", borderBottom: "1px solid var(--color-border)", background: "var(--color-surface-raised)" },
+    versionsTd: { padding: "10px 12px", borderBottom: "1px solid var(--color-border-td)", fontSize: 13, color: "var(--color-text-primary)", verticalAlign: "top" },
     mono: { fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace" },
-    hint: { fontSize: 13, color: "#6b7280", marginTop: 8, lineHeight: 1.4 },
-    secretBox: { border: "1px dashed #d1d5db", background: "#fff", padding: 12, borderRadius: 10, display: "grid", gap: 10 },
+    hint: { fontSize: 13, color: "var(--color-text-muted)", marginTop: 8, lineHeight: 1.4 },
+    secretBox: { border: "1px dashed var(--color-border-strong)", background: "var(--color-surface)", padding: 12, borderRadius: 10, display: "grid", gap: 10 },
   };
 
   return (
@@ -355,11 +355,11 @@ export default function AdminApplicationsPage() {
 
                       <td style={styles.td}>
                         {a.url ? (
-                          <a href={a.url} target="_blank" rel="noreferrer" style={{ color: "#6366f1" }}>
+                          <a href={a.url} target="_blank" rel="noreferrer" style={{ color: "var(--color-primary)" }}>
                             {a.url}
                           </a>
                         ) : (
-                          <span style={{ color: "#9ca3af" }}>{t("common.noneSymbol")}</span>
+                          <span style={{ color: "var(--color-text-faint)" }}>{t("common.noneSymbol")}</span>
                         )}
                       </td>
 
@@ -370,7 +370,7 @@ export default function AdminApplicationsPage() {
                               width: 8,
                               height: 8,
                               borderRadius: 999,
-                              background: a.isActive === false ? "#ef4444" : "#10b981",
+                              background: a.isActive === false ? "var(--color-error)" : "var(--color-success)",
                               display: "inline-block",
                             }}
                           />
@@ -443,7 +443,7 @@ export default function AdminApplicationsPage() {
                                                 width: 8,
                                                 height: 8,
                                                 borderRadius: 999,
-                                                background: v.isActive ? "#10b981" : "#ef4444",
+                                                background: v.isActive ? "var(--color-success)" : "var(--color-error)",
                                                 display: "inline-block",
                                               }}
                                             />
@@ -545,7 +545,7 @@ export default function AdminApplicationsPage() {
                       <label style={styles.label}>{t("applications.isActive")}</label>
                       <div style={styles.checkboxRow}>
                         <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
-                        <span style={{ color: "#374151", fontSize: 14 }}>{isActive ? t("common.yes") : t("common.no")}</span>
+                        <span style={{ color: "var(--color-text-secondary)", fontSize: 14 }}>{isActive ? t("common.yes") : t("common.no")}</span>
                       </div>
                     </div>
                   </div>
@@ -578,7 +578,7 @@ export default function AdminApplicationsPage() {
 
             <div style={styles.modalBody}>
               <div style={{ display: "grid", gap: 10 }}>
-                <div style={{ color: "#111827", fontWeight: 800 }}>
+                <div style={{ color: "var(--color-text-primary)", fontWeight: 800 }}>
                   {t("applications.secretHeader", { name: createdAppName, version: createdVersion })}
                 </div>
 

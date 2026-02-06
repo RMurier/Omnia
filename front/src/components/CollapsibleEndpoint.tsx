@@ -28,7 +28,7 @@ export default function CollapsibleEndpoint({ method, path, description, request
   const styles: Record<string, React.CSSProperties> = {
     container: {
       marginBottom: 24,
-      border: "1px solid #e5e7eb",
+      border: "1px solid var(--color-border)",
       borderRadius: 8,
       overflow: "hidden",
     },
@@ -37,9 +37,9 @@ export default function CollapsibleEndpoint({ method, path, description, request
       alignItems: "center",
       justifyContent: "space-between",
       padding: "12px 16px",
-      backgroundColor: "#f9fafb",
+      backgroundColor: "var(--color-surface-sunken)",
       cursor: "pointer",
-      borderBottom: isCollapsed ? "none" : "1px solid #e5e7eb",
+      borderBottom: isCollapsed ? "none" : "1px solid var(--color-border)",
     },
     endpointInfo: {
       display: "flex",
@@ -47,7 +47,7 @@ export default function CollapsibleEndpoint({ method, path, description, request
       gap: 12,
     },
     method: {
-      backgroundColor: method === "POST" ? "#3b82f6" : "#10b981", // Differentiate POST and GET
+      backgroundColor: method === "POST" ? "var(--color-method-post)" : "var(--color-method-get)",
       color: "#fff",
       padding: "4px 8px",
       borderRadius: 4,
@@ -59,16 +59,16 @@ export default function CollapsibleEndpoint({ method, path, description, request
     path: {
       fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
       fontSize: 14,
-      color: "#111827",
+      color: "var(--color-text-primary)",
     },
     description: {
-      color: "#374151",
+      color: "var(--color-text-secondary)",
       lineHeight: 1.7,
       fontSize: 14,
     },
     content: {
       padding: "16px",
-      backgroundColor: "#fff",
+      backgroundColor: "var(--color-surface)",
     },
     codeBlockContainer: {
       marginTop: 16,
@@ -83,7 +83,7 @@ export default function CollapsibleEndpoint({ method, path, description, request
           <span style={styles.path}>{path}</span>
         </div>
         <div>
-          {isCollapsed ? <ChevronDown size={18} color="#6b7280" /> : <ChevronUp size={18} color="#6b7280" />}
+          {isCollapsed ? <ChevronDown size={18} style={{ color: "var(--color-text-muted)" }} /> : <ChevronUp size={18} style={{ color: "var(--color-text-muted)" }} />}
         </div>
       </div>
       {!isCollapsed && (

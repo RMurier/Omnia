@@ -321,49 +321,49 @@ export default function LogsPage() {
   const styles: Record<string, React.CSSProperties> = {
     page: { padding: 20, maxWidth: "min(99vw, 3600px)", margin: "0 auto" },
     topBar: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 12 },
-    title: { margin: 0, fontSize: 22, fontWeight: 900, color: "#111827" },
-    subtitle: { margin: "6px 0 0", color: "#6b7280", fontSize: 14 },
-    panel: { border: "1px solid #e5e7eb", borderRadius: 12, background: "#fff", padding: 14, marginBottom: 12 },
+    title: { margin: 0, fontSize: 22, fontWeight: 900, color: "var(--color-text-primary)" },
+    subtitle: { margin: "6px 0 0", color: "var(--color-text-muted)", fontSize: 14 },
+    panel: { border: "1px solid var(--color-border)", borderRadius: 12, background: "var(--color-surface)", padding: 14, marginBottom: 12 },
 
     filtersGrid: { display: "grid", gridTemplateColumns: "repeat(12, minmax(0, 1fr))", gap: 14, alignItems: "end" },
-    filterBlock: { padding: 10, borderRadius: 12, border: "1px solid #eef2f7", background: "#fafafa", minWidth: 0 },
+    filterBlock: { padding: 10, borderRadius: 12, border: "1px solid var(--color-border-subtle)", background: "var(--color-surface-raised)", minWidth: 0 },
     field: { display: "grid", gap: 6 },
     col3: { gridColumn: "span 3", minWidth: 0 },
     col2: { gridColumn: "span 2", minWidth: 0 },
     col3Mobile: { gridColumn: "span 6", minWidth: 0 },
     col2Mobile: { gridColumn: "span 6", minWidth: 0 },
 
-    label: { display: "block", fontSize: 12, fontWeight: 800, color: "#374151" },
-    input: { height: 40, borderRadius: 10, border: "1px solid #d1d5db", padding: "0 12px", outline: "none", fontSize: 14, width: "100%", background: "#fff", boxSizing: "border-box" },
+    label: { display: "block", fontSize: 12, fontWeight: 800, color: "var(--color-text-secondary)" },
+    input: { height: 40, borderRadius: 10, border: "1px solid var(--color-border-strong)", padding: "0 12px", outline: "none", fontSize: 14, width: "100%", background: "var(--color-surface)", boxSizing: "border-box" },
 
-    btn: { padding: "10px 12px", borderRadius: 10, border: "1px solid #d1d5db", background: "#fff", cursor: "pointer", fontWeight: 800, fontSize: 14, whiteSpace: "nowrap" },
-    btnSmall: { padding: "7px 10px", borderRadius: 10, border: "1px solid #d1d5db", background: "#fff", cursor: "pointer", fontWeight: 800, fontSize: 13, whiteSpace: "nowrap" },
+    btn: { padding: "10px 12px", borderRadius: 10, border: "1px solid var(--color-border-strong)", background: "var(--color-surface)", cursor: "pointer", fontWeight: 800, fontSize: 14, whiteSpace: "nowrap" },
+    btnSmall: { padding: "7px 10px", borderRadius: 10, border: "1px solid var(--color-border-strong)", background: "var(--color-surface)", cursor: "pointer", fontWeight: 800, fontSize: 13, whiteSpace: "nowrap" },
     disabled: { opacity: 0.6, cursor: "not-allowed" },
 
-    error: { border: "1px solid #ef4444", background: "#fef2f2", color: "#991b1b", padding: 12, borderRadius: 10, marginBottom: 12, fontSize: 14 },
+    error: { border: "1px solid var(--color-error)", background: "var(--color-error-bg)", color: "var(--color-error-text)", padding: 12, borderRadius: 10, marginBottom: 12, fontSize: 14 },
 
-    card: { border: "1px solid #e5e7eb", borderRadius: 12, background: "#fff", overflow: "hidden" },
+    card: { border: "1px solid var(--color-border)", borderRadius: 12, background: "var(--color-surface)", overflow: "hidden" },
     listWrap: { overflow: "auto" },
 
     table: { width: "100%", borderCollapse: "collapse", tableLayout: "fixed", minWidth: 980 },
-    th: { position: "sticky", top: 0, zIndex: 2, textAlign: "left", fontSize: 12, letterSpacing: 0.4, textTransform: "uppercase", color: "#6b7280", padding: "12px 14px", borderBottom: "1px solid #e5e7eb", background: "#fafafa", whiteSpace: "nowrap" },
-    td: { padding: "12px 14px", borderBottom: "1px solid #f1f5f9", verticalAlign: "top", color: "#111827", fontSize: 14, overflow: "hidden", textOverflow: "ellipsis" },
-    tdMuted: { color: "#6b7280", fontSize: 12, marginTop: 6 },
+    th: { position: "sticky", top: 0, zIndex: 2, textAlign: "left", fontSize: 12, letterSpacing: 0.4, textTransform: "uppercase", color: "var(--color-text-muted)", padding: "12px 14px", borderBottom: "1px solid var(--color-border)", background: "var(--color-surface-raised)", whiteSpace: "nowrap" },
+    td: { padding: "12px 14px", borderBottom: "1px solid var(--color-border-td)", verticalAlign: "top", color: "var(--color-text-primary)", fontSize: 14, overflow: "hidden", textOverflow: "ellipsis" },
+    tdMuted: { color: "var(--color-text-muted)", fontSize: 12, marginTop: 6 },
 
     groupRow: { cursor: "pointer" },
-    expandedRow: { background: "#f8fafc" },
+    expandedRow: { background: "var(--color-skeleton-box)" },
 
-    badge: { display: "inline-flex", alignItems: "center", gap: 8, padding: "4px 10px", borderRadius: 999, fontSize: 12, fontWeight: 900, border: "1px solid #e5e7eb", background: "#fff", color: "#111827", whiteSpace: "nowrap" },
-    pillBad: { borderColor: "#ef4444", color: "#7f1d1d", background: "#fef2f2" },
-    pillWarn: { borderColor: "#f59e0b", color: "#7c2d12", background: "#fffbeb" },
-    pillOk: { borderColor: "#10b981", color: "#065f46", background: "#ecfdf5" },
+    badge: { display: "inline-flex", alignItems: "center", gap: 8, padding: "4px 10px", borderRadius: 999, fontSize: 12, fontWeight: 900, border: "1px solid var(--color-border)", background: "var(--color-surface)", color: "var(--color-text-primary)", whiteSpace: "nowrap" },
+    pillBad: { borderColor: "var(--color-error)", color: "var(--color-error-text-dark)", background: "var(--color-error-bg)" },
+    pillWarn: { borderColor: "var(--color-warning)", color: "var(--color-warning-text)", background: "var(--color-warning-bg)" },
+    pillOk: { borderColor: "var(--color-success)", color: "var(--color-success-text)", background: "var(--color-success-bg)" },
 
-    subRow: { background: "#ffffff" },
-    subCell: { padding: "10px 14px", borderBottom: "1px solid #eef2f7", fontSize: 13, color: "#111827" },
-    subCard: { border: "1px solid #e5e7eb", borderRadius: 12, background: "#fff", padding: 12, display: "grid", gap: 8 },
+    subRow: { background: "var(--color-surface)" },
+    subCell: { padding: "10px 14px", borderBottom: "1px solid var(--color-border-subtle)", fontSize: 13, color: "var(--color-text-primary)" },
+    subCard: { border: "1px solid var(--color-border)", borderRadius: 12, background: "var(--color-surface)", padding: 12, display: "grid", gap: 8 },
 
     mono: { fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" },
-    pre: { margin: 0, padding: 12, borderRadius: 12, border: "1px solid #e5e7eb", background: "#fafafa", overflowX: "auto", fontSize: 12, lineHeight: 1.5, color: "#111827" },
+    pre: { margin: 0, padding: 12, borderRadius: 12, border: "1px solid var(--color-border)", background: "var(--color-surface-raised)", overflowX: "auto", fontSize: 12, lineHeight: 1.5, color: "var(--color-text-primary)" },
   };
 
   function categoryBadgeStyle(cat: string): React.CSSProperties {
@@ -690,8 +690,8 @@ export default function LogsPage() {
                               <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
                                 <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
                                   <span style={patchedBadgeStyle(isPatched)}>{isPatched ? t("logs.patched") : t("logs.notPatched")}</span>
-                                  <span style={{ color: "#6b7280", fontSize: 12 }}>{new Date(occurredAtUtc).toLocaleString()}</span>
-                                  <span style={{ color: "#6b7280", fontSize: 12 }}>
+                                  <span style={{ color: "var(--color-text-muted)", fontSize: 12 }}>{new Date(occurredAtUtc).toLocaleString()}</span>
+                                  <span style={{ color: "var(--color-text-muted)", fontSize: 12 }}>
                                     <span style={styles.mono}>{id}</span>
                                   </span>
                                 </div>
@@ -706,7 +706,7 @@ export default function LogsPage() {
                                 </button>
                               </div>
 
-                              <div style={{ color: "#111827", fontSize: 13 }}>{(l!.message ?? "") as any}</div>
+                              <div style={{ color: "var(--color-text-primary)", fontSize: 13 }}>{(l!.message ?? "") as any}</div>
                               {stack ? <pre style={{ ...styles.pre, ...(styles.mono as any) }}>{stack}</pre> : null}
                             </div>
                           </td>
@@ -718,7 +718,7 @@ export default function LogsPage() {
                     g.ids.length > 30 ? (
                       <tr key={`limit:${g.key}`} style={styles.subRow}>
                         <td style={styles.subCell} colSpan={7}>
-                          <div style={{ color: "#6b7280", fontSize: 12 }}>{t("logs.limited", { count: g.ids.length })}.</div>
+                          <div style={{ color: "var(--color-text-muted)", fontSize: 12 }}>{t("logs.limited", { count: g.ids.length })}.</div>
                         </td>
                       </tr>
                     ) : null;

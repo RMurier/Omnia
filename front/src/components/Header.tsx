@@ -1,7 +1,9 @@
 import React, { useMemo } from "react";
 import { useAuthStore } from "../stores/authStore";
+import { useThemeStore } from "../stores/themeStore";
 import { signout } from "../utils/authFetch";
 import { useTranslation } from "react-i18next";
+import { Settings, Sun, Moon } from "lucide-react";
 
 
 type NavItem = {
@@ -14,10 +16,15 @@ type HeaderProps = {
 };
 
 export default function Header({ isAuthenticated = false }: HeaderProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const email = useAuthStore((s) => s.email);
   const name = useAuthStore((s) => s.name);
   const lastName = useAuthStore((s) => s.lastName);
+  const theme = useThemeStore((s) => s.theme);
+  const toggleTheme = useThemeStore((s) => s.toggleTheme);
+
+  const currentLang = (i18n.language || "en").toLowerCase();
+  const isFr = currentLang.startsWith("fr");
 
   const navItems: NavItem[] = useMemo(
     () => [
@@ -38,8 +45,8 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
       alignItems: "center",
       justifyContent: "space-between",
       padding: "0 24px",
-      borderBottom: "1px solid #e5e7eb",
-      backgroundColor: "#ffffff",
+      borderBottom: "1px solid var(--color-border)",
+      backgroundColor: "var(--color-surface)",
       position: "sticky",
       top: 0,
       zIndex: 50,
@@ -48,7 +55,7 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
     logo: {
       fontSize: 18,
       fontWeight: 600,
-      color: "#111827",
+      color: "var(--color-text-primary)",
       textDecoration: "none",
     },
     nav: { display: "flex", alignItems: "center", gap: 16 },
@@ -62,14 +69,14 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
     },
     link: {
       fontSize: 14,
-      color: "#374151",
+      color: "var(--color-text-secondary)",
       textDecoration: "none",
     },
     primaryButton: {
       padding: "8px 14px",
       borderRadius: 6,
       border: "none",
-      backgroundColor: "#6366f1",
+      backgroundColor: "var(--color-primary)",
       color: "#ffffff",
       cursor: "pointer",
       fontSize: 14,
@@ -84,11 +91,11 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
       listStyle: "none",
       padding: "6px 10px",
       borderRadius: 999,
-      border: "1px solid #d1d5db",
-      backgroundColor: "#ffffff",
+      border: "1px solid var(--color-border-strong)",
+      backgroundColor: "var(--color-surface)",
       cursor: "pointer",
       fontSize: 14,
-      color: "#111827",
+      color: "var(--color-text-primary)",
       display: "inline-flex",
       alignItems: "center",
       gap: 10,
@@ -99,12 +106,12 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
       width: 28,
       height: 28,
       borderRadius: 999,
-      backgroundColor: "#f3f4f6",
+      backgroundColor: "var(--color-surface-sunken)",
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
       fontWeight: 800,
-      color: "#374151",
+      color: "var(--color-text-secondary)",
       fontSize: 13,
       flex: "0 0 auto",
     },
@@ -113,7 +120,7 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
       height: 0,
       borderLeft: "5px solid transparent",
       borderRight: "5px solid transparent",
-      borderTop: "6px solid #6b7280",
+      borderTop: "6px solid var(--color-text-muted)",
       marginLeft: 2,
     },
     menu: {
@@ -122,26 +129,26 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
       top: "calc(100% + 8px)",
       minWidth: 200,
       borderRadius: 12,
-      border: "1px solid #e5e7eb",
-      background: "#ffffff",
-      boxShadow: "0 10px 28px rgba(0,0,0,0.10)",
+      border: "1px solid var(--color-border)",
+      background: "var(--color-surface)",
+      boxShadow: "0 10px 28px var(--color-shadow)",
       padding: 8,
       zIndex: 60,
     },
     menuHeader: {
       padding: "8px 10px",
-      borderBottom: "1px solid #f3f4f6",
+      borderBottom: "1px solid var(--color-surface-sunken)",
       marginBottom: 8,
     },
-    menuName: { fontWeight: 900, color: "#111827", fontSize: 14, margin: 0 },
-    menuSub: { color: "#6b7280", fontSize: 12, margin: "4px 0 0" },
+    menuName: { fontWeight: 900, color: "var(--color-text-primary)", fontSize: 14, margin: 0 },
+    menuSub: { color: "var(--color-text-muted)", fontSize: 12, margin: "4px 0 0" },
     itemLink: {
       width: "100%",
       display: "block",
       padding: "10px 10px",
       borderRadius: 10,
       textDecoration: "none",
-      color: "#111827",
+      color: "var(--color-text-primary)",
       fontWeight: 800,
       fontSize: 14,
     },
@@ -150,14 +157,85 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
       display: "block",
       padding: "10px 10px",
       borderRadius: 10,
-      border: "1px solid #fee2e2",
-      background: "#fef2f2",
-      color: "#991b1b",
+      border: "1px solid var(--color-error-btn-border)",
+      background: "var(--color-error-bg)",
+      color: "var(--color-error-btn-text)",
       fontWeight: 800,
       fontSize: 14,
       textAlign: "left",
       cursor: "pointer",
       marginTop: 6,
+    },
+
+    /* Settings dropdown */
+    settingsBtn: {
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      width: 38,
+      height: 38,
+      borderRadius: 999,
+      border: "1px solid var(--color-border-strong)",
+      backgroundColor: "var(--color-surface)",
+      cursor: "pointer",
+      padding: 0,
+    },
+    settingsMenu: {
+      position: "absolute",
+      right: 0,
+      top: "calc(100% + 8px)",
+      minWidth: 220,
+      borderRadius: 12,
+      border: "1px solid var(--color-border)",
+      background: "var(--color-surface)",
+      boxShadow: "0 10px 28px var(--color-shadow)",
+      padding: 10,
+      zIndex: 60,
+    },
+    settingsRow: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 10,
+      padding: "8px 6px",
+    },
+    settingsLabel: {
+      fontSize: 13,
+      fontWeight: 800,
+      color: "var(--color-text-primary)",
+    },
+    themeToggle: {
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      width: 36,
+      height: 36,
+      borderRadius: 10,
+      border: "1px solid var(--color-border-strong)",
+      backgroundColor: "var(--color-surface-raised)",
+      cursor: "pointer",
+      padding: 0,
+    },
+    langPill: {
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 0,
+      borderRadius: 10,
+      border: "1px solid var(--color-border-strong)",
+      overflow: "hidden",
+    },
+    langBtn: {
+      padding: "6px 12px",
+      border: "none",
+      cursor: "pointer",
+      fontWeight: 800,
+      fontSize: 13,
+      background: "var(--color-surface)",
+      color: "var(--color-text-muted)",
+    },
+    langBtnActive: {
+      background: "var(--color-primary)",
+      color: "#ffffff",
     },
   };
 
@@ -182,6 +260,52 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
             </a>
           </li>
         </ul>
+
+        {/* Settings dropdown */}
+        <details style={styles.details}>
+          <summary style={styles.settingsBtn}>
+            <Settings size={18} style={{ color: "var(--color-text-muted)" }} />
+          </summary>
+
+          <div style={styles.settingsMenu}>
+            {/* Theme toggle */}
+            <div style={styles.settingsRow}>
+              <span style={styles.settingsLabel}>{t("settings.theme")}</span>
+              <button
+                type="button"
+                style={styles.themeToggle}
+                onClick={toggleTheme}
+                aria-label={theme === "dark" ? t("settings.themeLight") : t("settings.themeDark")}
+              >
+                {theme === "dark"
+                  ? <Sun size={18} style={{ color: "var(--color-warning)" }} />
+                  : <Moon size={18} style={{ color: "var(--color-text-muted)" }} />
+                }
+              </button>
+            </div>
+
+            {/* Language selector */}
+            <div style={styles.settingsRow}>
+              <span style={styles.settingsLabel}>{t("settings.language")}</span>
+              <div style={styles.langPill}>
+                <button
+                  type="button"
+                  style={{ ...styles.langBtn, ...(!isFr ? styles.langBtnActive : {}) }}
+                  onClick={() => i18n.changeLanguage("en")}
+                >
+                  EN
+                </button>
+                <button
+                  type="button"
+                  style={{ ...styles.langBtn, ...(isFr ? styles.langBtnActive : {}) }}
+                  onClick={() => i18n.changeLanguage("fr")}
+                >
+                  FR
+                </button>
+              </div>
+            </div>
+          </div>
+        </details>
 
         {!isAuthenticated ? (
           <a href="/signin" style={styles.primaryButton}>

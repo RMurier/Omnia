@@ -15,13 +15,13 @@ export default function DocSection({ id, title, children }: Props) {
     title: {
       fontSize: 20,
       fontWeight: 700,
-      color: "#111827",
+      color: "var(--color-text-primary)",
       marginBottom: 16,
       paddingBottom: 8,
-      borderBottom: "2px solid #e5e7eb",
+      borderBottom: "2px solid var(--color-border)",
     },
     content: {
-      color: "#374151",
+      color: "var(--color-text-secondary)",
       lineHeight: 1.7,
     },
   };

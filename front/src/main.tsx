@@ -12,6 +12,7 @@ import LogsPage from "./pages/Logs.tsx";
 import AdminActivityPage from "./pages/Activity.tsx";
 import Documentation from "./pages/docs/Documentation.tsx";
 import { useAuthStore } from "./stores/authStore";
+import { useThemeStore } from "./stores/themeStore";
 import MePage from "./pages/Me.tsx";
 
 function Root() {
@@ -19,6 +20,7 @@ function Root() {
 
   React.useEffect(() => {
     hydrateFromServer();
+    useThemeStore.getState().initTheme();
   }, [hydrateFromServer]);
 
   return (

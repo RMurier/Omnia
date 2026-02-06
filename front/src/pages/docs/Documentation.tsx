@@ -113,13 +113,13 @@ export default function Documentation() {
     page: {
       display: "flex",
       minHeight: "calc(100vh - 64px)",
-      background: "#f9fafb",
+      background: "var(--color-surface-sunken)",
     },
     sidebar: {
       width: 280,
       minWidth: 280,
-      background: "#fff",
-      borderRight: "1px solid #e5e7eb",
+      background: "var(--color-surface)",
+      borderRight: "1px solid var(--color-border)",
       padding: "24px 0",
       position: "sticky",
       top: "64px",
@@ -131,7 +131,7 @@ export default function Documentation() {
       fontWeight: 700,
       textTransform: "uppercase",
       letterSpacing: 0.5,
-      color: "#6b7280",
+      color: "var(--color-text-muted)",
       padding: "0 20px",
       marginBottom: 12,
     },
@@ -152,13 +152,13 @@ export default function Documentation() {
       cursor: "pointer",
       fontSize: 14,
       fontWeight: 600,
-      color: "#374151",
+      color: "var(--color-text-secondary)",
       transition: "background 0.15s, color 0.15s",
     },
     categoryBtnActive: {
-      background: "#eef2ff",
-      color: "#4f46e5",
-      borderLeft: "3px solid #4f46e5",
+      background: "var(--color-sidebar-active-bg)",
+      color: "var(--color-sidebar-active-text)",
+      borderLeft: "3px solid var(--color-sidebar-active-border)",
     },
     sectionList: {
       listStyle: "none",
@@ -176,7 +176,7 @@ export default function Documentation() {
       background: "transparent",
       cursor: "pointer",
       fontSize: 13,
-      color: "#6b7280",
+      color: "var(--color-text-muted)",
       borderRadius: 4,
     },
     main: {
@@ -190,12 +190,12 @@ export default function Documentation() {
     title: {
       fontSize: 28,
       fontWeight: 800,
-      color: "#111827",
+      color: "var(--color-text-primary)",
       margin: 0,
     },
     subtitle: {
       fontSize: 15,
-      color: "#6b7280",
+      color: "var(--color-text-muted)",
       marginTop: 8,
     },
   };
