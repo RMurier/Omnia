@@ -4,6 +4,7 @@ using Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace api.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260210213935_AddResetPassword")]
+    partial class AddResetPassword
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -491,68 +494,6 @@ namespace api.Data.Migrations
                             Description = "Read-only access to the application, logs and activities.",
                             Name = "Viewer"
                         });
-                });
-
-            modelBuilder.Entity("api.Data.Models.SystemMailLog", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier")
-                        .HasColumnName("ID")
-                        .HasDefaultValueSql("NEWID()");
-
-                    b.Property<string>("BccAddresses")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("BCC_ADDRESSES");
-
-                    b.Property<string>("Body")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("BODY");
-
-                    b.Property<string>("CcAddresses")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("CC_ADDRESSES");
-
-                    b.Property<string>("ErrorMessage")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("ERROR_MESSAGE");
-
-                    b.Property<string>("Fingerprint")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(64)")
-                        .HasColumnName("FINGERPRINT");
-
-                    b.Property<string>("FromAddress")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("FROM_ADDRESS");
-
-                    b.Property<DateTime>("SentAtUtc")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("SENT_AT_UTC");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(16)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(16)")
-                        .HasColumnName("STATUS");
-
-                    b.Property<string>("Subject")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("SUBJECT");
-
-                    b.Property<string>("ToAddresses")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("TO_ADDRESSES");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("T_SYSTEM_MAIL_LOG", (string)null);
                 });
 
             modelBuilder.Entity("api.Data.Models.User", b =>

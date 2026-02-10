@@ -160,5 +160,152 @@ namespace api.Controllers
                 return StatusCode(ex.StatusCode, new { message = _t[ex.Key].Value });
             }
         }
+
+        // ── Member management ───────────────────────────────────────────
+
+        [HttpGet("roles")]
+        public async Task<ActionResult<List<RoleDto>>> GetRoles(CancellationToken ct)
+        {
+            return Ok(await _application.GetRoles(ct));
+        }
+
+        [HttpGet("{id:guid}/members")]
+        public async Task<ActionResult<List<ApplicationMemberDto>>> GetMembers([FromRoute] Guid id, CancellationToken ct)
+        {
+            var userId = GetUserIdFromClaims();
+            if (userId is null)
+                return Unauthorized(new { message = _t["Errors.Unauthorized"].Value });
+
+            try
+            {
+                return Ok(await _application.GetMembers(id, userId.Value, ct));
+            }
+            catch (ApiException ex)
+            {
+                return StatusCode(ex.StatusCode, new { message = _t[ex.Key].Value });
+            }
+        }
+
+        [HttpGet("{id:guid}/invitations")]
+        public async Task<ActionResult<List<PendingInvitationDto>>> GetPendingInvitations([FromRoute] Guid id, CancellationToken ct)
+        {
+            var userId = GetUserIdFromClaims();
+            if (userId is null)
+                return Unauthorized(new { message = _t["Errors.Unauthorized"].Value });
+
+            try
+            {
+                return Ok(await _application.GetPendingInvitations(id, userId.Value, ct));
+            }
+            catch (ApiException ex)
+            {
+                return StatusCode(ex.StatusCode, new { message = _t[ex.Key].Value });
+            }
+        }
+
+        [HttpPost("{id:guid}/members/invite")]
+        public async Task<ActionResult<InviteMemberResultDto>> InviteMember(
+            [FromRoute] Guid id,
+            [FromBody] InviteMemberRequest request,
+            CancellationToken ct)
+        {
+            var userId = GetUserIdFromClaims();
+            if (userId is null)
+                return Unauthorized(new { message = _t["Errors.Unauthorized"].Value });
+
+            try
+            {
+                var result = await _application.InviteMember(id, request, userId.Value, ct);
+                return Ok(result);
+            }
+            catch (ApiException ex)
+            {
+                return StatusCode(ex.StatusCode, new { message = _t[ex.Key].Value });
+            }
+        }
+
+        [HttpPatch("{id:guid}/members/{memberId:guid}/role")]
+        public async Task<IActionResult> UpdateMemberRole(
+            [FromRoute] Guid id,
+            [FromRoute] Guid memberId,
+            [FromBody] UpdateMemberRoleRequest request,
+            CancellationToken ct)
+        {
+            var userId = GetUserIdFromClaims();
+            if (userId is null)
+                return Unauthorized(new { message = _t["Errors.Unauthorized"].Value });
+
+            try
+            {
+                await _application.UpdateMemberRole(id, memberId, request, userId.Value, ct);
+                return Ok(new { ok = true });
+            }
+            catch (ApiException ex)
+            {
+                return StatusCode(ex.StatusCode, new { message = _t[ex.Key].Value });
+            }
+        }
+
+        [HttpDelete("{id:guid}/members/{memberId:guid}")]
+        public async Task<IActionResult> RemoveMember(
+            [FromRoute] Guid id,
+            [FromRoute] Guid memberId,
+            CancellationToken ct)
+        {
+            var userId = GetUserIdFromClaims();
+            if (userId is null)
+                return Unauthorized(new { message = _t["Errors.Unauthorized"].Value });
+
+            try
+            {
+                await _application.RemoveMember(id, memberId, userId.Value, ct);
+                return NoContent();
+            }
+            catch (ApiException ex)
+            {
+                return StatusCode(ex.StatusCode, new { message = _t[ex.Key].Value });
+            }
+        }
+
+        [HttpDelete("{id:guid}/invitations/{invitationId:guid}")]
+        public async Task<IActionResult> CancelInvitation(
+            [FromRoute] Guid id,
+            [FromRoute] Guid invitationId,
+            CancellationToken ct)
+        {
+            var userId = GetUserIdFromClaims();
+            if (userId is null)
+                return Unauthorized(new { message = _t["Errors.Unauthorized"].Value });
+
+            try
+            {
+                await _application.CancelInvitation(id, invitationId, userId.Value, ct);
+                return NoContent();
+            }
+            catch (ApiException ex)
+            {
+                return StatusCode(ex.StatusCode, new { message = _t[ex.Key].Value });
+            }
+        }
+
+        [HttpGet("{id:guid}/members/check-email")]
+        public async Task<ActionResult<CheckEmailResultDto>> CheckEmail(
+            [FromRoute] Guid id,
+            [FromQuery] string email,
+            CancellationToken ct)
+        {
+            var userId = GetUserIdFromClaims();
+            if (userId is null)
+                return Unauthorized(new { message = _t["Errors.Unauthorized"].Value });
+
+            try
+            {
+                return Ok(await _application.CheckEmail(id, email, userId.Value, ct));
+            }
+            catch (ApiException ex)
+            {
+                return StatusCode(ex.StatusCode, new { message = _t[ex.Key].Value });
+            }
+        }
     }
 }

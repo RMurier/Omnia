@@ -4,6 +4,7 @@ using Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace api.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260207213115_AddMailLogsAndConfirmationCreateUser")]
+    partial class AddMailLogsAndConfirmationCreateUser
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -133,47 +136,6 @@ namespace api.Data.Migrations
                             KeyEnc = "IQfYMxIc4RqfMOeZyj/1wtpyS/8EB0kMHkuKF4f40tXzEAXDCpaVLpCfuVHkXmtXQKl8TEa6VCTaZUOv",
                             RefApplication = new Guid("6932a69e-eaa0-4e9c-b4cf-d7a9c6524e4c")
                         });
-                });
-
-            modelBuilder.Entity("api.Data.Models.ApplicationInvitation", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier")
-                        .HasColumnName("ID");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("CREATED_AT");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)")
-                        .HasColumnName("EMAIL");
-
-                    b.Property<Guid>("InvitedBy")
-                        .HasColumnType("uniqueidentifier")
-                        .HasColumnName("INVITED_BY");
-
-                    b.Property<Guid>("RefApplication")
-                        .HasColumnType("uniqueidentifier")
-                        .HasColumnName("REF_APPLICATION");
-
-                    b.Property<Guid>("RefRoleApplication")
-                        .HasColumnType("uniqueidentifier")
-                        .HasColumnName("REF_ROLE_APPLICATION");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("InvitedBy");
-
-                    b.HasIndex("RefRoleApplication");
-
-                    b.HasIndex("RefApplication", "Email")
-                        .IsUnique()
-                        .HasDatabaseName("UX_APPLICATION_INVITATION_APP_EMAIL");
-
-                    b.ToTable("T_APPLICATION_INVITATION", (string)null);
                 });
 
             modelBuilder.Entity("api.Data.Models.ApplicationMember", b =>
@@ -493,68 +455,6 @@ namespace api.Data.Migrations
                         });
                 });
 
-            modelBuilder.Entity("api.Data.Models.SystemMailLog", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier")
-                        .HasColumnName("ID")
-                        .HasDefaultValueSql("NEWID()");
-
-                    b.Property<string>("BccAddresses")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("BCC_ADDRESSES");
-
-                    b.Property<string>("Body")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("BODY");
-
-                    b.Property<string>("CcAddresses")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("CC_ADDRESSES");
-
-                    b.Property<string>("ErrorMessage")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("ERROR_MESSAGE");
-
-                    b.Property<string>("Fingerprint")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(64)")
-                        .HasColumnName("FINGERPRINT");
-
-                    b.Property<string>("FromAddress")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("FROM_ADDRESS");
-
-                    b.Property<DateTime>("SentAtUtc")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("SENT_AT_UTC");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(16)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(16)")
-                        .HasColumnName("STATUS");
-
-                    b.Property<string>("Subject")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("SUBJECT");
-
-                    b.Property<string>("ToAddresses")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("TO_ADDRESSES");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("T_SYSTEM_MAIL_LOG", (string)null);
-                });
-
             modelBuilder.Entity("api.Data.Models.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -591,15 +491,6 @@ namespace api.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("PASSWORD");
-
-                    b.Property<string>("PasswordResetToken")
-                        .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)")
-                        .HasColumnName("PASSWORD_RESET_TOKEN");
-
-                    b.Property<DateTime?>("PasswordResetTokenExpiresAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("PASSWORD_RESET_TOKEN_EXPIRES_AT");
 
                     b.Property<string>("Salt")
                         .IsRequired()
@@ -660,36 +551,6 @@ namespace api.Data.Migrations
                         .HasConstraintName("FK_APPLICATION_ENCRYPTION_KEY_REF_APPLICATION");
 
                     b.Navigation("Application");
-                });
-
-            modelBuilder.Entity("api.Data.Models.ApplicationInvitation", b =>
-                {
-                    b.HasOne("api.Data.Models.User", "InvitedByUser")
-                        .WithMany()
-                        .HasForeignKey("InvitedBy")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("FK_APPLICATION_INVITATION_INVITEDBY");
-
-                    b.HasOne("api.Data.Models.Application", "Application")
-                        .WithMany()
-                        .HasForeignKey("RefApplication")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("FK_APPLICATION_INVITATION_APPLICATION");
-
-                    b.HasOne("api.Data.Models.RoleApplication", "RoleApplication")
-                        .WithMany()
-                        .HasForeignKey("RefRoleApplication")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("FK_APPLICATION_INVITATION_ROLE");
-
-                    b.Navigation("Application");
-
-                    b.Navigation("InvitedByUser");
-
-                    b.Navigation("RoleApplication");
                 });
 
             modelBuilder.Entity("api.Data.Models.ApplicationMember", b =>

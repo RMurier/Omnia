@@ -17,4 +17,13 @@ public interface IAuth
     Task<string?> GetLastName(Guid userId, CancellationToken ct);
     Task<MeResponseDto?> GetMe(Guid userId, CancellationToken ct);
     Task ChangePassword(Guid userId, string currentPassword, string newPassword, CancellationToken ct);
+    Task ConfirmEmail(string token, CancellationToken ct);
+    Task ResendConfirmation(string email, CancellationToken ct);
+    Task ForgotPassword(string email, CancellationToken ct);
+    Task ResetPassword(string token, string newPassword, CancellationToken ct);
+    Task<(Guid userId, string? name, string? lastName)?> FindUserByEmail(string email, CancellationToken ct);
+    string EncryptEmail(string plainEmail);
+    string? DecryptEmail(string encryptedEmail);
+    string? DecryptName(string? encryptedName);
+    string? DecryptLastName(string? encryptedLastName);
 }

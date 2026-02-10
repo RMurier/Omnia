@@ -26,6 +26,35 @@ type CreateAppResult = {
   version: AppVersion;
 };
 
+type RoleItem = {
+  id: string;
+  name: string;
+  description?: string | null;
+};
+
+type MemberItem = {
+  memberId: string;
+  userId: string;
+  email?: string | null;
+  name?: string | null;
+  lastName?: string | null;
+  role?: RoleItem | null;
+  createdAt: string;
+};
+
+type PendingInvitation = {
+  id: string;
+  email?: string | null;
+  role?: RoleItem | null;
+  createdAt: string;
+};
+
+type CheckEmailResult = {
+  exists: boolean;
+  name?: string | null;
+  lastName?: string | null;
+};
+
 export default function AdminApplicationsPage() {
   const { t } = useTranslation();
 
@@ -52,6 +81,21 @@ export default function AdminApplicationsPage() {
   const [versionsOpenFor, setVersionsOpenFor] = useState<string | null>(null);
   const [versions, setVersions] = useState<AppVersion[]>([]);
   const [versionsLoading, setVersionsLoading] = useState(false);
+
+  // Members panel
+  const [membersOpenFor, setMembersOpenFor] = useState<string | null>(null);
+  const [members, setMembers] = useState<MemberItem[]>([]);
+  const [pendingInvitations, setPendingInvitations] = useState<PendingInvitation[]>([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [roles, setRoles] = useState<RoleItem[]>([]);
+
+  // Invite form
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRoleId, setInviteRoleId] = useState("");
+  const [inviting, setInviting] = useState(false);
+  const [inviteMsg, setInviteMsg] = useState<string | null>(null);
+  const [checkResult, setCheckResult] = useState<CheckEmailResult | null>(null);
+  const [checking, setChecking] = useState(false);
 
   const canSubmit = useMemo(() => name.trim().length >= 2 && !busy, [name, busy]);
 
@@ -224,7 +268,144 @@ export default function AdminApplicationsPage() {
         setVersionsOpenFor(null);
         setVersions([]);
       }
+      if (membersOpenFor === app.id) {
+        setMembersOpenFor(null);
+        setMembers([]);
+        setPendingInvitations([]);
+      }
       await loadApps();
+    } catch (e: any) {
+      setError(String(e?.message ?? e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // ── Members ────────────────────────────────────────────
+
+  const loadRoles = async () => {
+    try {
+      const data = await authFetch<RoleItem[]>("/application/roles", { method: "GET" });
+      setRoles(data ?? []);
+      if (data?.length && !inviteRoleId) {
+        const viewer = data.find((r) => r.name === "Viewer");
+        setInviteRoleId(viewer?.id ?? data[0].id);
+      }
+    } catch {}
+  };
+
+  const loadMembers = async (appId: string) => {
+    setMembersLoading(true);
+    setError(null);
+    try {
+      const [m, inv] = await Promise.all([
+        authFetch<MemberItem[]>(`/application/${appId}/members`, { method: "GET" }),
+        authFetch<PendingInvitation[]>(`/application/${appId}/invitations`, { method: "GET" }),
+      ]);
+      setMembers(m ?? []);
+      setPendingInvitations(inv ?? []);
+    } catch (e: any) {
+      setError(String(e?.message ?? e));
+    } finally {
+      setMembersLoading(false);
+    }
+  };
+
+  const toggleMembers = async (appId: string) => {
+    if (membersOpenFor === appId) {
+      setMembersOpenFor(null);
+      setMembers([]);
+      setPendingInvitations([]);
+      setInviteEmail("");
+      setInviteMsg(null);
+      setCheckResult(null);
+      return;
+    }
+    setMembersOpenFor(appId);
+    setInviteEmail("");
+    setInviteMsg(null);
+    setCheckResult(null);
+    await loadRoles();
+    await loadMembers(appId);
+  };
+
+  const onCheckEmail = async (appId: string) => {
+    const email = inviteEmail.trim();
+    if (!email) return;
+    setChecking(true);
+    setCheckResult(null);
+    try {
+      const res = await authFetch<CheckEmailResult>(`/application/${appId}/members/check-email?email=${encodeURIComponent(email)}`, { method: "GET" });
+      setCheckResult(res);
+    } catch {
+      setCheckResult(null);
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  const onInvite = async (appId: string) => {
+    const email = inviteEmail.trim();
+    if (!email || !inviteRoleId) return;
+    setInviting(true);
+    setInviteMsg(null);
+    setError(null);
+    try {
+      const res = await authFetch<{ memberAdded: boolean; invitationSent: boolean }>(`/application/${appId}/members/invite`, {
+        method: "POST",
+        body: JSON.stringify({ email, refRoleApplication: inviteRoleId }),
+      });
+      if (res.memberAdded) {
+        setInviteMsg(t("applications.inviteSuccessAdded"));
+      } else if (res.invitationSent) {
+        setInviteMsg(t("applications.inviteSuccessSent"));
+      }
+      setInviteEmail("");
+      setCheckResult(null);
+      await loadMembers(appId);
+    } catch (e: any) {
+      setError(String(e?.message ?? e));
+    } finally {
+      setInviting(false);
+    }
+  };
+
+  const onChangeRole = async (appId: string, memberId: string, newRoleId: string) => {
+    setBusy(true);
+    setError(null);
+    try {
+      await authFetch<void>(`/application/${appId}/members/${memberId}/role`, {
+        method: "PATCH",
+        body: JSON.stringify({ refRoleApplication: newRoleId }),
+      });
+      await loadMembers(appId);
+    } catch (e: any) {
+      setError(String(e?.message ?? e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onRemoveMember = async (appId: string, memberId: string) => {
+    if (!globalThis.confirm(t("applications.confirmRemoveMember"))) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await authFetch<void>(`/application/${appId}/members/${memberId}`, { method: "DELETE" });
+      await loadMembers(appId);
+    } catch (e: any) {
+      setError(String(e?.message ?? e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onCancelInvitation = async (appId: string, invitationId: string) => {
+    setBusy(true);
+    setError(null);
+    try {
+      await authFetch<void>(`/application/${appId}/invitations/${invitationId}`, { method: "DELETE" });
+      await loadMembers(appId);
     } catch (e: any) {
       setError(String(e?.message ?? e));
     } finally {
@@ -380,6 +561,9 @@ export default function AdminApplicationsPage() {
 
                       <td style={{ ...styles.td, textAlign: "right" }}>
                         <div style={styles.rowActions}>
+                          <button style={styles.smallBtn} onClick={() => toggleMembers(a.id)} disabled={busy}>
+                            {membersOpenFor === a.id ? t("applications.hideMembers") : t("applications.members")}
+                          </button>
                           <button style={styles.smallBtn} onClick={() => toggleVersions(a.id)} disabled={busy}>
                             {isVersionsOpen ? t("applications.hideVersions") : t("applications.versions")}
                           </button>
@@ -483,6 +667,160 @@ export default function AdminApplicationsPage() {
                               <div style={styles.hint}>
                                 {t("applications.reminderPrefix")} <span style={styles.mono}>X-Key-Version</span>.
                               </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+
+                    {membersOpenFor === a.id && (
+                      <tr>
+                        <td colSpan={6} style={{ padding: 0 }}>
+                          <div style={styles.versionsWrap}>
+                            <div style={styles.versionsInner}>
+                              <div style={styles.versionsTitleRow}>
+                                <h3 style={styles.versionsTitle}>
+                                  {t("applications.membersTitle", { name: a.name })}
+                                </h3>
+                                <button style={styles.btn} onClick={() => loadMembers(a.id)} disabled={busy || membersLoading}>
+                                  {t("applications.refreshMembers")}
+                                </button>
+                              </div>
+
+                              {/* Invite form */}
+                              <div style={{ ...styles.secretBox, marginBottom: 12 }}>
+                                <div style={{ fontWeight: 700, fontSize: 13 }}>{t("applications.inviteTitle")}</div>
+                                <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
+                                  <div style={{ flex: 1, minWidth: 180 }}>
+                                    <label style={styles.label}>{t("applications.inviteEmail")}</label>
+                                    <input
+                                      style={{ ...styles.input, width: "100%", boxSizing: "border-box" }}
+                                      value={inviteEmail}
+                                      onChange={(e) => { setInviteEmail(e.target.value); setCheckResult(null); setInviteMsg(null); }}
+                                      onBlur={() => inviteEmail.trim() && onCheckEmail(a.id)}
+                                      placeholder={t("applications.inviteEmailPlaceholder")}
+                                    />
+                                  </div>
+                                  <div style={{ minWidth: 130 }}>
+                                    <label style={styles.label}>{t("applications.inviteRole")}</label>
+                                    <select
+                                      style={{ ...styles.input, width: "100%", boxSizing: "border-box" }}
+                                      value={inviteRoleId}
+                                      onChange={(e) => setInviteRoleId(e.target.value)}
+                                    >
+                                      {roles.map((r) => (
+                                        <option key={r.id} value={r.id}>{r.name}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                  <button
+                                    style={styles.btnPrimary}
+                                    onClick={() => onInvite(a.id)}
+                                    disabled={inviting || !inviteEmail.trim() || !inviteRoleId}
+                                  >
+                                    {inviting ? t("applications.inviting") : t("applications.inviteBtn")}
+                                  </button>
+                                </div>
+                                {checking && (
+                                  <div style={{ fontSize: 12, color: "var(--color-text-muted)" }}>{t("applications.checkingEmail")}</div>
+                                )}
+                                {checkResult && !checking && (
+                                  <div style={{ fontSize: 12, color: checkResult.exists ? "var(--color-success)" : "var(--color-text-muted)" }}>
+                                    {checkResult.exists
+                                      ? t("applications.userFound", { name: [checkResult.name, checkResult.lastName].filter(Boolean).join(" ") || checkResult.name || "—" })
+                                      : t("applications.userNotFound")}
+                                  </div>
+                                )}
+                                {inviteMsg && (
+                                  <div style={{ fontSize: 12, color: "var(--color-success)" }}>{inviteMsg}</div>
+                                )}
+                              </div>
+
+                              {/* Members list */}
+                              {membersLoading ? (
+                                <div style={styles.empty}>{t("applications.membersLoading")}</div>
+                              ) : members.length === 0 ? (
+                                <div style={styles.empty}>{t("applications.membersEmpty")}</div>
+                              ) : (
+                                <table style={styles.versionsTable}>
+                                  <thead>
+                                    <tr>
+                                      <th style={styles.versionsTh}>Email</th>
+                                      <th style={styles.versionsTh}>{t("applications.name")}</th>
+                                      <th style={styles.versionsTh}>{t("applications.inviteRole")}</th>
+                                      <th style={{ ...styles.versionsTh, textAlign: "right" }}>{t("common.actions")}</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {members.map((m) => (
+                                      <tr key={m.memberId}>
+                                        <td style={styles.versionsTd}>{m.email ?? "—"}</td>
+                                        <td style={styles.versionsTd}>
+                                          {[m.name, m.lastName].filter(Boolean).join(" ") || "—"}
+                                        </td>
+                                        <td style={styles.versionsTd}>
+                                          <select
+                                            style={{ ...styles.input, height: 32, fontSize: 12, padding: "0 6px" }}
+                                            value={m.role?.id ?? ""}
+                                            onChange={(e) => onChangeRole(a.id, m.memberId, e.target.value)}
+                                            disabled={busy}
+                                          >
+                                            {roles.map((r) => (
+                                              <option key={r.id} value={r.id}>{r.name}</option>
+                                            ))}
+                                          </select>
+                                        </td>
+                                        <td style={{ ...styles.versionsTd, textAlign: "right" }}>
+                                          <button
+                                            style={styles.dangerBtn}
+                                            onClick={() => onRemoveMember(a.id, m.memberId)}
+                                            disabled={busy}
+                                          >
+                                            {t("applications.removeMember")}
+                                          </button>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              )}
+
+                              {/* Pending invitations */}
+                              {pendingInvitations.length > 0 && (
+                                <div style={{ marginTop: 12 }}>
+                                  <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 6, color: "var(--color-text-secondary)" }}>
+                                    {t("applications.pendingInvitations")}
+                                  </div>
+                                  <table style={styles.versionsTable}>
+                                    <thead>
+                                      <tr>
+                                        <th style={styles.versionsTh}>Email</th>
+                                        <th style={styles.versionsTh}>{t("applications.inviteRole")}</th>
+                                        <th style={styles.versionsTh}>{t("applications.createdAt")}</th>
+                                        <th style={{ ...styles.versionsTh, textAlign: "right" }}>{t("common.actions")}</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {pendingInvitations.map((inv) => (
+                                        <tr key={inv.id}>
+                                          <td style={styles.versionsTd}>{inv.email ?? "—"}</td>
+                                          <td style={styles.versionsTd}>{inv.role?.name ?? "—"}</td>
+                                          <td style={styles.versionsTd}>{fmtDate(inv.createdAt)}</td>
+                                          <td style={{ ...styles.versionsTd, textAlign: "right" }}>
+                                            <button
+                                              style={styles.dangerBtn}
+                                              onClick={() => onCancelInvitation(a.id, inv.id)}
+                                              disabled={busy}
+                                            >
+                                              {t("applications.cancelInvitation")}
+                                            </button>
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </td>

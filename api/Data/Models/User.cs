@@ -10,6 +10,10 @@ namespace api.Data.Models
         public string? LastName { get; set; }
         public string? Password { get; set; } = default!;
         public string? Salt { get; set; } = default!;
+        public bool EmailConfirmed { get; set; }
+        public string? EmailConfirmationToken { get; set; }
+        public string? PasswordResetToken { get; set; }
+        public DateTime? PasswordResetTokenExpiresAt { get; set; }
         [NotMapped]
         public string? AccessToken { get; set; } = default!;
         [NotMapped]

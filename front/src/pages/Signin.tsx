@@ -149,6 +149,15 @@ export default function SignIn() {
             {loading ? t("signin.loading") : t("signin.submit")}
           </button>
         </form>
+
+        <div style={{ textAlign: "center", marginTop: 16, fontSize: 14, color: "var(--color-text-muted)", display: "flex", flexDirection: "column", gap: 8 }}>
+          <a href="/forgot-password" style={{ color: "var(--color-primary)", textDecoration: "none" }}>
+            {t("signin.forgotPassword")}
+          </a>
+          <a href="/signup" style={{ color: "var(--color-primary)", textDecoration: "none" }}>
+            {t("signin.noAccount")}
+          </a>
+        </div>
       </div>
     </div>
   );

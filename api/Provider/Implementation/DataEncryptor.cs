@@ -9,12 +9,21 @@ namespace api.Provider.Implementation
     {
         private readonly IApplicationEncryptionKeyProvider _keyProvider;
         private readonly IMemoryCache _cache;
+        private readonly byte[] _systemKey;
         private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(10);
 
-        public DataEncryptor(IApplicationEncryptionKeyProvider keyProvider, IMemoryCache cache)
+        public DataEncryptor(IApplicationEncryptionKeyProvider keyProvider, IMemoryCache cache, IConfiguration config)
         {
             _keyProvider = keyProvider;
             _cache = cache;
+
+            var systemKeyB64 = config["Security:SystemMailKey"];
+            if (string.IsNullOrWhiteSpace(systemKeyB64))
+                throw new InvalidOperationException("Security:SystemMailKey is missing");
+
+            _systemKey = Convert.FromBase64String(systemKeyB64);
+            if (_systemKey.Length != 32)
+                throw new InvalidOperationException("Security:SystemMailKey must be a 32-byte AES-256 key (base64-encoded)");
         }
 
         public async Task<string> EncryptAsync(string plaintext, Guid applicationId, CancellationToken ct)
@@ -47,6 +56,18 @@ namespace api.Provider.Implementation
 
             var decrypted = await DecryptAsync(ciphertext, applicationId, ct);
             return Guid.TryParse(decrypted, out var guid) ? guid : Guid.Empty;
+        }
+
+        public string EncryptSystem(string plaintext)
+        {
+            if (string.IsNullOrEmpty(plaintext)) return string.Empty;
+            return Encrypt(plaintext, _systemKey);
+        }
+
+        public string DecryptSystem(string ciphertext)
+        {
+            if (string.IsNullOrEmpty(ciphertext)) return string.Empty;
+            return Decrypt(ciphertext, _systemKey);
         }
 
         private async Task<byte[]> GetCachedKeyAsync(Guid applicationId, CancellationToken ct)

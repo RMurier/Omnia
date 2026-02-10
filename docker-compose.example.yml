@@ -33,6 +33,14 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: "http://0.0.0.0:8080"
       ConnectionStrings__DefaultConnection: "Server=db,1433;Database=Omnia;User Id=sa;Password=__YOUR_STRONG_PASSWORD__;TrustServerCertificate=True;MultipleActiveResultSets=True"
+      SmtpSettings__Host: "ssl0.ovh.net"
+      SmtpSettings__Port: "587"
+      SmtpSettings__Username: "__YOUR_OVH_EMAIL__"
+      SmtpSettings__Password: "__YOUR_OVH_PASSWORD__"
+      SmtpSettings__FromAddress: "__YOUR_OVH_EMAIL__"
+      SmtpSettings__FromName: "Omnia"
+      AppSettings__IsBeta: "true"
+      AppSettings__FrontendUrl: "https://omnia-monitoring.com"
     depends_on:
       - db
     networks:

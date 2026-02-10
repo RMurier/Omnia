@@ -138,6 +138,10 @@ builder.Services.AddScoped<IApplication, ApplicationService>();
 builder.Services.AddScoped<IApplicationSecretProtector, ApplicationSecretProtector>();
 builder.Services.AddScoped<IActivity, ActivityService>();
 builder.Services.AddScoped<ILog, LogService>();
+builder.Services.AddScoped<IMail, MailService>();
+
+builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
+builder.Services.AddScoped<IMailSender, SmtpMailSender>();
 
 builder.Services.AddScoped<IApplicationSecretProvider, EfApplicationSecretProvider>();
 builder.Services.AddScoped<IApplicationEncryptionKeyProvider, ApplicationEncryptionKeyProvider>();

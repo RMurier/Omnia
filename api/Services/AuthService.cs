@@ -12,17 +12,22 @@ using System.Text;
 
 using api.Exceptions;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Localization;
 namespace api.Services;
 
 public class AuthService : IAuth
 {
     private readonly AppDbContext _context;
     private readonly IConfiguration _config;
+    private readonly IMail _mail;
+    private readonly IStringLocalizer<Shared> _t;
 
-    public AuthService(AppDbContext context, IConfiguration config)
+    public AuthService(AppDbContext context, IConfiguration config, IMail mail, IStringLocalizer<Shared> t)
     {
         _context = context;
         _config = config;
+        _mail = mail;
+        _t = t;
     }
 
     private static string NormalizeEmail(string email)
@@ -123,6 +128,9 @@ public class AuthService : IAuth
         if (!AuthHelper.VerifyPassword(user.Password, computedHash))
             throw new ApiException(StatusCodes.Status401Unauthorized, Shared.Keys.Errors.InvalidCredentials);
 
+        if (!user.EmailConfirmed)
+            throw new ApiException(StatusCodes.Status401Unauthorized, Shared.Keys.Errors.EmailNotConfirmed);
+
         string accessToken = GenerateToken(user.Id);
         string refreshToken = GenerateRefreshToken(user.Id);
 
@@ -135,6 +143,10 @@ public class AuthService : IAuth
 
     public async Task<CreateUserResponse> Register(CreateUserRequest request, CancellationToken ct)
     {
+        bool isBeta = string.Equals(_config["AppSettings:IsBeta"], "true", StringComparison.OrdinalIgnoreCase);
+        if (isBeta)
+            throw new ApiException(StatusCodes.Status400BadRequest, Shared.Keys.Errors.BetaRegistrationDisabled);
+
         if (request == null || string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
             throw new ApiException(StatusCodes.Status400BadRequest, Shared.Keys.Errors.EmailPasswordRequired);
 
@@ -155,6 +167,7 @@ public class AuthService : IAuth
 
         string salt = AuthHelper.GenerateSalt();
         string passwordHash = AuthHelper.HashPassword(request.Password, salt, pepper);
+        string confirmationToken = Guid.NewGuid().ToString();
 
         var user = new User
         {
@@ -163,11 +176,44 @@ public class AuthService : IAuth
             Name = string.IsNullOrWhiteSpace(request.Name) ? null : EncryptDeterministic(nameKey, request.Name.Trim()),
             LastName = string.IsNullOrWhiteSpace(request.LastName) ? null : EncryptDeterministic(lastNameKey, request.LastName.Trim()),
             Password = passwordHash,
-            Salt = salt
+            Salt = salt,
+            EmailConfirmed = false,
+            EmailConfirmationToken = confirmationToken
         };
 
         _context.User.Add(user);
         await _context.SaveChangesAsync(ct);
+
+        // Process pending invitations for this email
+        var pendingInvitations = await _context.ApplicationInvitation
+            .Where(i => i.Email == encryptedEmail)
+            .ToListAsync(ct);
+
+        foreach (var inv in pendingInvitations)
+        {
+            var alreadyMember = await _context.ApplicationMember
+                .AnyAsync(m => m.RefApplication == inv.RefApplication && m.RefUser == user.Id, ct);
+
+            if (!alreadyMember)
+            {
+                _context.ApplicationMember.Add(new ApplicationMember
+                {
+                    Id = Guid.NewGuid(),
+                    RefApplication = inv.RefApplication,
+                    RefUser = user.Id,
+                    RefRoleApplication = inv.RefRoleApplication,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+        }
+
+        if (pendingInvitations.Count > 0)
+        {
+            _context.ApplicationInvitation.RemoveRange(pendingInvitations);
+            await _context.SaveChangesAsync(ct);
+        }
+
+        await SendConfirmationEmail(normalizedEmail, confirmationToken, ct);
 
         return new CreateUserResponse
         {
@@ -345,4 +391,227 @@ public class AuthService : IAuth
 
         await _context.SaveChangesAsync(ct);
     }
+
+    public async Task ConfirmEmail(string token, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+            throw new ApiException(StatusCodes.Status400BadRequest, Shared.Keys.Errors.InvalidConfirmationToken);
+
+        var user = await _context.User.FirstOrDefaultAsync(u => u.EmailConfirmationToken == token, ct);
+        if (user is null)
+            throw new ApiException(StatusCodes.Status400BadRequest, Shared.Keys.Errors.InvalidConfirmationToken);
+
+        user.EmailConfirmed = true;
+        user.EmailConfirmationToken = null;
+        await _context.SaveChangesAsync(ct);
+    }
+
+    public async Task ResendConfirmation(string email, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(email)) return;
+
+        string emailKey = GetEmailKey();
+        string normalizedEmail = NormalizeEmail(email);
+        string encryptedEmail = EncryptDeterministic(emailKey, normalizedEmail);
+
+        var user = await _context.User.FirstOrDefaultAsync(u => u.Email == encryptedEmail, ct);
+        if (user is null || user.EmailConfirmed) return;
+
+        var newToken = Guid.NewGuid().ToString();
+        user.EmailConfirmationToken = newToken;
+        await _context.SaveChangesAsync(ct);
+
+        await SendConfirmationEmail(normalizedEmail, newToken, ct);
+    }
+
+    private async Task SendConfirmationEmail(string plainEmail, string token, CancellationToken ct)
+    {
+        string frontendUrl = _config["AppSettings:FrontendUrl"] ?? "https://localhost:5173";
+        string fromAddress = _config["SmtpSettings:FromAddress"] ?? "noreply@omnia-monitoring.com";
+        string confirmLink = $"{frontendUrl}/confirm-email?token={token}";
+
+        string lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+        string subject = _t[Shared.Keys.Email.Confirm.Subject].Value;
+        string title = _t[Shared.Keys.Email.Confirm.Title].Value;
+        string body = _t[Shared.Keys.Email.Confirm.Body].Value;
+        string button = _t[Shared.Keys.Email.Confirm.Button].Value;
+        string footer = _t[Shared.Keys.Email.Confirm.Footer].Value;
+
+        string htmlBody = $@"<!DOCTYPE html>
+<html lang=""{lang}"">
+<head><meta charset=""UTF-8""></head>
+<body style=""margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background-color:#f4f4f5;color:#18181b;"">
+  <table width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""padding:40px 20px;"">
+    <tr><td align=""center"">
+      <table width=""420"" cellpadding=""0"" cellspacing=""0"" style=""background:#ffffff;border-radius:12px;border:1px solid #e4e4e7;padding:32px;"">
+        <tr><td>
+          <h2 style=""margin:0 0 16px;font-size:20px;font-weight:600;color:#18181b;"">{title}</h2>
+          <p style=""margin:0 0 24px;font-size:15px;line-height:1.6;color:#3f3f46;"">
+            {body}
+          </p>
+          <table cellpadding=""0"" cellspacing=""0"" style=""margin:0 0 24px;""><tr><td>
+            <a href=""{confirmLink}"" style=""display:inline-block;padding:12px 28px;background-color:#6366f1;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;border-radius:8px;"">{button}</a>
+          </td></tr></table>
+          <p style=""margin:0;font-size:13px;line-height:1.5;color:#71717a;"">{footer}</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>";
+
+        string plainTextBody = $@"{title}
+
+{body}
+{confirmLink}
+
+{footer}";
+
+        await _mail.SendAndLogAsync(
+            fromAddress,
+            new[] { plainEmail },
+            null,
+            null,
+            subject,
+            htmlBody,
+            plainTextBody,
+            ct);
+    }
+
+    public async Task ForgotPassword(string email, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(email)) return;
+
+        string emailKey = GetEmailKey();
+        string normalizedEmail = NormalizeEmail(email);
+        string encryptedEmail = EncryptDeterministic(emailKey, normalizedEmail);
+
+        var user = await _context.User.FirstOrDefaultAsync(u => u.Email == encryptedEmail, ct);
+        if (user is null || !user.EmailConfirmed) return;
+
+        var token = Guid.NewGuid().ToString();
+        user.PasswordResetToken = token;
+        user.PasswordResetTokenExpiresAt = DateTime.UtcNow.AddHours(1);
+        await _context.SaveChangesAsync(ct);
+
+        await SendResetPasswordEmail(normalizedEmail, token, ct);
+    }
+
+    public async Task ResetPassword(string token, string newPassword, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+            throw new ApiException(StatusCodes.Status400BadRequest, Shared.Keys.Errors.InvalidResetToken);
+
+        var user = await _context.User.FirstOrDefaultAsync(
+            u => u.PasswordResetToken == token, ct);
+
+        if (user is null || user.PasswordResetTokenExpiresAt is null || user.PasswordResetTokenExpiresAt < DateTime.UtcNow)
+            throw new ApiException(StatusCodes.Status400BadRequest, Shared.Keys.Errors.InvalidResetToken);
+
+        var pepper = GetPepper();
+        var newSalt = AuthHelper.GenerateSalt();
+        var newHash = AuthHelper.HashPassword(newPassword, newSalt, pepper);
+
+        user.Salt = newSalt;
+        user.Password = newHash;
+        user.PasswordResetToken = null;
+        user.PasswordResetTokenExpiresAt = null;
+
+        await _context.SaveChangesAsync(ct);
+    }
+
+    private async Task SendResetPasswordEmail(string plainEmail, string token, CancellationToken ct)
+    {
+        string frontendUrl = _config["AppSettings:FrontendUrl"] ?? "https://localhost:5173";
+        string fromAddress = _config["SmtpSettings:FromAddress"] ?? "noreply@omnia-monitoring.com";
+        string resetLink = $"{frontendUrl}/reset-password?token={token}";
+
+        string lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+        string subject = _t[Shared.Keys.Email.Reset.Subject].Value;
+        string title = _t[Shared.Keys.Email.Reset.Title].Value;
+        string body = _t[Shared.Keys.Email.Reset.Body].Value;
+        string button = _t[Shared.Keys.Email.Reset.Button].Value;
+        string expires = _t[Shared.Keys.Email.Reset.Expires].Value;
+        string footer = _t[Shared.Keys.Email.Reset.Footer].Value;
+
+        string htmlBody = $@"<!DOCTYPE html>
+<html lang=""{lang}"">
+<head><meta charset=""UTF-8""></head>
+<body style=""margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background-color:#f4f4f5;color:#18181b;"">
+  <table width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""padding:40px 20px;"">
+    <tr><td align=""center"">
+      <table width=""420"" cellpadding=""0"" cellspacing=""0"" style=""background:#ffffff;border-radius:12px;border:1px solid #e4e4e7;padding:32px;"">
+        <tr><td>
+          <h2 style=""margin:0 0 16px;font-size:20px;font-weight:600;color:#18181b;"">{title}</h2>
+          <p style=""margin:0 0 24px;font-size:15px;line-height:1.6;color:#3f3f46;"">
+            {body}
+          </p>
+          <table cellpadding=""0"" cellspacing=""0"" style=""margin:0 0 24px;""><tr><td>
+            <a href=""{resetLink}"" style=""display:inline-block;padding:12px 28px;background-color:#6366f1;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;border-radius:8px;"">{button}</a>
+          </td></tr></table>
+          <p style=""margin:0 0 8px;font-size:13px;line-height:1.5;color:#71717a;"">{expires}</p>
+          <p style=""margin:0;font-size:13px;line-height:1.5;color:#71717a;"">{footer}</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>";
+
+        string plainTextBody = $@"{title}
+
+{body}
+
+{resetLink}
+
+{expires}
+
+{footer}";
+
+        await _mail.SendAndLogAsync(
+            fromAddress,
+            new[] { plainEmail },
+            null,
+            null,
+            subject,
+            htmlBody,
+            plainTextBody,
+            ct);
+    }
+
+    public async Task<(Guid userId, string? name, string? lastName)?> FindUserByEmail(string email, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(email)) return null;
+
+        string emailKey = GetEmailKey();
+        string normalizedEmail = NormalizeEmail(email);
+        string encryptedEmail = EncryptDeterministic(emailKey, normalizedEmail);
+
+        var user = await _context.User.AsNoTracking().FirstOrDefaultAsync(u => u.Email == encryptedEmail, ct);
+        if (user is null) return null;
+
+        string nameKey = GetNameKey();
+        string lastNameKey = GetLastNameKey();
+
+        string? name = string.IsNullOrWhiteSpace(user.Name) ? null : DecryptDeterministic(nameKey, user.Name);
+        string? lastName = string.IsNullOrWhiteSpace(user.LastName) ? null : DecryptDeterministic(lastNameKey, user.LastName);
+
+        return (user.Id, name, lastName);
+    }
+
+    public string EncryptEmail(string plainEmail)
+    {
+        string emailKey = GetEmailKey();
+        string normalizedEmail = NormalizeEmail(plainEmail);
+        return EncryptDeterministic(emailKey, normalizedEmail);
+    }
+
+    public string? DecryptEmail(string encryptedEmail)
+        => DecryptDeterministic(GetEmailKey(), encryptedEmail);
+
+    public string? DecryptName(string? encryptedName)
+        => string.IsNullOrWhiteSpace(encryptedName) ? null : DecryptDeterministic(GetNameKey(), encryptedName);
+
+    public string? DecryptLastName(string? encryptedLastName)
+        => string.IsNullOrWhiteSpace(encryptedLastName) ? null : DecryptDeterministic(GetLastNameKey(), encryptedLastName);
 }

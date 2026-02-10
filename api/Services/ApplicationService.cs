@@ -16,12 +16,24 @@ namespace api.Services
         private readonly AppDbContext _db;
         private readonly IApplicationSecretProtector _protector;
         private readonly IApplicationEncryptionKeyProvider _encryptionKeyProvider;
+        private readonly IAuth _auth;
+        private readonly IMailSender _mailSender;
+        private readonly IConfiguration _config;
 
-        public ApplicationService(AppDbContext db, IApplicationSecretProtector protector, IApplicationEncryptionKeyProvider encryptionKeyProvider)
+        public ApplicationService(
+            AppDbContext db,
+            IApplicationSecretProtector protector,
+            IApplicationEncryptionKeyProvider encryptionKeyProvider,
+            IAuth auth,
+            IMailSender mailSender,
+            IConfiguration config)
         {
             _db = db;
             _protector = protector;
             _encryptionKeyProvider = encryptionKeyProvider;
+            _auth = auth;
+            _mailSender = mailSender;
+            _config = config;
         }
 
         public async Task<IEnumerable<ApplicationDto>> GetAll(Guid userId, CancellationToken ct)
@@ -269,6 +281,289 @@ namespace api.Services
 
             await _db.SaveChangesAsync(ct);
             return true;
+        }
+
+        // ── Member management ───────────────────────────────────────────
+
+        private static readonly HashSet<Guid> ValidRoleIds = new()
+        {
+            RoleApplication.Ids.Owner,
+            RoleApplication.Ids.Maintainer,
+            RoleApplication.Ids.Viewer
+        };
+
+        public async Task<IEnumerable<ApplicationMemberDto>> GetMembers(Guid applicationId, Guid userId, CancellationToken ct)
+        {
+            if (!await ApplicationAccessHelper.CanAccessApplicationAsync(_db, userId, applicationId, ct))
+                throw new ApiException(StatusCodes.Status403Forbidden, Shared.Keys.Errors.Forbidden);
+
+            var members = await _db.ApplicationMember
+                .AsNoTracking()
+                .Include(m => m.User)
+                .Include(m => m.RoleApplication)
+                .Where(m => m.RefApplication == applicationId)
+                .OrderBy(m => m.CreatedAt)
+                .ToListAsync(ct);
+
+            return members.Select(m => new ApplicationMemberDto
+            {
+                MemberId = m.Id,
+                UserId = m.RefUser,
+                Email = _auth.DecryptEmail(m.User!.Email),
+                Name = _auth.DecryptName(m.User.Name),
+                LastName = _auth.DecryptLastName(m.User.LastName),
+                Role = m.RoleApplication is null ? null : new RoleDto
+                {
+                    Id = m.RoleApplication.Id,
+                    Name = m.RoleApplication.Name,
+                    Description = m.RoleApplication.Description
+                },
+                CreatedAt = m.CreatedAt
+            });
+        }
+
+        public async Task<IEnumerable<PendingInvitationDto>> GetPendingInvitations(Guid applicationId, Guid userId, CancellationToken ct)
+        {
+            if (!await ApplicationAccessHelper.CanMaintainApplicationAsync(_db, userId, applicationId, ct))
+                throw new ApiException(StatusCodes.Status403Forbidden, Shared.Keys.Errors.Forbidden);
+
+            var invitations = await _db.ApplicationInvitation
+                .AsNoTracking()
+                .Include(i => i.RoleApplication)
+                .Where(i => i.RefApplication == applicationId)
+                .OrderByDescending(i => i.CreatedAt)
+                .ToListAsync(ct);
+
+            return invitations.Select(i => new PendingInvitationDto
+            {
+                Id = i.Id,
+                Email = _auth.DecryptEmail(i.Email),
+                Role = i.RoleApplication is null ? null : new RoleDto
+                {
+                    Id = i.RoleApplication.Id,
+                    Name = i.RoleApplication.Name,
+                    Description = i.RoleApplication.Description
+                },
+                CreatedAt = i.CreatedAt
+            });
+        }
+
+        public async Task<InviteMemberResultDto> InviteMember(Guid applicationId, InviteMemberRequest request, Guid userId, CancellationToken ct)
+        {
+            if (!await ApplicationAccessHelper.CanMaintainApplicationAsync(_db, userId, applicationId, ct))
+                throw new ApiException(StatusCodes.Status403Forbidden, Shared.Keys.Errors.Forbidden);
+
+            if (!ValidRoleIds.Contains(request.RefRoleApplication))
+                throw new ApiException(StatusCodes.Status400BadRequest, Shared.Keys.Errors.InvalidRole);
+
+            var app = await _db.Application.AsNoTracking().FirstOrDefaultAsync(x => x.Id == applicationId, ct);
+            if (app is null)
+                throw new ApiException(StatusCodes.Status404NotFound, Shared.Keys.Errors.ApplicationNotFound);
+
+            string plainEmail = (request.Email ?? "").Trim().ToLowerInvariant();
+            string encryptedEmail = _auth.EncryptEmail(plainEmail);
+
+            // Check if user exists
+            var found = await _auth.FindUserByEmail(plainEmail, ct);
+
+            if (found.HasValue)
+            {
+                var targetUserId = found.Value.userId;
+
+                // Check if already a member
+                bool alreadyMember = await _db.ApplicationMember
+                    .AnyAsync(m => m.RefApplication == applicationId && m.RefUser == targetUserId, ct);
+                if (alreadyMember)
+                    throw new ApiException(StatusCodes.Status409Conflict, Shared.Keys.Errors.MemberAlreadyExists);
+
+                // Add as member
+                _db.ApplicationMember.Add(new ApplicationMember
+                {
+                    Id = Guid.NewGuid(),
+                    RefApplication = applicationId,
+                    RefUser = targetUserId,
+                    RefRoleApplication = request.RefRoleApplication,
+                    CreatedAt = DateTime.UtcNow
+                });
+
+                // Remove any pending invitation for this email
+                var existingInv = await _db.ApplicationInvitation
+                    .FirstOrDefaultAsync(i => i.RefApplication == applicationId && i.Email == encryptedEmail, ct);
+                if (existingInv is not null)
+                    _db.ApplicationInvitation.Remove(existingInv);
+
+                await _db.SaveChangesAsync(ct);
+
+                // Send notification email
+                var roleName = RoleApplication.All.FirstOrDefault(r => r.Id == request.RefRoleApplication)?.Name ?? "Member";
+                await SendMemberAddedEmail(plainEmail, app.Name ?? "Unknown", roleName, ct);
+
+                return new InviteMemberResultDto { MemberAdded = true, InvitationSent = false };
+            }
+            else
+            {
+                // User doesn't exist — create invitation
+                bool invExists = await _db.ApplicationInvitation
+                    .AnyAsync(i => i.RefApplication == applicationId && i.Email == encryptedEmail, ct);
+                if (invExists)
+                    throw new ApiException(StatusCodes.Status409Conflict, Shared.Keys.Errors.InvitationAlreadyPending);
+
+                _db.ApplicationInvitation.Add(new ApplicationInvitation
+                {
+                    Id = Guid.NewGuid(),
+                    RefApplication = applicationId,
+                    Email = encryptedEmail,
+                    RefRoleApplication = request.RefRoleApplication,
+                    InvitedBy = userId,
+                    CreatedAt = DateTime.UtcNow
+                });
+                await _db.SaveChangesAsync(ct);
+
+                // Send invitation email
+                var roleName = RoleApplication.All.FirstOrDefault(r => r.Id == request.RefRoleApplication)?.Name ?? "Member";
+                await SendInvitationEmail(plainEmail, app.Name ?? "Unknown", roleName, ct);
+
+                return new InviteMemberResultDto { MemberAdded = false, InvitationSent = true };
+            }
+        }
+
+        public async Task UpdateMemberRole(Guid applicationId, Guid memberId, UpdateMemberRoleRequest request, Guid userId, CancellationToken ct)
+        {
+            if (!await ApplicationAccessHelper.IsApplicationOwnerAsync(_db, userId, applicationId, ct))
+                throw new ApiException(StatusCodes.Status403Forbidden, Shared.Keys.Errors.Forbidden);
+
+            if (!ValidRoleIds.Contains(request.RefRoleApplication))
+                throw new ApiException(StatusCodes.Status400BadRequest, Shared.Keys.Errors.InvalidRole);
+
+            var member = await _db.ApplicationMember
+                .FirstOrDefaultAsync(m => m.Id == memberId && m.RefApplication == applicationId, ct);
+            if (member is null)
+                throw new ApiException(StatusCodes.Status404NotFound, Shared.Keys.Errors.NotFound);
+
+            // If changing from Owner, ensure there's at least one other owner
+            if (member.RefRoleApplication == RoleApplication.Ids.Owner && request.RefRoleApplication != RoleApplication.Ids.Owner)
+            {
+                int ownerCount = await _db.ApplicationMember
+                    .CountAsync(m => m.RefApplication == applicationId && m.RefRoleApplication == RoleApplication.Ids.Owner, ct);
+                if (ownerCount <= 1)
+                    throw new ApiException(StatusCodes.Status400BadRequest, Shared.Keys.Errors.CannotRemoveLastOwner);
+            }
+
+            member.RefRoleApplication = request.RefRoleApplication;
+            await _db.SaveChangesAsync(ct);
+        }
+
+        public async Task RemoveMember(Guid applicationId, Guid memberId, Guid userId, CancellationToken ct)
+        {
+            if (!await ApplicationAccessHelper.IsApplicationOwnerAsync(_db, userId, applicationId, ct))
+                throw new ApiException(StatusCodes.Status403Forbidden, Shared.Keys.Errors.Forbidden);
+
+            var member = await _db.ApplicationMember
+                .FirstOrDefaultAsync(m => m.Id == memberId && m.RefApplication == applicationId, ct);
+            if (member is null)
+                throw new ApiException(StatusCodes.Status404NotFound, Shared.Keys.Errors.NotFound);
+
+            // Cannot remove the last owner
+            if (member.RefRoleApplication == RoleApplication.Ids.Owner)
+            {
+                int ownerCount = await _db.ApplicationMember
+                    .CountAsync(m => m.RefApplication == applicationId && m.RefRoleApplication == RoleApplication.Ids.Owner, ct);
+                if (ownerCount <= 1)
+                    throw new ApiException(StatusCodes.Status400BadRequest, Shared.Keys.Errors.CannotRemoveLastOwner);
+            }
+
+            _db.ApplicationMember.Remove(member);
+            await _db.SaveChangesAsync(ct);
+        }
+
+        public async Task CancelInvitation(Guid applicationId, Guid invitationId, Guid userId, CancellationToken ct)
+        {
+            if (!await ApplicationAccessHelper.CanMaintainApplicationAsync(_db, userId, applicationId, ct))
+                throw new ApiException(StatusCodes.Status403Forbidden, Shared.Keys.Errors.Forbidden);
+
+            var inv = await _db.ApplicationInvitation
+                .FirstOrDefaultAsync(i => i.Id == invitationId && i.RefApplication == applicationId, ct);
+            if (inv is null)
+                throw new ApiException(StatusCodes.Status404NotFound, Shared.Keys.Errors.NotFound);
+
+            _db.ApplicationInvitation.Remove(inv);
+            await _db.SaveChangesAsync(ct);
+        }
+
+        public async Task<CheckEmailResultDto> CheckEmail(Guid applicationId, string email, Guid userId, CancellationToken ct)
+        {
+            if (!await ApplicationAccessHelper.CanMaintainApplicationAsync(_db, userId, applicationId, ct))
+                throw new ApiException(StatusCodes.Status403Forbidden, Shared.Keys.Errors.Forbidden);
+
+            var found = await _auth.FindUserByEmail(email, ct);
+            if (!found.HasValue)
+                return new CheckEmailResultDto { Exists = false };
+
+            return new CheckEmailResultDto
+            {
+                Exists = true,
+                Name = found.Value.name,
+                LastName = found.Value.lastName
+            };
+        }
+
+        public async Task<IEnumerable<RoleDto>> GetRoles(CancellationToken ct)
+        {
+            return await _db.RoleApplication
+                .AsNoTracking()
+                .OrderBy(r => r.Name)
+                .Select(r => new RoleDto
+                {
+                    Id = r.Id,
+                    Name = r.Name,
+                    Description = r.Description
+                })
+                .ToListAsync(ct);
+        }
+
+        private async Task SendMemberAddedEmail(string plainEmail, string appName, string roleName, CancellationToken ct)
+        {
+            string fromAddress = _config["SmtpSettings:FromAddress"] ?? "noreply@omnia-monitoring.com";
+            string frontendUrl = _config["AppSettings:FrontendUrl"] ?? "https://localhost:5173";
+
+            string body = $@"
+<html>
+<body style=""font-family: sans-serif; padding: 24px;"">
+  <h2>You've been added to {appName}</h2>
+  <p>You have been added as <strong>{roleName}</strong> on the application <strong>{appName}</strong> in Omnia.</p>
+  <p><a href=""{frontendUrl}/applications"" style=""display:inline-block;padding:12px 24px;background:#6366f1;color:#fff;border-radius:8px;text-decoration:none;"">Go to Omnia</a></p>
+</body>
+</html>";
+
+            try
+            {
+                await _mailSender.SendAsync(fromAddress, new[] { plainEmail }, null, null,
+                    $"You've been added to {appName}", body, true, ct);
+            }
+            catch { /* don't fail the invite if email fails */ }
+        }
+
+        private async Task SendInvitationEmail(string plainEmail, string appName, string roleName, CancellationToken ct)
+        {
+            string fromAddress = _config["SmtpSettings:FromAddress"] ?? "noreply@omnia-monitoring.com";
+            string frontendUrl = _config["AppSettings:FrontendUrl"] ?? "https://localhost:5173";
+
+            string body = $@"
+<html>
+<body style=""font-family: sans-serif; padding: 24px;"">
+  <h2>You've been invited to {appName}</h2>
+  <p>You have been invited as <strong>{roleName}</strong> on the application <strong>{appName}</strong> in Omnia.</p>
+  <p>Create your account to get started:</p>
+  <p><a href=""{frontendUrl}/signup"" style=""display:inline-block;padding:12px 24px;background:#6366f1;color:#fff;border-radius:8px;text-decoration:none;"">Create my account</a></p>
+</body>
+</html>";
+
+            try
+            {
+                await _mailSender.SendAsync(fromAddress, new[] { plainEmail }, null, null,
+                    $"Invitation to join {appName} on Omnia", body, true, ct);
+            }
+            catch { /* don't fail the invite if email fails */ }
         }
     }
 }
