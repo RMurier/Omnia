@@ -73,6 +73,7 @@ function shouldSuppressRedirect(path: string, opts?: AuthFetchOptions) {
   if (path === "/auth/beta-status") return true;
   if (path === "/auth/forgot-password") return true;
   if (path === "/auth/reset-password") return true;
+  if (path.startsWith("/auth/confirm-password-change")) return true;
   return false;
 }
 

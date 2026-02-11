@@ -34,6 +34,7 @@
                 public const string InvalidRole = "Errors.InvalidRole";
                 public const string InvitationAlreadyPending = "Errors.InvitationAlreadyPending";
                 public const string InvalidResetToken = "Errors.InvalidResetToken";
+                public const string InvalidPasswordChangeToken = "Errors.InvalidPasswordChangeToken";
             }
 
             public static class Email
@@ -45,6 +46,16 @@
                     public const string Body = "Email.Confirm.Body";
                     public const string Button = "Email.Confirm.Button";
                     public const string Footer = "Email.Confirm.Footer";
+                }
+
+                public static class ChangePassword
+                {
+                    public const string Subject = "Email.ChangePassword.Subject";
+                    public const string Title = "Email.ChangePassword.Title";
+                    public const string Body = "Email.ChangePassword.Body";
+                    public const string Button = "Email.ChangePassword.Button";
+                    public const string Expires = "Email.ChangePassword.Expires";
+                    public const string Footer = "Email.ChangePassword.Footer";
                 }
 
                 public static class Reset

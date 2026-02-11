@@ -59,6 +59,27 @@ namespace api.Data.Configurations
                 .HasColumnName("PASSWORD_RESET_TOKEN_EXPIRES_AT")
                 .IsRequired(false);
 
+            builder.Property(x => x.PendingPassword)
+                .HasColumnName("PENDING_PASSWORD")
+                .IsRequired(false);
+
+            builder.Property(x => x.PendingSalt)
+                .HasColumnName("PENDING_SALT")
+                .IsRequired(false);
+
+            builder.Property(x => x.PasswordChangeToken)
+                .HasColumnName("PASSWORD_CHANGE_TOKEN")
+                .HasMaxLength(128)
+                .IsRequired(false);
+
+            builder.Property(x => x.PasswordChangeTokenExpiresAt)
+                .HasColumnName("PASSWORD_CHANGE_TOKEN_EXPIRES_AT")
+                .IsRequired(false);
+
+            builder.Property(x => x.PasswordChangedAt)
+                .HasColumnName("PASSWORD_CHANGED_AT")
+                .IsRequired(false);
+
             builder.HasIndex(x => x.Email)
                 .IsUnique()
                 .HasDatabaseName("UX_USER_EMAIL");

@@ -53,7 +53,7 @@ export default function MePage() {
       setCurrentPassword("");
       setNewPassword("");
       setConfirm("");
-      setSuccess(t("me.passwordUpdated"));
+      setSuccess(t("me.passwordChangeEmailSent"));
     } catch (err: any) {
       setError(String(err?.message ?? err ?? t("me.error")));
     } finally {

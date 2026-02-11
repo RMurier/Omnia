@@ -14,6 +14,11 @@ namespace api.Data.Models
         public string? EmailConfirmationToken { get; set; }
         public string? PasswordResetToken { get; set; }
         public DateTime? PasswordResetTokenExpiresAt { get; set; }
+        public string? PendingPassword { get; set; }
+        public string? PendingSalt { get; set; }
+        public string? PasswordChangeToken { get; set; }
+        public DateTime? PasswordChangeTokenExpiresAt { get; set; }
+        public DateTime? PasswordChangedAt { get; set; }
         [NotMapped]
         public string? AccessToken { get; set; } = default!;
         [NotMapped]

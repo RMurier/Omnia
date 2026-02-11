@@ -108,6 +108,12 @@
     "resending": "Sending...",
     "resendOk": "Confirmation email sent."
   },
+  "confirmPasswordChange": {
+    "title": "Password change confirmation",
+    "success": "Your password has been changed successfully. You have been disconnected from all devices. You can now sign in with your new password.",
+    "invalidLink": "Invalid or expired password change confirmation link.",
+    "goToSignin": "Go to sign in"
+  },
   "notFound": {
     "title": "Page not found",
     "subtitle": "This page doesn't exist or was moved. Check the URL or go back home.",
@@ -132,6 +138,7 @@
     "passwordUpdated": "Password updated",
     "update": "Update",
     "updating": "Updating...",
+    "passwordChangeEmailSent": "A confirmation email has been sent. Please check your inbox to confirm the password change.",
     "languageTitle": "Language",
     "currentLanguage": "Current language:",
     "error": "Error"

@@ -8,6 +8,7 @@ import SignUp from "./pages/Signup.tsx";
 import ConfirmEmail from "./pages/ConfirmEmail.tsx";
 import ForgotPassword from "./pages/ForgotPassword.tsx";
 import ResetPassword from "./pages/ResetPassword.tsx";
+import ConfirmPasswordChange from "./pages/ConfirmPasswordChange.tsx";
 import AdminApplicationsPage from "./pages/Application.tsx";
 import Header from "./components/Header.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -39,6 +40,7 @@ function Root() {
           <Route path="/confirm-email" element={<ConfirmEmail />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/confirm-password-change" element={<ConfirmPasswordChange />} />
           <Route path="/me" element={<MePage />} />
           <Route path="/activity" element={<AdminActivityPage />} />
           <Route path="/applications" element={<AdminApplicationsPage />} />

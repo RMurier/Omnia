@@ -17,6 +17,7 @@ public interface IAuth
     Task<string?> GetLastName(Guid userId, CancellationToken ct);
     Task<MeResponseDto?> GetMe(Guid userId, CancellationToken ct);
     Task ChangePassword(Guid userId, string currentPassword, string newPassword, CancellationToken ct);
+    Task ConfirmPasswordChange(string token, CancellationToken ct);
     Task ConfirmEmail(string token, CancellationToken ct);
     Task ResendConfirmation(string email, CancellationToken ct);
     Task ForgotPassword(string email, CancellationToken ct);

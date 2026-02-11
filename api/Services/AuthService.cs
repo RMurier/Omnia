@@ -305,8 +305,14 @@ public class AuthService : IAuth
             if (!Guid.TryParse(tokenUserIdStr, out var userId))
                 return null;
 
-            var userExists = await _context.User.AsNoTracking().AnyAsync(x => x.Id == userId, ct);
-            if (!userExists) return null;
+            var user = await _context.User.AsNoTracking()
+                .Where(x => x.Id == userId)
+                .Select(x => new { x.Id, x.PasswordChangedAt })
+                .FirstOrDefaultAsync(ct);
+            if (user is null) return null;
+
+            if (user.PasswordChangedAt is not null && jwt.IssuedAt < user.PasswordChangedAt)
+                return null;
 
             string newAccessToken = GenerateToken(userId);
             string newRefreshToken = GenerateRefreshToken(userId);
@@ -386,8 +392,44 @@ public class AuthService : IAuth
         var newSalt = AuthHelper.GenerateSalt();
         var newHash = AuthHelper.HashPassword(newPassword, newSalt, pepper);
 
-        user.Salt = newSalt;
-        user.Password = newHash;
+        var token = Guid.NewGuid().ToString();
+        user.PendingPassword = newHash;
+        user.PendingSalt = newSalt;
+        user.PasswordChangeToken = token;
+        user.PasswordChangeTokenExpiresAt = DateTime.UtcNow.AddMinutes(10);
+
+        await _context.SaveChangesAsync(ct);
+
+        var emailKey = GetEmailKey();
+        var plainEmail = DecryptDeterministic(emailKey, user.Email);
+        if (!string.IsNullOrWhiteSpace(plainEmail))
+            await SendPasswordChangeConfirmationEmail(plainEmail, token, ct);
+    }
+
+    public async Task ConfirmPasswordChange(string token, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+            throw new ApiException(StatusCodes.Status400BadRequest, Shared.Keys.Errors.InvalidPasswordChangeToken);
+
+        var user = await _context.User.FirstOrDefaultAsync(
+            u => u.PasswordChangeToken == token, ct);
+
+        if (user is null
+            || user.PasswordChangeTokenExpiresAt is null
+            || user.PasswordChangeTokenExpiresAt < DateTime.UtcNow
+            || string.IsNullOrWhiteSpace(user.PendingPassword)
+            || string.IsNullOrWhiteSpace(user.PendingSalt))
+        {
+            throw new ApiException(StatusCodes.Status400BadRequest, Shared.Keys.Errors.InvalidPasswordChangeToken);
+        }
+
+        user.Password = user.PendingPassword;
+        user.Salt = user.PendingSalt;
+        user.PendingPassword = null;
+        user.PendingSalt = null;
+        user.PasswordChangeToken = null;
+        user.PasswordChangeTokenExpiresAt = null;
+        user.PasswordChangedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync(ct);
     }
@@ -516,6 +558,7 @@ public class AuthService : IAuth
         user.Password = newHash;
         user.PasswordResetToken = null;
         user.PasswordResetTokenExpiresAt = null;
+        user.PasswordChangedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync(ct);
     }
@@ -563,6 +606,65 @@ public class AuthService : IAuth
 {body}
 
 {resetLink}
+
+{expires}
+
+{footer}";
+
+        await _mail.SendAndLogAsync(
+            fromAddress,
+            new[] { plainEmail },
+            null,
+            null,
+            subject,
+            htmlBody,
+            plainTextBody,
+            ct);
+    }
+
+    private async Task SendPasswordChangeConfirmationEmail(string plainEmail, string token, CancellationToken ct)
+    {
+        string frontendUrl = _config["AppSettings:FrontendUrl"] ?? "https://localhost:5173";
+        string fromAddress = _config["SmtpSettings:FromAddress"] ?? "noreply@omnia-monitoring.com";
+        string confirmLink = $"{frontendUrl}/confirm-password-change?token={token}";
+
+        string lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+        string subject = _t[Shared.Keys.Email.ChangePassword.Subject].Value;
+        string title = _t[Shared.Keys.Email.ChangePassword.Title].Value;
+        string body = _t[Shared.Keys.Email.ChangePassword.Body].Value;
+        string button = _t[Shared.Keys.Email.ChangePassword.Button].Value;
+        string expires = _t[Shared.Keys.Email.ChangePassword.Expires].Value;
+        string footer = _t[Shared.Keys.Email.ChangePassword.Footer].Value;
+
+        string htmlBody = $@"<!DOCTYPE html>
+<html lang=""{lang}"">
+<head><meta charset=""UTF-8""></head>
+<body style=""margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background-color:#f4f4f5;color:#18181b;"">
+  <table width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""padding:40px 20px;"">
+    <tr><td align=""center"">
+      <table width=""420"" cellpadding=""0"" cellspacing=""0"" style=""background:#ffffff;border-radius:12px;border:1px solid #e4e4e7;padding:32px;"">
+        <tr><td>
+          <h2 style=""margin:0 0 16px;font-size:20px;font-weight:600;color:#18181b;"">{title}</h2>
+          <p style=""margin:0 0 24px;font-size:15px;line-height:1.6;color:#3f3f46;"">
+            {body}
+          </p>
+          <table cellpadding=""0"" cellspacing=""0"" style=""margin:0 0 24px;""><tr><td>
+            <a href=""{confirmLink}"" style=""display:inline-block;padding:12px 28px;background-color:#6366f1;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;border-radius:8px;"">{button}</a>
+          </td></tr></table>
+          <p style=""margin:0 0 8px;font-size:13px;line-height:1.5;color:#71717a;"">{expires}</p>
+          <p style=""margin:0;font-size:13px;line-height:1.5;color:#71717a;"">{footer}</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>";
+
+        string plainTextBody = $@"{title}
+
+{body}
+
+{confirmLink}
 
 {expires}
 

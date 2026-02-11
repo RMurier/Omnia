@@ -119,6 +119,21 @@ public sealed class AuthController : ControllerBase
     }
 
     [AllowAnonymous]
+    [HttpGet("confirm-password-change")]
+    public async Task<IActionResult> ConfirmPasswordChange([FromQuery] string token, CancellationToken ct)
+    {
+        try
+        {
+            await _auth.ConfirmPasswordChange(token, ct);
+            return Ok(new { ok = true });
+        }
+        catch (ApiException ex)
+        {
+            return StatusCode(ex.StatusCode, new { message = _t[ex.Key].Value });
+        }
+    }
+
+    [AllowAnonymous]
     [HttpPost("resend-confirmation")]
     public async Task<IActionResult> ResendConfirmation([FromBody] ResendConfirmationRequest request, CancellationToken ct)
     {
