@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useMediaQuery } from "../hooks/useMediaQuery";
+import { BREAKPOINTS } from "../hooks/breakpoints";
 import { authFetch } from "../utils/authFetch";
 
 type AppItem = {
@@ -24,6 +26,35 @@ type CreateAppResult = {
   application: AppItem;
   secretBase64: string;
   version: AppVersion;
+};
+
+type RoleItem = {
+  id: string;
+  name: string;
+  description?: string | null;
+};
+
+type MemberItem = {
+  memberId: string;
+  userId: string;
+  email?: string | null;
+  name?: string | null;
+  lastName?: string | null;
+  role?: RoleItem | null;
+  createdAt: string;
+};
+
+type PendingInvitation = {
+  id: string;
+  email?: string | null;
+  role?: RoleItem | null;
+  createdAt: string;
+};
+
+type CheckEmailResult = {
+  exists: boolean;
+  name?: string | null;
+  lastName?: string | null;
 };
 
 export default function AdminApplicationsPage() {
@@ -52,6 +83,22 @@ export default function AdminApplicationsPage() {
   const [versionsOpenFor, setVersionsOpenFor] = useState<string | null>(null);
   const [versions, setVersions] = useState<AppVersion[]>([]);
   const [versionsLoading, setVersionsLoading] = useState(false);
+
+  // Members panel
+  const [membersOpenFor, setMembersOpenFor] = useState<string | null>(null);
+  const [members, setMembers] = useState<MemberItem[]>([]);
+  const [pendingInvitations, setPendingInvitations] = useState<PendingInvitation[]>([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [roles, setRoles] = useState<RoleItem[]>([]);
+
+  // Invite form
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRoleId, setInviteRoleId] = useState("");
+  const [inviting, setInviting] = useState(false);
+  const [inviteMsg, setInviteMsg] = useState<string | null>(null);
+  const [checkResult, setCheckResult] = useState<CheckEmailResult | null>(null);
+  const [checking, setChecking] = useState(false);
+  const isTablet = useMediaQuery(BREAKPOINTS.tablet);
 
   const canSubmit = useMemo(() => name.trim().length >= 2 && !busy, [name, busy]);
 
@@ -224,7 +271,144 @@ export default function AdminApplicationsPage() {
         setVersionsOpenFor(null);
         setVersions([]);
       }
+      if (membersOpenFor === app.id) {
+        setMembersOpenFor(null);
+        setMembers([]);
+        setPendingInvitations([]);
+      }
       await loadApps();
+    } catch (e: any) {
+      setError(String(e?.message ?? e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // ── Members ────────────────────────────────────────────
+
+  const loadRoles = async () => {
+    try {
+      const data = await authFetch<RoleItem[]>("/application/roles", { method: "GET" });
+      setRoles(data ?? []);
+      if (data?.length && !inviteRoleId) {
+        const viewer = data.find((r) => r.name === "Viewer");
+        setInviteRoleId(viewer?.id ?? data[0].id);
+      }
+    } catch {}
+  };
+
+  const loadMembers = async (appId: string) => {
+    setMembersLoading(true);
+    setError(null);
+    try {
+      const [m, inv] = await Promise.all([
+        authFetch<MemberItem[]>(`/application/${appId}/members`, { method: "GET" }),
+        authFetch<PendingInvitation[]>(`/application/${appId}/invitations`, { method: "GET" }),
+      ]);
+      setMembers(m ?? []);
+      setPendingInvitations(inv ?? []);
+    } catch (e: any) {
+      setError(String(e?.message ?? e));
+    } finally {
+      setMembersLoading(false);
+    }
+  };
+
+  const toggleMembers = async (appId: string) => {
+    if (membersOpenFor === appId) {
+      setMembersOpenFor(null);
+      setMembers([]);
+      setPendingInvitations([]);
+      setInviteEmail("");
+      setInviteMsg(null);
+      setCheckResult(null);
+      return;
+    }
+    setMembersOpenFor(appId);
+    setInviteEmail("");
+    setInviteMsg(null);
+    setCheckResult(null);
+    await loadRoles();
+    await loadMembers(appId);
+  };
+
+  const onCheckEmail = async (appId: string) => {
+    const email = inviteEmail.trim();
+    if (!email) return;
+    setChecking(true);
+    setCheckResult(null);
+    try {
+      const res = await authFetch<CheckEmailResult>(`/application/${appId}/members/check-email?email=${encodeURIComponent(email)}`, { method: "GET" });
+      setCheckResult(res);
+    } catch {
+      setCheckResult(null);
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  const onInvite = async (appId: string) => {
+    const email = inviteEmail.trim();
+    if (!email || !inviteRoleId) return;
+    setInviting(true);
+    setInviteMsg(null);
+    setError(null);
+    try {
+      const res = await authFetch<{ memberAdded: boolean; invitationSent: boolean }>(`/application/${appId}/members/invite`, {
+        method: "POST",
+        body: JSON.stringify({ email, refRoleApplication: inviteRoleId }),
+      });
+      if (res.memberAdded) {
+        setInviteMsg(t("applications.inviteSuccessAdded"));
+      } else if (res.invitationSent) {
+        setInviteMsg(t("applications.inviteSuccessSent"));
+      }
+      setInviteEmail("");
+      setCheckResult(null);
+      await loadMembers(appId);
+    } catch (e: any) {
+      setError(String(e?.message ?? e));
+    } finally {
+      setInviting(false);
+    }
+  };
+
+  const onChangeRole = async (appId: string, memberId: string, newRoleId: string) => {
+    setBusy(true);
+    setError(null);
+    try {
+      await authFetch<void>(`/application/${appId}/members/${memberId}/role`, {
+        method: "PATCH",
+        body: JSON.stringify({ refRoleApplication: newRoleId }),
+      });
+      await loadMembers(appId);
+    } catch (e: any) {
+      setError(String(e?.message ?? e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onRemoveMember = async (appId: string, memberId: string) => {
+    if (!globalThis.confirm(t("applications.confirmRemoveMember"))) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await authFetch<void>(`/application/${appId}/members/${memberId}`, { method: "DELETE" });
+      await loadMembers(appId);
+    } catch (e: any) {
+      setError(String(e?.message ?? e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onCancelInvitation = async (appId: string, invitationId: string) => {
+    setBusy(true);
+    setError(null);
+    try {
+      await authFetch<void>(`/application/${appId}/invitations/${invitationId}`, { method: "DELETE" });
+      await loadMembers(appId);
     } catch (e: any) {
       setError(String(e?.message ?? e));
     } finally {
@@ -241,59 +425,59 @@ export default function AdminApplicationsPage() {
   };
 
   const styles: Record<string, React.CSSProperties> = {
-    page: { padding: 24, maxWidth: 1100, margin: "0 auto" },
+    page: { padding: isTablet ? 12 : 24, maxWidth: 1100, margin: "0 auto" },
     topBar: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 16 },
-    title: { margin: 0, fontSize: 22, fontWeight: 700, color: "#111827" },
-    subtitle: { margin: "6px 0 0 0", color: "#6b7280", fontSize: 14 },
+    title: { margin: 0, fontSize: 22, fontWeight: 700, color: "var(--color-text-primary)" },
+    subtitle: { margin: "6px 0 0 0", color: "var(--color-text-muted)", fontSize: 14 },
     actions: { display: "flex", gap: 10, alignItems: "center" },
-    btn: { padding: "10px 12px", borderRadius: 8, border: "1px solid #d1d5db", background: "#fff", cursor: "pointer", fontWeight: 600 },
-    btnPrimary: { padding: "10px 12px", borderRadius: 8, border: "none", background: "#6366f1", color: "#fff", cursor: "pointer", fontWeight: 700 },
+    btn: { padding: "10px 12px", borderRadius: 8, border: "1px solid var(--color-border-strong)", background: "var(--color-surface)", color: "var(--color-text-primary)", cursor: "pointer", fontWeight: 600 },
+    btnPrimary: { padding: "10px 12px", borderRadius: 8, border: "none", background: "var(--color-primary)", color: "var(--color-surface)", cursor: "pointer", fontWeight: 700 },
     btnDisabled: { opacity: 0.7, cursor: "not-allowed" },
 
-    card: { border: "1px solid #e5e7eb", borderRadius: 12, background: "#fff", overflow: "hidden" },
+    card: { border: "1px solid var(--color-border)", borderRadius: 12, background: "var(--color-surface)", overflow: "hidden" },
     table: { width: "100%", borderCollapse: "collapse" },
-    th: { textAlign: "left", fontSize: 12, letterSpacing: 0.4, textTransform: "uppercase", color: "#6b7280", padding: "12px 14px", borderBottom: "1px solid #e5e7eb", background: "#fafafa" },
-    td: { padding: "12px 14px", borderBottom: "1px solid #f1f5f9", verticalAlign: "top", color: "#111827", fontSize: 14 },
-    tdMuted: { color: "#6b7280", fontSize: 13, marginTop: 4 },
+    th: { textAlign: "left", fontSize: 12, letterSpacing: 0.4, textTransform: "uppercase", color: "var(--color-text-muted)", padding: "12px 14px", borderBottom: "1px solid var(--color-border)", background: "var(--color-surface-raised)" },
+    td: { padding: "12px 14px", borderBottom: "1px solid var(--color-border-td)", verticalAlign: "top", color: "var(--color-text-primary)", fontSize: 14 },
+    tdMuted: { color: "var(--color-text-muted)", fontSize: 13, marginTop: 4 },
 
     rowActions: { display: "flex", gap: 10, justifyContent: "flex-end", flexWrap: "wrap" },
-    smallBtn: { padding: "8px 10px", borderRadius: 8, border: "1px solid #d1d5db", background: "#fff", cursor: "pointer", fontWeight: 600, fontSize: 13 },
-    dangerBtn: { padding: "8px 10px", borderRadius: 8, border: "1px solid #ef4444", background: "#fff", cursor: "pointer", fontWeight: 700, color: "#b91c1c", fontSize: 13 },
+    smallBtn: { padding: "8px 10px", borderRadius: 8, border: "1px solid var(--color-border-strong)", background: "var(--color-surface)", color: "var(--color-text-primary)", cursor: "pointer", fontWeight: 600, fontSize: 13 },
+    dangerBtn: { padding: "8px 10px", borderRadius: 8, border: "1px solid var(--color-error)", background: "var(--color-surface)", cursor: "pointer", fontWeight: 700, color: "var(--color-error-text)", fontSize: 13 },
 
-    badge: { display: "inline-flex", alignItems: "center", gap: 8, padding: "4px 10px", borderRadius: 999, fontSize: 12, fontWeight: 700, border: "1px solid #e5e7eb", background: "#fff" },
+    badge: { display: "inline-flex", alignItems: "center", gap: 8, padding: "4px 10px", borderRadius: 999, fontSize: 12, fontWeight: 700, border: "1px solid var(--color-border)", background: "var(--color-surface)" },
 
-    error: { border: "1px solid #ef4444", background: "#fef2f2", color: "#991b1b", padding: 12, borderRadius: 10, marginBottom: 12, fontSize: 14 },
-    empty: { padding: 18, color: "#6b7280" },
+    error: { border: "1px solid var(--color-error)", background: "var(--color-error-bg)", color: "var(--color-error-text)", padding: 12, borderRadius: 10, marginBottom: 12, fontSize: 14 },
+    empty: { padding: 18, color: "var(--color-text-muted)" },
 
-    overlay: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.25)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, zIndex: 50 },
-    modal: { width: "100%", maxWidth: 620, background: "#fff", borderRadius: 12, border: "1px solid #e5e7eb", boxShadow: "0 18px 60px rgba(0,0,0,0.25)", overflow: "hidden" },
-    modalHeader: { padding: "14px 16px", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, background: "#fafafa" },
-    modalTitle: { margin: 0, fontSize: 16, fontWeight: 800, color: "#111827" },
+    overlay: { position: "fixed", inset: 0, background: "var(--color-overlay)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, zIndex: 50 },
+    modal: { width: "100%", maxWidth: isTablet ? "100%" : 620, background: "var(--color-surface)", borderRadius: isTablet ? 0 : 12, border: "1px solid var(--color-border)", boxShadow: "0 18px 60px var(--color-shadow-heavy)", overflow: "hidden", ...(isTablet ? { height: "100%", display: "flex", flexDirection: "column" as const } : {}) },
+    modalHeader: { padding: "14px 16px", borderBottom: "1px solid var(--color-border)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, background: "var(--color-surface-raised)" },
+    modalTitle: { margin: 0, fontSize: 16, fontWeight: 800, color: "var(--color-text-primary)" },
     modalBody: { padding: 16 },
     form: { display: "grid", gap: 12 },
     field: { display: "grid", gap: 6 },
-    label: { fontSize: 13, fontWeight: 700, color: "#374151" },
-    input: { height: 42, borderRadius: 8, border: "1px solid #d1d5db", padding: "0 12px", outline: "none", fontSize: 14 },
-    textarea: { minHeight: 90, borderRadius: 8, border: "1px solid #d1d5db", padding: "10px 12px", outline: "none", fontSize: 14, resize: "vertical" },
-    row: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 },
+    label: { fontSize: 13, fontWeight: 700, color: "var(--color-text-secondary)" },
+    input: { height: 42, borderRadius: 8, border: "1px solid var(--color-border-strong)", padding: "0 12px", outline: "none", fontSize: 14 },
+    textarea: { minHeight: 90, borderRadius: 8, border: "1px solid var(--color-border-strong)", padding: "10px 12px", outline: "none", fontSize: 14, resize: "vertical" },
+    row: { display: "grid", gridTemplateColumns: isTablet ? "1fr" : "1fr 1fr", gap: 12 },
     checkboxRow: { display: "flex", alignItems: "center", gap: 10, marginTop: 6 },
 
-    footer: { padding: 16, borderTop: "1px solid #e5e7eb", display: "flex", justifyContent: "flex-end", gap: 10, background: "#fafafa" },
+    footer: { padding: 16, borderTop: "1px solid var(--color-border)", display: "flex", justifyContent: "flex-end", gap: 10, background: "var(--color-surface-raised)" },
 
-    versionsWrap: { background: "#fafafa", borderTop: "1px solid #e5e7eb" },
+    versionsWrap: { background: "var(--color-surface-raised)", borderTop: "1px solid var(--color-border)" },
     versionsInner: { padding: 14 },
     versionsTitleRow: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 10, flexWrap: "wrap" },
-    versionsTitle: { margin: 0, fontSize: 14, fontWeight: 800, color: "#111827" },
-    versionsTable: { width: "100%", borderCollapse: "collapse", background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, overflow: "hidden" },
-    versionsTh: { textAlign: "left", fontSize: 12, letterSpacing: 0.4, textTransform: "uppercase", color: "#6b7280", padding: "10px 12px", borderBottom: "1px solid #e5e7eb", background: "#fafafa" },
-    versionsTd: { padding: "10px 12px", borderBottom: "1px solid #f1f5f9", fontSize: 13, color: "#111827", verticalAlign: "top" },
+    versionsTitle: { margin: 0, fontSize: 14, fontWeight: 800, color: "var(--color-text-primary)" },
+    versionsTable: { width: "100%", borderCollapse: "collapse", background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 12, overflow: "hidden" },
+    versionsTh: { textAlign: "left", fontSize: 12, letterSpacing: 0.4, textTransform: "uppercase", color: "var(--color-text-muted)", padding: "10px 12px", borderBottom: "1px solid var(--color-border)", background: "var(--color-surface-raised)" },
+    versionsTd: { padding: "10px 12px", borderBottom: "1px solid var(--color-border-td)", fontSize: 13, color: "var(--color-text-primary)", verticalAlign: "top" },
     mono: { fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace" },
-    hint: { fontSize: 13, color: "#6b7280", marginTop: 8, lineHeight: 1.4 },
-    secretBox: { border: "1px dashed #d1d5db", background: "#fff", padding: 12, borderRadius: 10, display: "grid", gap: 10 },
+    hint: { fontSize: 13, color: "var(--color-text-muted)", marginTop: 8, lineHeight: 1.4 },
+    secretBox: { border: "1px dashed var(--color-border-strong)", background: "var(--color-surface)", padding: 12, borderRadius: 10, display: "grid", gap: 10 },
   };
 
   return (
-    <div style={styles.page}>
+    <div className="animate-page" style={styles.page}>
       <div style={styles.topBar}>
         <div>
           <h1 style={styles.title}>{t("applications.title")}</h1>
@@ -312,7 +496,8 @@ export default function AdminApplicationsPage() {
 
       {error && <div style={styles.error}>{error}</div>}
 
-      <div style={styles.card}>
+      <div className="hover-lift" style={styles.card}>
+        <div style={{ overflowX: "auto" }}>
         <table style={styles.table}>
           <thead>
             <tr>
@@ -355,11 +540,11 @@ export default function AdminApplicationsPage() {
 
                       <td style={styles.td}>
                         {a.url ? (
-                          <a href={a.url} target="_blank" rel="noreferrer" style={{ color: "#6366f1" }}>
+                          <a href={a.url} target="_blank" rel="noreferrer" style={{ color: "var(--color-primary)" }}>
                             {a.url}
                           </a>
                         ) : (
-                          <span style={{ color: "#9ca3af" }}>{t("common.noneSymbol")}</span>
+                          <span style={{ color: "var(--color-text-faint)" }}>{t("common.noneSymbol")}</span>
                         )}
                       </td>
 
@@ -370,7 +555,7 @@ export default function AdminApplicationsPage() {
                               width: 8,
                               height: 8,
                               borderRadius: 999,
-                              background: a.isActive === false ? "#ef4444" : "#10b981",
+                              background: a.isActive === false ? "var(--color-error)" : "var(--color-success)",
                               display: "inline-block",
                             }}
                           />
@@ -380,6 +565,9 @@ export default function AdminApplicationsPage() {
 
                       <td style={{ ...styles.td, textAlign: "right" }}>
                         <div style={styles.rowActions}>
+                          <button style={styles.smallBtn} onClick={() => toggleMembers(a.id)} disabled={busy}>
+                            {membersOpenFor === a.id ? t("applications.hideMembers") : t("applications.members")}
+                          </button>
                           <button style={styles.smallBtn} onClick={() => toggleVersions(a.id)} disabled={busy}>
                             {isVersionsOpen ? t("applications.hideVersions") : t("applications.versions")}
                           </button>
@@ -443,7 +631,7 @@ export default function AdminApplicationsPage() {
                                                 width: 8,
                                                 height: 8,
                                                 borderRadius: 999,
-                                                background: v.isActive ? "#10b981" : "#ef4444",
+                                                background: v.isActive ? "var(--color-success)" : "var(--color-error)",
                                                 display: "inline-block",
                                               }}
                                             />
@@ -488,18 +676,173 @@ export default function AdminApplicationsPage() {
                         </td>
                       </tr>
                     )}
+
+                    {membersOpenFor === a.id && (
+                      <tr>
+                        <td colSpan={6} style={{ padding: 0 }}>
+                          <div style={styles.versionsWrap}>
+                            <div style={styles.versionsInner}>
+                              <div style={styles.versionsTitleRow}>
+                                <h3 style={styles.versionsTitle}>
+                                  {t("applications.membersTitle", { name: a.name })}
+                                </h3>
+                                <button style={styles.btn} onClick={() => loadMembers(a.id)} disabled={busy || membersLoading}>
+                                  {t("applications.refreshMembers")}
+                                </button>
+                              </div>
+
+                              {/* Invite form */}
+                              <div style={{ ...styles.secretBox, marginBottom: 12 }}>
+                                <div style={{ fontWeight: 700, fontSize: 13 }}>{t("applications.inviteTitle")}</div>
+                                <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
+                                  <div style={{ flex: 1, minWidth: 180 }}>
+                                    <label style={styles.label}>{t("applications.inviteEmail")}</label>
+                                    <input
+                                      style={{ ...styles.input, width: "100%", boxSizing: "border-box" }}
+                                      value={inviteEmail}
+                                      onChange={(e) => { setInviteEmail(e.target.value); setCheckResult(null); setInviteMsg(null); }}
+                                      onBlur={() => inviteEmail.trim() && onCheckEmail(a.id)}
+                                      placeholder={t("applications.inviteEmailPlaceholder")}
+                                    />
+                                  </div>
+                                  <div style={{ minWidth: 130 }}>
+                                    <label style={styles.label}>{t("applications.inviteRole")}</label>
+                                    <select
+                                      style={{ ...styles.input, width: "100%", boxSizing: "border-box" }}
+                                      value={inviteRoleId}
+                                      onChange={(e) => setInviteRoleId(e.target.value)}
+                                    >
+                                      {roles.map((r) => (
+                                        <option key={r.id} value={r.id}>{r.name}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                  <button
+                                    style={styles.btnPrimary}
+                                    onClick={() => onInvite(a.id)}
+                                    disabled={inviting || !inviteEmail.trim() || !inviteRoleId}
+                                  >
+                                    {inviting ? t("applications.inviting") : t("applications.inviteBtn")}
+                                  </button>
+                                </div>
+                                {checking && (
+                                  <div style={{ fontSize: 12, color: "var(--color-text-muted)" }}>{t("applications.checkingEmail")}</div>
+                                )}
+                                {checkResult && !checking && (
+                                  <div style={{ fontSize: 12, color: checkResult.exists ? "var(--color-success)" : "var(--color-text-muted)" }}>
+                                    {checkResult.exists
+                                      ? t("applications.userFound", { name: [checkResult.name, checkResult.lastName].filter(Boolean).join(" ") || checkResult.name || "—" })
+                                      : t("applications.userNotFound")}
+                                  </div>
+                                )}
+                                {inviteMsg && (
+                                  <div style={{ fontSize: 12, color: "var(--color-success)" }}>{inviteMsg}</div>
+                                )}
+                              </div>
+
+                              {/* Members list */}
+                              {membersLoading ? (
+                                <div style={styles.empty}>{t("applications.membersLoading")}</div>
+                              ) : members.length === 0 ? (
+                                <div style={styles.empty}>{t("applications.membersEmpty")}</div>
+                              ) : (
+                                <table style={styles.versionsTable}>
+                                  <thead>
+                                    <tr>
+                                      <th style={styles.versionsTh}>Email</th>
+                                      <th style={styles.versionsTh}>{t("applications.name")}</th>
+                                      <th style={styles.versionsTh}>{t("applications.inviteRole")}</th>
+                                      <th style={{ ...styles.versionsTh, textAlign: "right" }}>{t("common.actions")}</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {members.map((m) => (
+                                      <tr key={m.memberId}>
+                                        <td style={styles.versionsTd}>{m.email ?? "—"}</td>
+                                        <td style={styles.versionsTd}>
+                                          {[m.name, m.lastName].filter(Boolean).join(" ") || "—"}
+                                        </td>
+                                        <td style={styles.versionsTd}>
+                                          <select
+                                            style={{ ...styles.input, height: 32, fontSize: 12, padding: "0 6px" }}
+                                            value={m.role?.id ?? ""}
+                                            onChange={(e) => onChangeRole(a.id, m.memberId, e.target.value)}
+                                            disabled={busy}
+                                          >
+                                            {roles.map((r) => (
+                                              <option key={r.id} value={r.id}>{r.name}</option>
+                                            ))}
+                                          </select>
+                                        </td>
+                                        <td style={{ ...styles.versionsTd, textAlign: "right" }}>
+                                          <button
+                                            style={styles.dangerBtn}
+                                            onClick={() => onRemoveMember(a.id, m.memberId)}
+                                            disabled={busy}
+                                          >
+                                            {t("applications.removeMember")}
+                                          </button>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              )}
+
+                              {/* Pending invitations */}
+                              {pendingInvitations.length > 0 && (
+                                <div style={{ marginTop: 12 }}>
+                                  <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 6, color: "var(--color-text-secondary)" }}>
+                                    {t("applications.pendingInvitations")}
+                                  </div>
+                                  <table style={styles.versionsTable}>
+                                    <thead>
+                                      <tr>
+                                        <th style={styles.versionsTh}>Email</th>
+                                        <th style={styles.versionsTh}>{t("applications.inviteRole")}</th>
+                                        <th style={styles.versionsTh}>{t("applications.createdAt")}</th>
+                                        <th style={{ ...styles.versionsTh, textAlign: "right" }}>{t("common.actions")}</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {pendingInvitations.map((inv) => (
+                                        <tr key={inv.id}>
+                                          <td style={styles.versionsTd}>{inv.email ?? "—"}</td>
+                                          <td style={styles.versionsTd}>{inv.role?.name ?? "—"}</td>
+                                          <td style={styles.versionsTd}>{fmtDate(inv.createdAt)}</td>
+                                          <td style={{ ...styles.versionsTd, textAlign: "right" }}>
+                                            <button
+                                              style={styles.dangerBtn}
+                                              onClick={() => onCancelInvitation(a.id, inv.id)}
+                                              disabled={busy}
+                                            >
+                                              {t("applications.cancelInvitation")}
+                                            </button>
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
                   </React.Fragment>
                 );
               })
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Create/Edit Modal */}
       {isModalOpen && (
-        <div style={styles.overlay} onMouseDown={closeModal} role="dialog" aria-modal="true">
-          <div style={styles.modal} onMouseDown={(e) => e.stopPropagation()}>
+        <div className="animate-overlay" style={styles.overlay} onMouseDown={closeModal} role="dialog" aria-modal="true">
+          <div className="animate-modal" style={styles.modal} onMouseDown={(e) => e.stopPropagation()}>
             <div style={styles.modalHeader}>
               <h2 style={styles.modalTitle}>{editing ? t("applications.edit") : t("applications.addOne")}</h2>
               <button style={styles.btn} onClick={closeModal} disabled={busy}>
@@ -545,7 +888,7 @@ export default function AdminApplicationsPage() {
                       <label style={styles.label}>{t("applications.isActive")}</label>
                       <div style={styles.checkboxRow}>
                         <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
-                        <span style={{ color: "#374151", fontSize: 14 }}>{isActive ? t("common.yes") : t("common.no")}</span>
+                        <span style={{ color: "var(--color-text-secondary)", fontSize: 14 }}>{isActive ? t("common.yes") : t("common.no")}</span>
                       </div>
                     </div>
                   </div>
@@ -567,8 +910,8 @@ export default function AdminApplicationsPage() {
 
       {/* One-time secret modal */}
       {secretModalOpen && (
-        <div style={styles.overlay} onMouseDown={closeSecretModal} role="dialog" aria-modal="true">
-          <div style={styles.modal} onMouseDown={(e) => e.stopPropagation()}>
+        <div className="animate-overlay" style={styles.overlay} onMouseDown={closeSecretModal} role="dialog" aria-modal="true">
+          <div className="animate-modal" style={styles.modal} onMouseDown={(e) => e.stopPropagation()}>
             <div style={styles.modalHeader}>
               <h2 style={styles.modalTitle}>{t("applications.secretModalTitle")}</h2>
               <button style={styles.btn} onClick={closeSecretModal}>
@@ -578,12 +921,12 @@ export default function AdminApplicationsPage() {
 
             <div style={styles.modalBody}>
               <div style={{ display: "grid", gap: 10 }}>
-                <div style={{ color: "#111827", fontWeight: 800 }}>
+                <div style={{ color: "var(--color-text-primary)", fontWeight: 800 }}>
                   {t("applications.secretHeader", { name: createdAppName, version: createdVersion })}
                 </div>
 
                 <div style={styles.secretBox}>
-                  <div style={{ fontSize: 13, color: "#6b7280" }}>{t("applications.secretHelp")}</div>
+                  <div style={{ fontSize: 13, color: "var(--color-text-muted)" }}>{t("applications.secretHelp")}</div>
 
                   <div style={{ ...styles.mono, wordBreak: "break-all", fontSize: 13 }}>{createdSecret}</div>
 

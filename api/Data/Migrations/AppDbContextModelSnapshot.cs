@@ -135,6 +135,47 @@ namespace api.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("api.Data.Models.ApplicationInvitation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("ID");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("CREATED_AT");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)")
+                        .HasColumnName("EMAIL");
+
+                    b.Property<Guid>("InvitedBy")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("INVITED_BY");
+
+                    b.Property<Guid>("RefApplication")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("REF_APPLICATION");
+
+                    b.Property<Guid>("RefRoleApplication")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("REF_ROLE_APPLICATION");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InvitedBy");
+
+                    b.HasIndex("RefRoleApplication");
+
+                    b.HasIndex("RefApplication", "Email")
+                        .IsUnique()
+                        .HasDatabaseName("UX_APPLICATION_INVITATION_APP_EMAIL");
+
+                    b.ToTable("T_APPLICATION_INVITATION", (string)null);
+                });
+
             modelBuilder.Entity("api.Data.Models.ApplicationMember", b =>
                 {
                     b.Property<Guid>("Id")
@@ -322,6 +363,89 @@ namespace api.Data.Migrations
                     b.ToTable("T_HMAC_NONCE", (string)null);
                 });
 
+            modelBuilder.Entity("api.Data.Models.MailLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("ID")
+                        .HasDefaultValueSql("NEWID()");
+
+                    b.Property<string>("AttachmentsJson")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("nvarchar(max)")
+                        .HasDefaultValue("[]")
+                        .HasColumnName("ATTACHMENTS_JSON");
+
+                    b.Property<string>("BccAddresses")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("BCC_ADDRESSES");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("BODY");
+
+                    b.Property<string>("CcAddresses")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("CC_ADDRESSES");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("ERROR_MESSAGE");
+
+                    b.Property<string>("Fingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("FINGERPRINT");
+
+                    b.Property<string>("FromAddress")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("FROM_ADDRESS");
+
+                    b.Property<bool>("IsPatched")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false)
+                        .HasColumnName("IS_PATCHED");
+
+                    b.Property<Guid>("RefApplication")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("REF_APPLICATION");
+
+                    b.Property<DateTime>("SentAtUtc")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("SENT_AT_UTC");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(16)")
+                        .HasColumnName("STATUS");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("SUBJECT");
+
+                    b.Property<string>("ToAddresses")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("nvarchar(max)")
+                        .HasDefaultValue("[]")
+                        .HasColumnName("TO_ADDRESSES");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RefApplication");
+
+                    b.ToTable("T_MAIL_LOG", (string)null);
+                });
+
             modelBuilder.Entity("api.Data.Models.RoleApplication", b =>
                 {
                     b.Property<Guid>("Id")
@@ -369,6 +493,68 @@ namespace api.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("api.Data.Models.SystemMailLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("ID")
+                        .HasDefaultValueSql("NEWID()");
+
+                    b.Property<string>("BccAddresses")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("BCC_ADDRESSES");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("BODY");
+
+                    b.Property<string>("CcAddresses")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("CC_ADDRESSES");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("ERROR_MESSAGE");
+
+                    b.Property<string>("Fingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("FINGERPRINT");
+
+                    b.Property<string>("FromAddress")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("FROM_ADDRESS");
+
+                    b.Property<DateTime>("SentAtUtc")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("SENT_AT_UTC");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(16)")
+                        .HasColumnName("STATUS");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("SUBJECT");
+
+                    b.Property<string>("ToAddresses")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("TO_ADDRESSES");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("T_SYSTEM_MAIL_LOG", (string)null);
+                });
+
             modelBuilder.Entity("api.Data.Models.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -382,6 +568,17 @@ namespace api.Data.Migrations
                         .HasColumnType("nvarchar(450)")
                         .HasColumnName("EMAIL");
 
+                    b.Property<string>("EmailConfirmationToken")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)")
+                        .HasColumnName("EMAIL_CONFIRMATION_TOKEN");
+
+                    b.Property<bool>("EmailConfirmed")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false)
+                        .HasColumnName("EMAIL_CONFIRMED");
+
                     b.Property<string>("LastName")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("LAST_NAME");
@@ -394,6 +591,36 @@ namespace api.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("PASSWORD");
+
+                    b.Property<string>("PasswordChangeToken")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)")
+                        .HasColumnName("PASSWORD_CHANGE_TOKEN");
+
+                    b.Property<DateTime?>("PasswordChangeTokenExpiresAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("PASSWORD_CHANGE_TOKEN_EXPIRES_AT");
+
+                    b.Property<DateTime?>("PasswordChangedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("PASSWORD_CHANGED_AT");
+
+                    b.Property<string>("PasswordResetToken")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)")
+                        .HasColumnName("PASSWORD_RESET_TOKEN");
+
+                    b.Property<DateTime?>("PasswordResetTokenExpiresAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("PASSWORD_RESET_TOKEN_EXPIRES_AT");
+
+                    b.Property<string>("PendingPassword")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("PENDING_PASSWORD");
+
+                    b.Property<string>("PendingSalt")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("PENDING_SALT");
 
                     b.Property<string>("Salt")
                         .IsRequired()
@@ -413,6 +640,7 @@ namespace api.Data.Migrations
                         {
                             Id = new Guid("1c7850fa-2cf8-4716-9991-b26d4f169d21"),
                             Email = "MGxkV2lfdkupgorWnMHpeyIT9IX5GIDcQctl6JHkwo0=",
+                            EmailConfirmed = true,
                             LastName = "7mKmhERhwYiFtwf2l6BJMQ==",
                             Name = "c8Tpx9kHQj0Xio6wAidnkg==",
                             Password = "wWwFqHINsN9P0TzRMd1d5yJQ9pz1nvw5ck0uRuVJu/D2kPPH/U/HylErGpB9g5RXA4mS8FqnAgdhXSuOgpabNQ==",
@@ -453,6 +681,36 @@ namespace api.Data.Migrations
                         .HasConstraintName("FK_APPLICATION_ENCRYPTION_KEY_REF_APPLICATION");
 
                     b.Navigation("Application");
+                });
+
+            modelBuilder.Entity("api.Data.Models.ApplicationInvitation", b =>
+                {
+                    b.HasOne("api.Data.Models.User", "InvitedByUser")
+                        .WithMany()
+                        .HasForeignKey("InvitedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_APPLICATION_INVITATION_INVITEDBY");
+
+                    b.HasOne("api.Data.Models.Application", "Application")
+                        .WithMany()
+                        .HasForeignKey("RefApplication")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_APPLICATION_INVITATION_APPLICATION");
+
+                    b.HasOne("api.Data.Models.RoleApplication", "RoleApplication")
+                        .WithMany()
+                        .HasForeignKey("RefRoleApplication")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_APPLICATION_INVITATION_ROLE");
+
+                    b.Navigation("Application");
+
+                    b.Navigation("InvitedByUser");
+
+                    b.Navigation("RoleApplication");
                 });
 
             modelBuilder.Entity("api.Data.Models.ApplicationMember", b =>
@@ -514,6 +772,17 @@ namespace api.Data.Migrations
                         .WithMany()
                         .HasForeignKey("RefApplication")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Application");
+                });
+
+            modelBuilder.Entity("api.Data.Models.MailLog", b =>
+                {
+                    b.HasOne("api.Data.Models.Application", "Application")
+                        .WithMany()
+                        .HasForeignKey("RefApplication")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Application");

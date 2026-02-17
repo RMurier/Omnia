@@ -40,6 +40,46 @@ namespace api.Data.Configurations
                 .HasColumnName("LAST_NAME")
                 .IsRequired(false);
 
+            builder.Property(x => x.EmailConfirmed)
+                .HasColumnName("EMAIL_CONFIRMED")
+                .IsRequired(true)
+                .HasDefaultValue(false);
+
+            builder.Property(x => x.EmailConfirmationToken)
+                .HasColumnName("EMAIL_CONFIRMATION_TOKEN")
+                .HasMaxLength(128)
+                .IsRequired(false);
+
+            builder.Property(x => x.PasswordResetToken)
+                .HasColumnName("PASSWORD_RESET_TOKEN")
+                .HasMaxLength(128)
+                .IsRequired(false);
+
+            builder.Property(x => x.PasswordResetTokenExpiresAt)
+                .HasColumnName("PASSWORD_RESET_TOKEN_EXPIRES_AT")
+                .IsRequired(false);
+
+            builder.Property(x => x.PendingPassword)
+                .HasColumnName("PENDING_PASSWORD")
+                .IsRequired(false);
+
+            builder.Property(x => x.PendingSalt)
+                .HasColumnName("PENDING_SALT")
+                .IsRequired(false);
+
+            builder.Property(x => x.PasswordChangeToken)
+                .HasColumnName("PASSWORD_CHANGE_TOKEN")
+                .HasMaxLength(128)
+                .IsRequired(false);
+
+            builder.Property(x => x.PasswordChangeTokenExpiresAt)
+                .HasColumnName("PASSWORD_CHANGE_TOKEN_EXPIRES_AT")
+                .IsRequired(false);
+
+            builder.Property(x => x.PasswordChangedAt)
+                .HasColumnName("PASSWORD_CHANGED_AT")
+                .IsRequired(false);
+
             builder.HasIndex(x => x.Email)
                 .IsUnique()
                 .HasDatabaseName("UX_USER_EMAIL");
@@ -53,7 +93,8 @@ namespace api.Data.Configurations
                     Name = "c8Tpx9kHQj0Xio6wAidnkg==",
                     LastName = "7mKmhERhwYiFtwf2l6BJMQ==",
                     Password = "wWwFqHINsN9P0TzRMd1d5yJQ9pz1nvw5ck0uRuVJu/D2kPPH/U/HylErGpB9g5RXA4mS8FqnAgdhXSuOgpabNQ==",
-                    Salt = "vhLKoFuOfVK46NC4W056EkXEEsYAQogvnd/kOg4HU80="
+                    Salt = "vhLKoFuOfVK46NC4W056EkXEEsYAQogvnd/kOg4HU80=",
+                    EmailConfirmed = true
                 });
         }
     }

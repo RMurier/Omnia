@@ -11,15 +11,15 @@ export default function General() {
     },
     question: {
       fontWeight: 700,
-      color: "#111827",
+      color: "var(--color-text-primary)",
       marginBottom: 8,
       fontSize: 15,
     },
     answer: {
-      color: "#374151",
+      color: "var(--color-text-secondary)",
       lineHeight: 1.7,
       paddingLeft: 16,
-      borderLeft: "3px solid #e5e7eb",
+      borderLeft: "3px solid var(--color-border)",
     },
   };
 

@@ -8,27 +8,27 @@ export default function AuthErrors() {
   const styles: Record<string, React.CSSProperties> = {
     paragraph: { marginBottom: 16, lineHeight: 1.7 },
     errorBox: {
-      background: "#fef2f2",
-      border: "1px solid #fecaca",
+      background: "var(--color-error-bg)",
+      border: "1px solid var(--color-error-border)",
       borderRadius: 8,
       padding: 12,
       marginBottom: 12,
       fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
       fontSize: 13,
-      color: "#991b1b",
+      color: "var(--color-error-text)",
     },
     solutionBox: {
-      background: "#f0fdf4",
-      border: "1px solid #bbf7d0",
+      background: "var(--color-success-bg)",
+      border: "1px solid var(--color-success-border)",
       borderRadius: 8,
       padding: 12,
       marginBottom: 24,
-      color: "#166534",
+      color: "var(--color-success-text-alt)",
     },
     errorTitle: {
       fontWeight: 700,
       marginBottom: 8,
-      color: "#111827",
+      color: "var(--color-text-primary)",
     },
   };
 

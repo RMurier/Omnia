@@ -1,32 +1,13 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useAuthStore } from "../stores/authStore";
 import { useTranslation } from "react-i18next";
+import { useMediaQuery } from "../hooks/useMediaQuery";
+import { BREAKPOINTS } from "../hooks/breakpoints";
 
 type Feature = {
   title: string;
   description: string;
 };
-
-function useMediaQuery(query: string) {
-  const [matches, setMatches] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const m = window.matchMedia(query);
-    const onChange = () => setMatches(Boolean(m.matches));
-    onChange();
-
-    if ((m as any).addEventListener) (m as any).addEventListener("change", onChange);
-    else (m as any).addListener(onChange);
-
-    return () => {
-      if ((m as any).removeEventListener) (m as any).removeEventListener("change", onChange);
-      else (m as any).removeListener(onChange);
-    };
-  }, [query]);
-
-  return matches;
-}
 
 function useIsAuthenticated() {
   const { isAuthenticated, hydrateFromServer } = useAuthStore();
@@ -41,7 +22,7 @@ function useIsAuthenticated() {
 export default function Home() {
   const { t } = useTranslation();
   const isAuthenticated = useIsAuthenticated();
-  const isMobile = useMediaQuery("(max-width: 900px)");
+  const isMobile = useMediaQuery(BREAKPOINTS.tablet);
 
   const features: Feature[] = useMemo(
     () => [
@@ -67,11 +48,11 @@ export default function Home() {
   }, []);
 
   const styles: Record<string, React.CSSProperties> = {
-    page: { padding: 24, maxWidth: "min(96vw, 1400px)", margin: "0 auto" },
+    page: { padding: isMobile ? "12px 8px" : 24, maxWidth: "min(96vw, 1400px)", margin: "0 auto" },
     hero: {
-      border: "1px solid #e5e7eb",
+      border: "1px solid var(--color-border)",
       borderRadius: 16,
-      background: "#fff",
+      background: "var(--color-surface)",
       padding: 22,
     },
     badge: {
@@ -80,9 +61,9 @@ export default function Home() {
       gap: 8,
       padding: "6px 10px",
       borderRadius: 999,
-      border: "1px solid #e5e7eb",
-      background: "#fafafa",
-      color: "#111827",
+      border: "1px solid var(--color-border)",
+      background: "var(--color-surface-raised)",
+      color: "var(--color-text-primary)",
       fontSize: 12,
       fontWeight: 800,
       marginBottom: 12,
@@ -92,16 +73,16 @@ export default function Home() {
       fontSize: 34,
       lineHeight: 1.12,
       letterSpacing: -0.6,
-      color: "#111827",
+      color: "var(--color-text-primary)",
       fontWeight: 900,
     },
-    subtitle: { margin: "10px 0 0", color: "#6b7280", fontSize: 15, lineHeight: 1.55 },
+    subtitle: { margin: "10px 0 0", color: "var(--color-text-muted)", fontSize: 15, lineHeight: 1.55 },
     actions: { display: "flex", gap: 10, marginTop: 16, flexWrap: "wrap" },
     btnPrimary: {
       padding: "10px 12px",
       borderRadius: 10,
       border: "none",
-      background: "#6366f1",
+      background: "var(--color-primary)",
       color: "#fff",
       cursor: "pointer",
       fontWeight: 800,
@@ -114,9 +95,9 @@ export default function Home() {
     btn: {
       padding: "10px 12px",
       borderRadius: 10,
-      border: "1px solid #d1d5db",
-      background: "#fff",
-      color: "#111827",
+      border: "1px solid var(--color-border-strong)",
+      background: "var(--color-surface)",
+      color: "var(--color-text-primary)",
       cursor: "pointer",
       fontWeight: 800,
       fontSize: 14,
@@ -132,18 +113,18 @@ export default function Home() {
       marginTop: 16,
     },
     card: {
-      border: "1px solid #e5e7eb",
+      border: "1px solid var(--color-border)",
       borderRadius: 14,
       padding: 16,
-      background: "#fff",
+      background: "var(--color-surface)",
       minWidth: 0,
     },
-    cardTitle: { margin: 0, fontSize: 16, fontWeight: 900, color: "#111827" },
-    cardText: { margin: "6px 0 0", color: "#6b7280", fontSize: 14, lineHeight: 1.55 },
+    cardTitle: { margin: 0, fontSize: 16, fontWeight: 900, color: "var(--color-text-primary)" },
+    cardText: { margin: "6px 0 0", color: "var(--color-text-muted)", fontSize: 14, lineHeight: 1.55 },
   };
 
   return (
-    <div style={styles.page}>
+    <div className="animate-page" style={styles.page}>
       <section style={styles.hero}>
         <div style={styles.badge}>{t("home.heroTitle")}</div>
 
@@ -171,7 +152,7 @@ export default function Home() {
 
         <div style={styles.grid}>
           {features.map((f) => (
-            <div key={f.title} style={styles.card}>
+            <div key={f.title} className="hover-lift" style={styles.card}>
               <h3 style={styles.cardTitle}>{f.title}</h3>
               <p style={styles.cardText}>{f.description}</p>
             </div>

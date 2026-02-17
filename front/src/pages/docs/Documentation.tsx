@@ -1,5 +1,8 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Menu, X } from "lucide-react";
+import { useMediaQuery } from "../../hooks/useMediaQuery";
+import { BREAKPOINTS } from "../../hooks/breakpoints";
 
 import GettingStartedIndex from "./GettingStarted";
 import CoreConceptsIndex from "./CoreConcepts";
@@ -98,6 +101,8 @@ const categories: Category[] = [
 export default function Documentation() {
   const { t } = useTranslation();
   const [activeCategory, setActiveCategory] = useState(categories[0].key);
+  const isTablet = useMediaQuery(BREAKPOINTS.tablet);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const currentCategory = categories.find((c) => c.key === activeCategory) ?? categories[0];
   const CategoryComponent = currentCategory.component;
@@ -107,31 +112,57 @@ export default function Documentation() {
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "start" });
     }
+    if (isTablet) setSidebarOpen(false);
+  };
+
+  const onCategoryClick = (key: string) => {
+    setActiveCategory(key);
+    if (isTablet) setSidebarOpen(false);
   };
 
   const styles: Record<string, React.CSSProperties> = {
     page: {
       display: "flex",
       minHeight: "calc(100vh - 64px)",
-      background: "#f9fafb",
+      background: "var(--color-surface-sunken)",
+      position: "relative",
+    },
+    overlay: {
+      position: "fixed",
+      inset: 0,
+      background: "var(--color-overlay)",
+      zIndex: 39,
     },
     sidebar: {
       width: 280,
       minWidth: 280,
-      background: "#fff",
-      borderRight: "1px solid #e5e7eb",
+      background: "var(--color-surface)",
+      borderRight: "1px solid var(--color-border)",
       padding: "24px 0",
-      position: "sticky",
-      top: "64px",
-      height: "calc(100vh - 64px)",
-      overflowY: "auto",
+      ...(isTablet
+        ? {
+            position: "fixed",
+            top: 64,
+            left: 0,
+            bottom: 0,
+            zIndex: 40,
+            transform: sidebarOpen ? "translateX(0)" : "translateX(-100%)",
+            transition: "transform 0.2s ease",
+            overflowY: "auto",
+          }
+        : {
+            position: "sticky",
+            top: "64px",
+            height: "calc(100vh - 64px)",
+            overflowY: "auto",
+          }),
     },
     sidebarTitle: {
       fontSize: 12,
       fontWeight: 700,
       textTransform: "uppercase",
       letterSpacing: 0.5,
-      color: "#6b7280",
+      color: "var(--color-text-muted)",
       padding: "0 20px",
       marginBottom: 12,
     },
@@ -152,13 +183,13 @@ export default function Documentation() {
       cursor: "pointer",
       fontSize: 14,
       fontWeight: 600,
-      color: "#374151",
+      color: "var(--color-text-secondary)",
       transition: "background 0.15s, color 0.15s",
     },
     categoryBtnActive: {
-      background: "#eef2ff",
-      color: "#4f46e5",
-      borderLeft: "3px solid #4f46e5",
+      background: "var(--color-sidebar-active-bg)",
+      color: "var(--color-sidebar-active-text)",
+      borderLeft: "3px solid var(--color-sidebar-active-border)",
     },
     sectionList: {
       listStyle: "none",
@@ -176,32 +207,58 @@ export default function Documentation() {
       background: "transparent",
       cursor: "pointer",
       fontSize: 13,
-      color: "#6b7280",
+      color: "var(--color-text-muted)",
       borderRadius: 4,
     },
     main: {
       flex: 1,
-      padding: "32px 48px",
+      padding: isTablet ? "24px 16px" : "32px 48px",
       maxWidth: 900,
     },
     header: {
       marginBottom: 32,
+      display: "flex",
+      alignItems: "center",
+      gap: 12,
     },
     title: {
       fontSize: 28,
       fontWeight: 800,
-      color: "#111827",
+      color: "var(--color-text-primary)",
       margin: 0,
     },
     subtitle: {
       fontSize: 15,
-      color: "#6b7280",
+      color: "var(--color-text-muted)",
       marginTop: 8,
+    },
+    toggleBtn: {
+      position: "fixed",
+      bottom: 20,
+      left: 16,
+      zIndex: 38,
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      width: 48,
+      height: 48,
+      borderRadius: 14,
+      border: "none",
+      backgroundColor: "var(--color-primary)",
+      boxShadow: "0 4px 20px rgba(99,102,241,0.4)",
+      cursor: "pointer",
+      padding: 0,
+      flexShrink: 0,
     },
   };
 
   return (
     <div style={styles.page}>
+      {/* Overlay for mobile sidebar */}
+      {isTablet && sidebarOpen && (
+        <div style={styles.overlay} onClick={() => setSidebarOpen(false)} />
+      )}
+
       <aside style={styles.sidebar}>
         <div style={styles.sidebarTitle}>{t("docs.navigation")}</div>
         <ul style={styles.categoryList}>
@@ -212,7 +269,7 @@ export default function Documentation() {
                   ...styles.categoryBtn,
                   ...(activeCategory === cat.key ? styles.categoryBtnActive : {}),
                 }}
-                onClick={() => setActiveCategory(cat.key)}
+                onClick={() => onCategoryClick(cat.key)}
                 type="button"
               >
                 {t(cat.labelKey)}
@@ -237,10 +294,26 @@ export default function Documentation() {
         </ul>
       </aside>
 
+      {isTablet && (
+        <button
+          type="button"
+          style={styles.toggleBtn}
+          onClick={() => setSidebarOpen((v) => !v)}
+          aria-label={t("docs.toggleSidebar")}
+        >
+          {sidebarOpen
+            ? <X size={22} style={{ color: "#fff" }} />
+            : <Menu size={22} style={{ color: "#fff" }} />
+          }
+        </button>
+      )}
+
       <main style={styles.main}>
         <div style={styles.header}>
-          <h1 style={styles.title}>{t("docs.title")}</h1>
-          <p style={styles.subtitle}>{t("docs.subtitle")}</p>
+          <div>
+            <h1 style={styles.title}>{t("docs.title")}</h1>
+            <p style={styles.subtitle}>{t("docs.subtitle")}</p>
+          </div>
         </div>
         <CategoryComponent />
       </main>

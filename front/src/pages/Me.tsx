@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useAuthStore } from "../stores/authStore";
 import { authFetch } from "../utils/authFetch";
 import { useTranslation } from "react-i18next";
+import { useMediaQuery } from "../hooks/useMediaQuery";
+import { BREAKPOINTS } from "../hooks/breakpoints";
 
 export default function MePage() {
   const { t, i18n } = useTranslation();
@@ -18,6 +20,7 @@ export default function MePage() {
     hydrateFromServer();
   }, [hydrateFromServer]);
 
+  const isMobile = useMediaQuery(BREAKPOINTS.mobile);
   const currentLang = (i18n.language || "en").toLowerCase();
   const isFr = currentLang.startsWith("fr");
   const isEn = currentLang.startsWith("en");
@@ -53,7 +56,7 @@ export default function MePage() {
       setCurrentPassword("");
       setNewPassword("");
       setConfirm("");
-      setSuccess(t("me.passwordUpdated"));
+      setSuccess(t("me.passwordChangeEmailSent"));
     } catch (err: any) {
       setError(String(err?.message ?? err ?? t("me.error")));
     } finally {
@@ -62,35 +65,39 @@ export default function MePage() {
   };
 
   const styles: Record<string, React.CSSProperties> = {
-    page: { padding: 24, maxWidth: 720, margin: "0 auto" },
+    page: { padding: isMobile ? "12px 8px" : 24, maxWidth: 720, margin: "0 auto" },
     card: {
-      border: "1px solid #e5e7eb",
+      border: "1px solid var(--color-border)",
       borderRadius: 14,
-      background: "#fff",
+      background: "var(--color-surface)",
       padding: 20,
     },
-    title: { margin: 0, fontSize: 22, fontWeight: 900, color: "#111827" },
-    sub: { margin: "8px 0 0", color: "#6b7280" },
+    title: { margin: 0, fontSize: 22, fontWeight: 900, color: "var(--color-text-primary)" },
+    sub: { margin: "8px 0 0", color: "var(--color-text-muted)" },
 
     section: { marginTop: 18 },
-    sectionTitle: { margin: 0, fontSize: 16, fontWeight: 900, color: "#111827" },
+    sectionTitle: { margin: 0, fontSize: 16, fontWeight: 900, color: "var(--color-text-primary)" },
 
-    label: { display: "block", fontSize: 13, fontWeight: 800, color: "#374151", marginBottom: 6 },
+    label: { display: "block", fontSize: 13, fontWeight: 800, color: "var(--color-text-secondary)", marginBottom: 6 },
     input: {
       width: "100%",
       height: 42,
       borderRadius: 10,
-      border: "1px solid #d1d5db",
+      border: "1px solid var(--color-border-strong)",
       padding: "0 12px",
       outline: "none",
+      boxSizing: "border-box" as const,
+      backgroundColor: "var(--color-surface)",
+      color: "var(--color-text-primary)",
+      fontSize: 14,
     },
     row: { display: "grid", gap: 12, marginTop: 12 },
     btn: {
       height: 44,
       borderRadius: 10,
       border: "none",
-      backgroundColor: "#6366f1",
-      color: "#ffffff",
+      backgroundColor: "var(--color-primary)",
+      color: "var(--color-surface)",
       cursor: "pointer",
       fontWeight: 800,
       fontSize: 14,
@@ -101,18 +108,18 @@ export default function MePage() {
       marginTop: 12,
       padding: 12,
       borderRadius: 10,
-      border: "1px solid #ef4444",
-      background: "#fef2f2",
-      color: "#991b1b",
+      border: "1px solid var(--color-error-border)",
+      background: "var(--color-error-bg)",
+      color: "var(--color-error-text)",
       fontWeight: 700,
     },
     success: {
       marginTop: 12,
       padding: 12,
       borderRadius: 10,
-      border: "1px solid #22c55e",
-      background: "#f0fdf4",
-      color: "#166534",
+      border: "1px solid var(--color-success-border)",
+      background: "var(--color-success-bg-alt)",
+      color: "var(--color-success-text-alt)",
       fontWeight: 700,
     },
     pill: {
@@ -120,11 +127,11 @@ export default function MePage() {
       alignItems: "center",
       gap: 8,
       borderRadius: 999,
-      border: "1px solid #e5e7eb",
+      border: "1px solid var(--color-border)",
       padding: "6px 10px",
-      background: "#fafafa",
+      background: "var(--color-surface-raised)",
       fontWeight: 800,
-      color: "#111827",
+      color: "var(--color-text-primary)",
       marginTop: 12,
     },
 
@@ -142,23 +149,23 @@ export default function MePage() {
       height: 40,
       padding: "0 12px",
       borderRadius: 10,
-      border: "1px solid #d1d5db",
-      background: "#fff",
+      border: "1px solid var(--color-border-strong)",
+      background: "var(--color-surface)",
       cursor: "pointer",
       fontWeight: 800,
-      color: "#111827",
+      color: "var(--color-text-primary)",
     },
     langBtnActive: {
-      border: "1px solid #6366f1",
+      border: "1px solid var(--color-primary)",
       boxShadow: "0 0 0 3px rgba(99,102,241,0.15)",
     },
     flag: { fontSize: 18, lineHeight: 1 },
-    langHint: { color: "#6b7280", fontSize: 13, marginTop: 8 },
+    langHint: { color: "var(--color-text-muted)", fontSize: 13, marginTop: 8 },
   };
 
   if (!isAuthenticated) {
     return (
-      <div style={styles.page}>
+      <div className="animate-page" style={styles.page}>
         <div style={styles.card}>
           <h1 style={styles.title}>{t("me.title")}</h1>
           <p style={styles.sub}>{t("me.mustBeConnected")}</p>
@@ -171,7 +178,7 @@ export default function MePage() {
   }
 
   return (
-    <div style={styles.page}>
+    <div className="animate-page" style={styles.page}>
       <div style={styles.card}>
         <h1 style={styles.title}>{t("me.title")}</h1>
         <p style={styles.sub}>{t("me.subtitle")}</p>
