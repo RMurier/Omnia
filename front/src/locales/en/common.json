@@ -17,7 +17,8 @@
     "signout": "Sign out",
     "signoutButton": "Sign out",
     "signin": "Sign in",
-    "myAccount": "My account"
+    "myAccount": "My account",
+    "toggleMenu": "Toggle menu"
   },
   "home": {
     "heroTitle": "Omnia · Central platform",
@@ -380,6 +381,7 @@
     "title": "Documentation",
     "subtitle": "Learn how to integrate Omnia into your applications.",
     "navigation": "Navigation",
+    "toggleSidebar": "Toggle sidebar",
     "copy": "Copy",
     "copied": "Copied!",
     "categories": {

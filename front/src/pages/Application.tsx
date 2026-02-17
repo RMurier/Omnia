@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useMediaQuery } from "../hooks/useMediaQuery";
+import { BREAKPOINTS } from "../hooks/breakpoints";
 import { authFetch } from "../utils/authFetch";
 
 type AppItem = {
@@ -96,6 +98,7 @@ export default function AdminApplicationsPage() {
   const [inviteMsg, setInviteMsg] = useState<string | null>(null);
   const [checkResult, setCheckResult] = useState<CheckEmailResult | null>(null);
   const [checking, setChecking] = useState(false);
+  const isTablet = useMediaQuery(BREAKPOINTS.tablet);
 
   const canSubmit = useMemo(() => name.trim().length >= 2 && !busy, [name, busy]);
 
@@ -422,12 +425,12 @@ export default function AdminApplicationsPage() {
   };
 
   const styles: Record<string, React.CSSProperties> = {
-    page: { padding: 24, maxWidth: 1100, margin: "0 auto" },
+    page: { padding: isTablet ? 12 : 24, maxWidth: 1100, margin: "0 auto" },
     topBar: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 16 },
     title: { margin: 0, fontSize: 22, fontWeight: 700, color: "var(--color-text-primary)" },
     subtitle: { margin: "6px 0 0 0", color: "var(--color-text-muted)", fontSize: 14 },
     actions: { display: "flex", gap: 10, alignItems: "center" },
-    btn: { padding: "10px 12px", borderRadius: 8, border: "1px solid var(--color-border-strong)", background: "var(--color-surface)", cursor: "pointer", fontWeight: 600 },
+    btn: { padding: "10px 12px", borderRadius: 8, border: "1px solid var(--color-border-strong)", background: "var(--color-surface)", color: "var(--color-text-primary)", cursor: "pointer", fontWeight: 600 },
     btnPrimary: { padding: "10px 12px", borderRadius: 8, border: "none", background: "var(--color-primary)", color: "var(--color-surface)", cursor: "pointer", fontWeight: 700 },
     btnDisabled: { opacity: 0.7, cursor: "not-allowed" },
 
@@ -438,7 +441,7 @@ export default function AdminApplicationsPage() {
     tdMuted: { color: "var(--color-text-muted)", fontSize: 13, marginTop: 4 },
 
     rowActions: { display: "flex", gap: 10, justifyContent: "flex-end", flexWrap: "wrap" },
-    smallBtn: { padding: "8px 10px", borderRadius: 8, border: "1px solid var(--color-border-strong)", background: "var(--color-surface)", cursor: "pointer", fontWeight: 600, fontSize: 13 },
+    smallBtn: { padding: "8px 10px", borderRadius: 8, border: "1px solid var(--color-border-strong)", background: "var(--color-surface)", color: "var(--color-text-primary)", cursor: "pointer", fontWeight: 600, fontSize: 13 },
     dangerBtn: { padding: "8px 10px", borderRadius: 8, border: "1px solid var(--color-error)", background: "var(--color-surface)", cursor: "pointer", fontWeight: 700, color: "var(--color-error-text)", fontSize: 13 },
 
     badge: { display: "inline-flex", alignItems: "center", gap: 8, padding: "4px 10px", borderRadius: 999, fontSize: 12, fontWeight: 700, border: "1px solid var(--color-border)", background: "var(--color-surface)" },
@@ -447,7 +450,7 @@ export default function AdminApplicationsPage() {
     empty: { padding: 18, color: "var(--color-text-muted)" },
 
     overlay: { position: "fixed", inset: 0, background: "var(--color-overlay)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, zIndex: 50 },
-    modal: { width: "100%", maxWidth: 620, background: "var(--color-surface)", borderRadius: 12, border: "1px solid var(--color-border)", boxShadow: "0 18px 60px var(--color-shadow-heavy)", overflow: "hidden" },
+    modal: { width: "100%", maxWidth: isTablet ? "100%" : 620, background: "var(--color-surface)", borderRadius: isTablet ? 0 : 12, border: "1px solid var(--color-border)", boxShadow: "0 18px 60px var(--color-shadow-heavy)", overflow: "hidden", ...(isTablet ? { height: "100%", display: "flex", flexDirection: "column" as const } : {}) },
     modalHeader: { padding: "14px 16px", borderBottom: "1px solid var(--color-border)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, background: "var(--color-surface-raised)" },
     modalTitle: { margin: 0, fontSize: 16, fontWeight: 800, color: "var(--color-text-primary)" },
     modalBody: { padding: 16 },
@@ -456,7 +459,7 @@ export default function AdminApplicationsPage() {
     label: { fontSize: 13, fontWeight: 700, color: "var(--color-text-secondary)" },
     input: { height: 42, borderRadius: 8, border: "1px solid var(--color-border-strong)", padding: "0 12px", outline: "none", fontSize: 14 },
     textarea: { minHeight: 90, borderRadius: 8, border: "1px solid var(--color-border-strong)", padding: "10px 12px", outline: "none", fontSize: 14, resize: "vertical" },
-    row: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 },
+    row: { display: "grid", gridTemplateColumns: isTablet ? "1fr" : "1fr 1fr", gap: 12 },
     checkboxRow: { display: "flex", alignItems: "center", gap: 10, marginTop: 6 },
 
     footer: { padding: 16, borderTop: "1px solid var(--color-border)", display: "flex", justifyContent: "flex-end", gap: 10, background: "var(--color-surface-raised)" },
@@ -474,7 +477,7 @@ export default function AdminApplicationsPage() {
   };
 
   return (
-    <div style={styles.page}>
+    <div className="animate-page" style={styles.page}>
       <div style={styles.topBar}>
         <div>
           <h1 style={styles.title}>{t("applications.title")}</h1>
@@ -493,7 +496,8 @@ export default function AdminApplicationsPage() {
 
       {error && <div style={styles.error}>{error}</div>}
 
-      <div style={styles.card}>
+      <div className="hover-lift" style={styles.card}>
+        <div style={{ overflowX: "auto" }}>
         <table style={styles.table}>
           <thead>
             <tr>
@@ -832,12 +836,13 @@ export default function AdminApplicationsPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Create/Edit Modal */}
       {isModalOpen && (
-        <div style={styles.overlay} onMouseDown={closeModal} role="dialog" aria-modal="true">
-          <div style={styles.modal} onMouseDown={(e) => e.stopPropagation()}>
+        <div className="animate-overlay" style={styles.overlay} onMouseDown={closeModal} role="dialog" aria-modal="true">
+          <div className="animate-modal" style={styles.modal} onMouseDown={(e) => e.stopPropagation()}>
             <div style={styles.modalHeader}>
               <h2 style={styles.modalTitle}>{editing ? t("applications.edit") : t("applications.addOne")}</h2>
               <button style={styles.btn} onClick={closeModal} disabled={busy}>
@@ -905,8 +910,8 @@ export default function AdminApplicationsPage() {
 
       {/* One-time secret modal */}
       {secretModalOpen && (
-        <div style={styles.overlay} onMouseDown={closeSecretModal} role="dialog" aria-modal="true">
-          <div style={styles.modal} onMouseDown={(e) => e.stopPropagation()}>
+        <div className="animate-overlay" style={styles.overlay} onMouseDown={closeSecretModal} role="dialog" aria-modal="true">
+          <div className="animate-modal" style={styles.modal} onMouseDown={(e) => e.stopPropagation()}>
             <div style={styles.modalHeader}>
               <h2 style={styles.modalTitle}>{t("applications.secretModalTitle")}</h2>
               <button style={styles.btn} onClick={closeSecretModal}>
@@ -921,7 +926,7 @@ export default function AdminApplicationsPage() {
                 </div>
 
                 <div style={styles.secretBox}>
-                  <div style={{ fontSize: 13, color: "#6b7280" }}>{t("applications.secretHelp")}</div>
+                  <div style={{ fontSize: 13, color: "var(--color-text-muted)" }}>{t("applications.secretHelp")}</div>
 
                   <div style={{ ...styles.mono, wordBreak: "break-all", fontSize: 13 }}>{createdSecret}</div>
 

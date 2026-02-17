@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useAuthStore } from "../stores/authStore";
 import { authFetch } from "../utils/authFetch";
 import { useTranslation } from "react-i18next";
+import { useMediaQuery } from "../hooks/useMediaQuery";
+import { BREAKPOINTS } from "../hooks/breakpoints";
 
 export default function MePage() {
   const { t, i18n } = useTranslation();
@@ -18,6 +20,7 @@ export default function MePage() {
     hydrateFromServer();
   }, [hydrateFromServer]);
 
+  const isMobile = useMediaQuery(BREAKPOINTS.mobile);
   const currentLang = (i18n.language || "en").toLowerCase();
   const isFr = currentLang.startsWith("fr");
   const isEn = currentLang.startsWith("en");
@@ -62,7 +65,7 @@ export default function MePage() {
   };
 
   const styles: Record<string, React.CSSProperties> = {
-    page: { padding: 24, maxWidth: 720, margin: "0 auto" },
+    page: { padding: isMobile ? "12px 8px" : 24, maxWidth: 720, margin: "0 auto" },
     card: {
       border: "1px solid var(--color-border)",
       borderRadius: 14,
@@ -83,6 +86,10 @@ export default function MePage() {
       border: "1px solid var(--color-border-strong)",
       padding: "0 12px",
       outline: "none",
+      boxSizing: "border-box" as const,
+      backgroundColor: "var(--color-surface)",
+      color: "var(--color-text-primary)",
+      fontSize: 14,
     },
     row: { display: "grid", gap: 12, marginTop: 12 },
     btn: {
@@ -158,7 +165,7 @@ export default function MePage() {
 
   if (!isAuthenticated) {
     return (
-      <div style={styles.page}>
+      <div className="animate-page" style={styles.page}>
         <div style={styles.card}>
           <h1 style={styles.title}>{t("me.title")}</h1>
           <p style={styles.sub}>{t("me.mustBeConnected")}</p>
@@ -171,7 +178,7 @@ export default function MePage() {
   }
 
   return (
-    <div style={styles.page}>
+    <div className="animate-page" style={styles.page}>
       <div style={styles.card}>
         <h1 style={styles.title}>{t("me.title")}</h1>
         <p style={styles.sub}>{t("me.subtitle")}</p>

@@ -1,9 +1,11 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { useAuthStore } from "../stores/authStore";
 import { useThemeStore } from "../stores/themeStore";
 import { signout } from "../utils/authFetch";
 import { useTranslation } from "react-i18next";
-import { Settings, Sun, Moon } from "lucide-react";
+import { Settings, Sun, Moon, Menu, X } from "lucide-react";
+import { useMediaQuery } from "../hooks/useMediaQuery";
+import { BREAKPOINTS } from "../hooks/breakpoints";
 
 
 type NavItem = {
@@ -22,6 +24,8 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
   const lastName = useAuthStore((s) => s.lastName);
   const theme = useThemeStore((s) => s.theme);
   const toggleTheme = useThemeStore((s) => s.toggleTheme);
+  const isMobile = useMediaQuery(BREAKPOINTS.mobile);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const currentLang = (i18n.language || "en").toLowerCase();
   const isFr = currentLang.startsWith("fr");
@@ -238,8 +242,165 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
       background: "var(--color-primary)",
       color: "#ffffff",
     },
+
+    /* Mobile menu */
+    hamburger: {
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      width: 38,
+      height: 38,
+      borderRadius: 10,
+      border: "1px solid var(--color-border-strong)",
+      backgroundColor: "var(--color-surface)",
+      cursor: "pointer",
+      padding: 0,
+    },
+    mobilePanel: {
+      position: "absolute",
+      top: 64,
+      left: 0,
+      right: 0,
+      background: "var(--color-surface)",
+      borderBottom: "1px solid var(--color-border)",
+      boxShadow: "0 10px 28px var(--color-shadow)",
+      padding: 16,
+      zIndex: 49,
+      display: "grid",
+      gap: 8,
+    },
+    mobileLink: {
+      display: "block",
+      padding: "10px 12px",
+      borderRadius: 10,
+      textDecoration: "none",
+      color: "var(--color-text-primary)",
+      fontWeight: 700,
+      fontSize: 15,
+    },
+    mobileDivider: {
+      height: 1,
+      background: "var(--color-border)",
+      margin: "4px 0",
+    },
+    mobileSettingsRow: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 10,
+      padding: "6px 12px",
+    },
   };
 
+  /* ── Mobile layout ── */
+  if (isMobile) {
+    return (
+      <header style={styles.header}>
+        <div style={styles.left}>
+          <a href="/" style={styles.logo}>{t("app.name")}</a>
+        </div>
+
+        <button
+          type="button"
+          style={styles.hamburger}
+          onClick={() => setMobileMenuOpen((v) => !v)}
+          aria-label={t("header.toggleMenu")}
+        >
+          {mobileMenuOpen
+            ? <X size={20} style={{ color: "var(--color-text-primary)" }} />
+            : <Menu size={20} style={{ color: "var(--color-text-primary)" }} />
+          }
+        </button>
+
+        {mobileMenuOpen && (
+          <div className="animate-dropdown" style={styles.mobilePanel}>
+            {/* Nav links */}
+            {isAuthenticated && navItems.map((item) => (
+              <a key={item.href} href={item.href} style={styles.mobileLink}>
+                {item.label}
+              </a>
+            ))}
+            <a href="/docs" style={styles.mobileLink}>
+              {t("nav.docs")}
+            </a>
+
+            <div style={styles.mobileDivider} />
+
+            {/* Theme */}
+            <div style={styles.mobileSettingsRow}>
+              <span style={styles.settingsLabel}>{t("settings.theme")}</span>
+              <button
+                type="button"
+                style={styles.themeToggle}
+                onClick={toggleTheme}
+                aria-label={theme === "dark" ? t("settings.themeLight") : t("settings.themeDark")}
+              >
+                {theme === "dark"
+                  ? <Sun size={18} style={{ color: "var(--color-warning)" }} />
+                  : <Moon size={18} style={{ color: "var(--color-text-muted)" }} />
+                }
+              </button>
+            </div>
+
+            {/* Language */}
+            <div style={styles.mobileSettingsRow}>
+              <span style={styles.settingsLabel}>{t("settings.language")}</span>
+              <div style={styles.langPill}>
+                <button
+                  type="button"
+                  style={{ ...styles.langBtn, ...(!isFr ? styles.langBtnActive : {}) }}
+                  onClick={() => i18n.changeLanguage("en")}
+                >
+                  EN
+                </button>
+                <button
+                  type="button"
+                  style={{ ...styles.langBtn, ...(isFr ? styles.langBtnActive : {}) }}
+                  onClick={() => i18n.changeLanguage("fr")}
+                >
+                  FR
+                </button>
+              </div>
+            </div>
+
+            <div style={styles.mobileDivider} />
+
+            {/* User section */}
+            {!isAuthenticated ? (
+              <a href="/signin" style={{ ...styles.mobileLink, color: "var(--color-primary)", fontWeight: 800 }}>
+                {t("header.signin")}
+              </a>
+            ) : (
+              <>
+                <div style={{ padding: "6px 12px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={styles.dot}>{initial}</span>
+                    <div>
+                      <div style={{ fontWeight: 900, color: "var(--color-text-primary)", fontSize: 14 }}>{displayName ?? t("header.myAccount")}</div>
+                      <div style={{ color: "var(--color-text-muted)", fontSize: 12 }}>{t("header.manageProfile")}</div>
+                    </div>
+                  </div>
+                </div>
+                <a href="/me" style={styles.mobileLink}>{t("header.profile")}</a>
+                <button
+                  type="button"
+                  style={{ ...styles.itemBtn, margin: "0 12px", width: "auto" }}
+                  onClick={async () => {
+                    await signout();
+                    window.location.href = "/signin";
+                  }}
+                >
+                  {t("header.signoutButton")}
+                </button>
+              </>
+            )}
+          </div>
+        )}
+      </header>
+    );
+  }
+
+  /* ── Desktop layout ── */
   return (
     <header style={styles.header}>
       <div style={styles.left}>

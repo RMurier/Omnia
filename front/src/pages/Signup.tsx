@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { apiFetch } from "../utils/authFetch";
 import { useTranslation } from "react-i18next";
+import { useMediaQuery } from "../hooks/useMediaQuery";
+import { BREAKPOINTS } from "../hooks/breakpoints";
 
 export default function SignUp() {
   const { t } = useTranslation();
@@ -17,6 +19,8 @@ export default function SignUp() {
 
   const [betaLoading, setBetaLoading] = useState(true);
   const [isBeta, setIsBeta] = useState(false);
+
+  const isMobile = useMediaQuery(BREAKPOINTS.mobile);
 
   useEffect(() => {
     apiFetch<{ isBeta: boolean }>("/auth/beta-status")
@@ -64,7 +68,7 @@ export default function SignUp() {
   };
 
   const styles: Record<string, React.CSSProperties> = {
-    page: { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "40px" },
+    page: { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: isMobile ? "24px 12px" : "40px" },
     card: {
       width: "100%",
       maxWidth: 420,
@@ -72,7 +76,7 @@ export default function SignUp() {
       backgroundColor: "var(--color-surface)",
       border: "1px solid var(--color-border)",
       boxShadow: "0 4px 15px var(--color-shadow)",
-      padding: 32,
+      padding: isMobile ? 16 : 32,
       color: "var(--color-text-primary)",
     },
     header: { marginBottom: 16 },
@@ -142,7 +146,7 @@ export default function SignUp() {
 
   if (betaLoading) {
     return (
-      <div style={styles.page}>
+      <div className="animate-page" style={styles.page}>
         <div style={styles.card}>
           <p style={{ textAlign: "center", color: "var(--color-text-muted)" }}>{t("common.loading")}</p>
         </div>
@@ -152,7 +156,7 @@ export default function SignUp() {
 
   if (isBeta) {
     return (
-      <div style={styles.page}>
+      <div className="animate-page" style={styles.page}>
         <div style={styles.card}>
           <div style={styles.header}>
             <h1 style={styles.title}>{t("signup.title")}</h1>
@@ -170,7 +174,7 @@ export default function SignUp() {
 
   if (success) {
     return (
-      <div style={styles.page}>
+      <div className="animate-page" style={styles.page}>
         <div style={styles.card}>
           <div style={styles.header}>
             <h1 style={styles.title}>{t("signup.title")}</h1>
@@ -196,7 +200,7 @@ export default function SignUp() {
   }
 
   return (
-    <div style={styles.page}>
+    <div className="animate-page" style={styles.page}>
       <div style={styles.card}>
         <div style={styles.header}>
           <h1 style={styles.title}>{t("signup.title")}</h1>

@@ -17,7 +17,8 @@
     "signout": "Déconnexion",
     "signoutButton": "Se déconnecter",
     "signin": "Connexion",
-    "myAccount": "Mon compte"
+    "myAccount": "Mon compte",
+    "toggleMenu": "Ouvrir le menu"
   },
   "home": {
     "heroTitle": "Omnia · Plateforme centrale",
@@ -380,6 +381,7 @@
     "title": "Documentation",
     "subtitle": "Apprenez à intégrer Omnia dans vos applications.",
     "navigation": "Navigation",
+    "toggleSidebar": "Afficher le menu",
     "copy": "Copier",
     "copied": "Copié !",
     "categories": {

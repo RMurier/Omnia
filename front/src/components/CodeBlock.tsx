@@ -80,7 +80,7 @@ export default function CodeBlock({ code, language, filename }: Props) {
   return (
     <div style={styles.wrapper}>
       <div style={styles.header}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           {filename && <span style={styles.filename}>{filename}</span>}
           {language && <span style={styles.language}>{language}</span>}
         </div>

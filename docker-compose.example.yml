@@ -22,6 +22,12 @@ services:
     networks:
       - omnia-net
     restart: always
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -C -Q "SELECT 1" -b
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   api:
     build:
@@ -42,7 +48,8 @@ services:
       AppSettings__IsBeta: "true"
       AppSettings__FrontendUrl: "https://omnia-monitoring.com"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - omnia-net
     expose:

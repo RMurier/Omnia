@@ -64,7 +64,6 @@ type AuthFetchOptions = RequestInit & {
 
 function shouldSuppressRedirect(path: string, opts?: AuthFetchOptions) {
   if (opts?.noRedirect) return true;
-  if (path === "/auth/me") return true;
   if (path === "/auth/login") return true;
   if (path === "/auth/register") return true;
   if (path === REFRESH_PATH) return true;
@@ -74,6 +73,7 @@ function shouldSuppressRedirect(path: string, opts?: AuthFetchOptions) {
   if (path === "/auth/forgot-password") return true;
   if (path === "/auth/reset-password") return true;
   if (path.startsWith("/auth/confirm-password-change")) return true;
+  if (path === "/auth/change-password") return true;
   return false;
 }
 
@@ -82,6 +82,7 @@ export async function authFetchResponse(path: string, options: AuthFetchOptions 
   if (first.status !== 401) return first;
 
   if (path === REFRESH_PATH) return first;
+  if (path === "/auth/change-password") return first;
 
   const refreshed = await tryRefreshCookieSession();
   if (!refreshed) {

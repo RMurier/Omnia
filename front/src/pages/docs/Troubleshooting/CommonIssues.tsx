@@ -9,17 +9,17 @@ export default function CommonIssues() {
   const styles: Record<string, React.CSSProperties> = {
     paragraph: { marginBottom: 16, lineHeight: 1.7 },
     issueBox: {
-      border: "1px solid #e5e7eb",
+      border: "1px solid var(--color-border)",
       borderRadius: 8,
       marginBottom: 24,
       overflow: "hidden",
     },
     issueHeader: {
-      background: "#f3f4f6",
+      background: "var(--color-surface-sunken)",
       padding: "12px 16px",
       fontWeight: 700,
-      color: "#111827",
-      borderBottom: "1px solid #e5e7eb",
+      color: "var(--color-text-primary)",
+      borderBottom: "1px solid var(--color-border)",
     },
     issueBody: {
       padding: 16,

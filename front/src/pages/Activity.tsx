@@ -5,6 +5,8 @@ import type { ApplicationItem } from "../interfaces/ApplicationItem";
 import { authFetch } from "../utils/authFetch";
 import { useTranslation } from "react-i18next";
 import { t } from "i18next";
+import { useMediaQuery } from "../hooks/useMediaQuery";
+import { BREAKPOINTS } from "../hooks/breakpoints";
 
 type AppsMode = "all" | "select";
 
@@ -357,7 +359,7 @@ function LineChart({
   };
 
   return (
-    <div style={styles.wrap} ref={wrapRef}>
+    <div className="hover-lift" style={styles.wrap} ref={wrapRef}>
       <div style={styles.header}>
         <div style={styles.title}>{t("activity.connectionsSeries")}</div>
         <div style={styles.legend}>
@@ -471,6 +473,8 @@ export default function AdminActivityPage() {
   const [appsMode, setAppsMode] = useState<AppsMode>("all");
   const [selectedAppIds, setSelectedAppIds] = useState<string[]>([]);
   const [filterOneApp, setFilterOneApp] = useState<string>("");
+  const isMobile = useMediaQuery(BREAKPOINTS.mobile);
+  const isTablet = useMediaQuery(BREAKPOINTS.tablet);
 
   const appNameById = useMemo(() => {
     const m = new Map<string, string>();
@@ -614,20 +618,20 @@ export default function AdminActivityPage() {
   }, [seriesRaw, fromLocal, toLocal, spacingUnit, spacingStep, appsMode, selectedAppIds, filterOneApp, appNameById]);
 
   const styles: Record<string, React.CSSProperties> = {
-    page: { padding: 24, maxWidth: 1280, margin: "0 auto" },
+    page: { padding: isMobile ? 12 : 24, maxWidth: 1280, margin: "0 auto" },
     topBar: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 16, flexWrap: "wrap" },
     title: { margin: 0, fontSize: 22, fontWeight: 900, color: "var(--color-text-primary)" },
     subtitle: { margin: "6px 0 0 0", color: "var(--color-text-muted)", fontSize: 14 },
     actions: { display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" },
-    btn: { padding: "10px 12px", borderRadius: 10, border: "1px solid var(--color-border-strong)", background: "var(--color-surface)", cursor: "pointer", fontWeight: 800 },
+    btn: { padding: "10px 12px", borderRadius: 10, border: "1px solid var(--color-border-strong)", background: "var(--color-surface)", color: "var(--color-text-primary)", cursor: "pointer", fontWeight: 800 },
 
     section: { border: "1px solid var(--color-border)", borderRadius: 14, background: "var(--color-surface)", overflow: "hidden", marginBottom: 16 },
     sectionHeader: { padding: "12px 14px", borderBottom: "1px solid var(--color-border)", background: "var(--color-surface-raised)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" },
     sectionTitle: { margin: 0, fontSize: 13, fontWeight: 900, color: "var(--color-text-primary)", textTransform: "uppercase", letterSpacing: 0.4 },
     sectionBody: { padding: 14 },
 
-    grid3: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 },
-    grid2: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 },
+    grid3: { display: "grid", gridTemplateColumns: isMobile ? "1fr" : isTablet ? "1fr 1fr" : "1fr 1fr 1fr", gap: 12 },
+    grid2: { display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 },
     field: { display: "grid", gap: 6, minWidth: 0 },
     label: { fontSize: 12, fontWeight: 900, color: "var(--color-text-secondary)" },
     input: { height: 42, borderRadius: 10, border: "1px solid var(--color-border-strong)", padding: "0 12px", outline: "none", fontSize: 14, background: "var(--color-surface)", width: "100%", boxSizing: "border-box" },
@@ -642,7 +646,7 @@ export default function AdminActivityPage() {
   const showChartSkeleton = loadingSeries || pendingSeries;
 
   return (
-    <div style={styles.page}>
+    <div className="animate-page" style={styles.page}>
       <div style={styles.topBar}>
         <div>
           <h1 style={styles.title}>{t("activity.title")}</h1>
@@ -770,12 +774,12 @@ export default function AdminActivityPage() {
                       return (
                         <label key={id} style={styles.checkRow} title={id}>
                           <input type="checkbox" checked={selectedAppIds.includes(id)} onChange={() => toggleSelected(id)} />
-                          <span style={{ fontWeight: 900, color: "#111827" }}>{name}</span>
-                          <span style={{ color: "#6b7280", fontSize: 12, marginLeft: "auto" }}>{id}</span>
+                          <span style={{ fontWeight: 900, color: "var(--color-text-primary)" }}>{name}</span>
+                          <span style={{ color: "var(--color-text-muted)", fontSize: 12, marginLeft: "auto" }}>{id}</span>
                         </label>
                       );
                     })}
-                    {!apps.length ? <div style={{ padding: 10, color: "#6b7280", fontSize: 12 }}>{t("activity.noneApp")}</div> : null}
+                    {!apps.length ? <div style={{ padding: 10, color: "var(--color-text-muted)", fontSize: 12 }}>{t("activity.noneApp")}</div> : null}
                   </div>
                 </div>
                 <div />

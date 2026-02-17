@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { apiFetch } from "../utils/authFetch";
 import { useTranslation } from "react-i18next";
+import { useMediaQuery } from "../hooks/useMediaQuery";
+import { BREAKPOINTS } from "../hooks/breakpoints";
 
 export default function ConfirmPasswordChange() {
   const { t } = useTranslation();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const isMobile = useMediaQuery(BREAKPOINTS.mobile);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -26,7 +30,7 @@ export default function ConfirmPasswordChange() {
   }, [t]);
 
   const styles: Record<string, React.CSSProperties> = {
-    page: { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "40px" },
+    page: { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: isMobile ? "24px 12px" : "40px" },
     card: {
       width: "100%",
       maxWidth: 420,
@@ -34,7 +38,7 @@ export default function ConfirmPasswordChange() {
       backgroundColor: "var(--color-surface)",
       border: "1px solid var(--color-border)",
       boxShadow: "0 4px 15px var(--color-shadow)",
-      padding: 32,
+      padding: isMobile ? 16 : 32,
       color: "var(--color-text-primary)",
     },
     title: { margin: 0, fontSize: 24, fontWeight: 600, lineHeight: 1.2, marginBottom: 16 },
@@ -50,7 +54,7 @@ export default function ConfirmPasswordChange() {
   };
 
   return (
-    <div style={styles.page}>
+    <div className="animate-page" style={styles.page}>
       <div style={styles.card}>
         <h1 style={styles.title}>{t("confirmPasswordChange.title")}</h1>
 

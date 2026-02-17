@@ -1,14 +1,17 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
+import { useMediaQuery } from "../hooks/useMediaQuery";
+import { BREAKPOINTS } from "../hooks/breakpoints";
 
 export default function NotFound() {
   const { t } = useTranslation();
+  const isMobile = useMediaQuery(BREAKPOINTS.mobile);
   const styles: Record<string, React.CSSProperties> = {
     page: {
       minHeight: "calc(100vh - 64px)",
       display: "grid",
       placeItems: "center",
-      padding: 24,
+      padding: isMobile ? 12 : 24,
       background: "var(--color-surface)",
     },
     card: {
@@ -79,7 +82,7 @@ export default function NotFound() {
   const path = typeof window !== "undefined" ? window.location.pathname : "";
 
   return (
-    <div style={styles.page}>
+    <div className="animate-page" style={styles.page}>
       <div style={styles.card}>
         <div style={styles.code}>404</div>
         <h1 style={styles.title}>{t("notFound.title")}</h1>

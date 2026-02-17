@@ -3,6 +3,8 @@ import type { ApplicationItem } from "../interfaces/ApplicationItem";
 import type { MailLogDto } from "../interfaces/MailLogDto";
 import { authFetch } from "../utils/authFetch";
 import { useTranslation } from "react-i18next";
+import { useMediaQuery } from "../hooks/useMediaQuery";
+import { BREAKPOINTS } from "../hooks/breakpoints";
 
 interface MailGroupUi {
   key: string;
@@ -41,27 +43,6 @@ function safeParseJson(s?: string | null): any[] | null {
   } catch {
     return null;
   }
-}
-
-function useMediaQuery(query: string) {
-  const [matches, setMatches] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const m = window.matchMedia(query);
-    const onChange = () => setMatches(Boolean(m.matches));
-    onChange();
-
-    if ((m as any).addEventListener) (m as any).addEventListener("change", onChange);
-    else (m as any).addListener(onChange);
-
-    return () => {
-      if ((m as any).removeEventListener) (m as any).removeEventListener("change", onChange);
-      else (m as any).removeListener(onChange);
-    };
-  }, [query]);
-
-  return matches;
 }
 
 function sortGroups(items: MailGroupUi[], sortBy: "lastSeen" | "occurrences" | "firstSeen", sortDir: "desc" | "asc") {
@@ -120,7 +101,8 @@ export default function MailsPage() {
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
-  const isNarrow = useMediaQuery("(max-width: 980px)");
+  const isNarrow = useMediaQuery(BREAKPOINTS.narrow);
+  const isMobile = useMediaQuery(BREAKPOINTS.mobile);
   const canRefresh = useMemo(() => !loading && !busy, [loading, busy]);
 
   const appNameById = useMemo(() => {
@@ -265,7 +247,7 @@ export default function MailsPage() {
   }, [filteredMails]);
 
   const styles: Record<string, React.CSSProperties> = {
-    page: { padding: 20, maxWidth: "min(99vw, 3600px)", margin: "0 auto" },
+    page: { padding: isMobile ? "12px 8px" : 20, maxWidth: "min(99vw, 3600px)", margin: "0 auto" },
     topBar: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 12 },
     title: { margin: 0, fontSize: 22, fontWeight: 900, color: "var(--color-text-primary)" },
     subtitle: { margin: "6px 0 0", color: "var(--color-text-muted)", fontSize: 14 },
@@ -407,7 +389,7 @@ export default function MailsPage() {
   }
 
   return (
-    <div style={styles.page}>
+    <div className="animate-page" style={styles.page}>
       <div style={styles.topBar}>
         <div>
           <h1 style={styles.title}>{t("mails.title")}</h1>

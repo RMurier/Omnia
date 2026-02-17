@@ -1,32 +1,13 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useAuthStore } from "../stores/authStore";
 import { useTranslation } from "react-i18next";
+import { useMediaQuery } from "../hooks/useMediaQuery";
+import { BREAKPOINTS } from "../hooks/breakpoints";
 
 type Feature = {
   title: string;
   description: string;
 };
-
-function useMediaQuery(query: string) {
-  const [matches, setMatches] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const m = window.matchMedia(query);
-    const onChange = () => setMatches(Boolean(m.matches));
-    onChange();
-
-    if ((m as any).addEventListener) (m as any).addEventListener("change", onChange);
-    else (m as any).addListener(onChange);
-
-    return () => {
-      if ((m as any).removeEventListener) (m as any).removeEventListener("change", onChange);
-      else (m as any).removeListener(onChange);
-    };
-  }, [query]);
-
-  return matches;
-}
 
 function useIsAuthenticated() {
   const { isAuthenticated, hydrateFromServer } = useAuthStore();
@@ -41,7 +22,7 @@ function useIsAuthenticated() {
 export default function Home() {
   const { t } = useTranslation();
   const isAuthenticated = useIsAuthenticated();
-  const isMobile = useMediaQuery("(max-width: 900px)");
+  const isMobile = useMediaQuery(BREAKPOINTS.tablet);
 
   const features: Feature[] = useMemo(
     () => [
@@ -67,7 +48,7 @@ export default function Home() {
   }, []);
 
   const styles: Record<string, React.CSSProperties> = {
-    page: { padding: 24, maxWidth: "min(96vw, 1400px)", margin: "0 auto" },
+    page: { padding: isMobile ? "12px 8px" : 24, maxWidth: "min(96vw, 1400px)", margin: "0 auto" },
     hero: {
       border: "1px solid var(--color-border)",
       borderRadius: 16,
@@ -143,7 +124,7 @@ export default function Home() {
   };
 
   return (
-    <div style={styles.page}>
+    <div className="animate-page" style={styles.page}>
       <section style={styles.hero}>
         <div style={styles.badge}>{t("home.heroTitle")}</div>
 
@@ -171,7 +152,7 @@ export default function Home() {
 
         <div style={styles.grid}>
           {features.map((f) => (
-            <div key={f.title} style={styles.card}>
+            <div key={f.title} className="hover-lift" style={styles.card}>
               <h3 style={styles.cardTitle}>{f.title}</h3>
               <p style={styles.cardText}>{f.description}</p>
             </div>

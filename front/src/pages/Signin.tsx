@@ -2,6 +2,8 @@ import React, { useMemo, useState } from "react";
 import { signin } from "../utils/authFetch";
 import { useAuthStore } from "../stores/authStore";
 import { useTranslation } from "react-i18next";
+import { useMediaQuery } from "../hooks/useMediaQuery";
+import { BREAKPOINTS } from "../hooks/breakpoints";
 
 export default function SignIn() {
   const { t } = useTranslation();
@@ -15,6 +17,8 @@ export default function SignIn() {
     const params = new URLSearchParams(window.location.search);
     return params.get("from") || "/";
   }, []);
+
+  const isMobile = useMediaQuery(BREAKPOINTS.mobile);
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -33,7 +37,7 @@ export default function SignIn() {
   };
 
   const styles: Record<string, React.CSSProperties> = {
-    page: { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "40px" },
+    page: { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: isMobile ? "24px 12px" : "40px" },
     card: {
       width: "100%",
       maxWidth: 420,
@@ -41,7 +45,7 @@ export default function SignIn() {
       backgroundColor: "var(--color-surface)",
       border: "1px solid var(--color-border)",
       boxShadow: "0 4px 15px var(--color-shadow)",
-      padding: 32,
+      padding: isMobile ? 16 : 32,
       color: "var(--color-text-primary)",
     },
     header: { marginBottom: 16 },
@@ -93,7 +97,7 @@ export default function SignIn() {
   };
 
   return (
-    <div style={styles.page}>
+    <div className="animate-page" style={styles.page}>
       <div style={styles.card}>
         <div style={styles.header}>
           <h1 style={styles.title}>{t("signin.title")}</h1>

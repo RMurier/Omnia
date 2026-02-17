@@ -4,6 +4,8 @@ import type { LogDto } from "../interfaces/LogDto";
 import type { LogGroupUi } from "../interfaces/LogGroupUi";
 import { authFetch } from "../utils/authFetch";
 import { useTranslation } from "react-i18next";
+import { useMediaQuery } from "../hooks/useMediaQuery";
+import { BREAKPOINTS } from "../hooks/breakpoints";
 
 function toDateInputValue(d: Date) {
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -101,27 +103,6 @@ function categoryLabel(t: (key: string) => string, c?: string | null) {
   }
 }
 
-function useMediaQuery(query: string) {
-  const [matches, setMatches] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const m = window.matchMedia(query);
-    const onChange = () => setMatches(Boolean(m.matches));
-    onChange();
-
-    if ((m as any).addEventListener) (m as any).addEventListener("change", onChange);
-    else (m as any).addListener(onChange);
-
-    return () => {
-      if ((m as any).removeEventListener) (m as any).removeEventListener("change", onChange);
-      else (m as any).removeListener(onChange);
-    };
-  }, [query]);
-
-  return matches;
-}
-
 function sortGroups(items: LogGroupUi[], sortBy: "lastSeen" | "occurrences" | "firstSeen", sortDir: "desc" | "asc") {
   const dir = sortDir === "asc" ? 1 : -1;
 
@@ -170,7 +151,8 @@ export default function LogsPage() {
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
-  const isNarrow = useMediaQuery("(max-width: 980px)");
+  const isNarrow = useMediaQuery(BREAKPOINTS.narrow);
+  const isMobile = useMediaQuery(BREAKPOINTS.mobile);
   const canRefresh = useMemo(() => !loading && !busy, [loading, busy]);
 
   const appNameById = useMemo(() => {
@@ -319,7 +301,7 @@ export default function LogsPage() {
   }, [filteredLogs]);
 
   const styles: Record<string, React.CSSProperties> = {
-    page: { padding: 20, maxWidth: "min(99vw, 3600px)", margin: "0 auto" },
+    page: { padding: isMobile ? "12px 8px" : 20, maxWidth: "min(99vw, 3600px)", margin: "0 auto" },
     topBar: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 12 },
     title: { margin: 0, fontSize: 22, fontWeight: 900, color: "var(--color-text-primary)" },
     subtitle: { margin: "6px 0 0", color: "var(--color-text-muted)", fontSize: 14 },
@@ -336,8 +318,8 @@ export default function LogsPage() {
     label: { display: "block", fontSize: 12, fontWeight: 800, color: "var(--color-text-secondary)" },
     input: { height: 40, borderRadius: 10, border: "1px solid var(--color-border-strong)", padding: "0 12px", outline: "none", fontSize: 14, width: "100%", background: "var(--color-surface)", boxSizing: "border-box" },
 
-    btn: { padding: "10px 12px", borderRadius: 10, border: "1px solid var(--color-border-strong)", background: "var(--color-surface)", cursor: "pointer", fontWeight: 800, fontSize: 14, whiteSpace: "nowrap" },
-    btnSmall: { padding: "7px 10px", borderRadius: 10, border: "1px solid var(--color-border-strong)", background: "var(--color-surface)", cursor: "pointer", fontWeight: 800, fontSize: 13, whiteSpace: "nowrap" },
+    btn: { padding: "10px 12px", borderRadius: 10, border: "1px solid var(--color-border-strong)", background: "var(--color-surface)", color: "var(--color-text-primary)", cursor: "pointer", fontWeight: 800, fontSize: 14, whiteSpace: "nowrap" },
+    btnSmall: { padding: "7px 10px", borderRadius: 10, border: "1px solid var(--color-border-strong)", background: "var(--color-surface)", color: "var(--color-text-primary)", cursor: "pointer", fontWeight: 800, fontSize: 13, whiteSpace: "nowrap" },
     disabled: { opacity: 0.6, cursor: "not-allowed" },
 
     error: { border: "1px solid var(--color-error)", background: "var(--color-error-bg)", color: "var(--color-error-text)", padding: 12, borderRadius: 10, marginBottom: 12, fontSize: 14 },
@@ -460,7 +442,7 @@ export default function LogsPage() {
   }
 
   return (
-    <div style={styles.page}>
+    <div className="animate-page" style={styles.page}>
       <div style={styles.topBar}>
         <div>
           <h1 style={styles.title}>{t("logs.title")}</h1>

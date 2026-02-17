@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { apiFetch } from "../utils/authFetch";
 import { useTranslation } from "react-i18next";
+import { useMediaQuery } from "../hooks/useMediaQuery";
+import { BREAKPOINTS } from "../hooks/breakpoints";
 
 export default function ForgotPassword() {
   const { t } = useTranslation();
@@ -8,6 +10,8 @@ export default function ForgotPassword() {
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const isMobile = useMediaQuery(BREAKPOINTS.mobile);
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -28,7 +32,7 @@ export default function ForgotPassword() {
   };
 
   const styles: Record<string, React.CSSProperties> = {
-    page: { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "40px" },
+    page: { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: isMobile ? "24px 12px" : "40px" },
     card: {
       width: "100%",
       maxWidth: 420,
@@ -36,7 +40,7 @@ export default function ForgotPassword() {
       backgroundColor: "var(--color-surface)",
       border: "1px solid var(--color-border)",
       boxShadow: "0 4px 15px var(--color-shadow)",
-      padding: 32,
+      padding: isMobile ? 16 : 32,
       color: "var(--color-text-primary)",
     },
     header: { marginBottom: 16 },
@@ -84,7 +88,7 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div style={styles.page}>
+    <div className="animate-page" style={styles.page}>
       <div style={styles.card}>
         <div style={styles.header}>
           <h1 style={styles.title}>{t("forgotPassword.title")}</h1>

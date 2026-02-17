@@ -8,7 +8,7 @@ export default function QuickStart() {
 
   const styles: Record<string, React.CSSProperties> = {
     paragraph: { marginBottom: 16, lineHeight: 1.7 },
-    stepTitle: { fontWeight: 700, marginBottom: 8, color: "#111827" },
+    stepTitle: { fontWeight: 700, marginBottom: 8, color: "var(--color-text-primary)" },
     step: { marginBottom: 24 },
   };
 

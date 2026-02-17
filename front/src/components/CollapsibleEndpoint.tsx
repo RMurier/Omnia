@@ -45,6 +45,7 @@ export default function CollapsibleEndpoint({ method, path, description, request
       display: "flex",
       alignItems: "center",
       gap: 12,
+      flexWrap: "wrap",
     },
     method: {
       backgroundColor: method === "POST" ? "var(--color-method-post)" : "var(--color-method-get)",
@@ -60,6 +61,7 @@ export default function CollapsibleEndpoint({ method, path, description, request
       fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
       fontSize: 14,
       color: "var(--color-text-primary)",
+      wordBreak: "break-all",
     },
     description: {
       color: "var(--color-text-secondary)",
