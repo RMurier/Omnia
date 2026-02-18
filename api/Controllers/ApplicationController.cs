@@ -163,6 +163,24 @@ namespace api.Controllers
 
         // ── Member management ───────────────────────────────────────────
 
+        [HttpPost("{id:guid}/logs/purge")]
+        public async Task<IActionResult> PurgeLogs([FromRoute] Guid id, CancellationToken ct)
+        {
+            var userId = GetUserIdFromClaims();
+            if (userId is null)
+                return Unauthorized(new { message = _t["Errors.Unauthorized"].Value });
+
+            try
+            {
+                var count = await _application.PurgeLogs(id, userId.Value, ct);
+                return Ok(new { deleted = count });
+            }
+            catch (ApiException ex)
+            {
+                return StatusCode(ex.StatusCode, new { message = _t[ex.Key].Value });
+            }
+        }
+
         [HttpGet("roles")]
         public async Task<ActionResult<List<RoleDto>>> GetRoles(CancellationToken ct)
         {

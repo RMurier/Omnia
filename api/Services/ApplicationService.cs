@@ -50,7 +50,9 @@ namespace api.Services
                     Name = a.Name,
                     Url = a.Url,
                     IsActive = a.IsActive,
-                    Description = a.Description
+                    Description = a.Description,
+                    LogRetentionValue = a.LogRetentionValue,
+                    LogRetentionUnit = a.LogRetentionUnit
                 })
                 .ToListAsync(ct);
         }
@@ -66,13 +68,18 @@ namespace api.Services
 
             if (a is null) return null;
 
+            var role = await ApplicationAccessHelper.GetUserRoleAsync(_db, userId, id, ct);
+
             return new ApplicationDto()
             {
                 Id = a.Id,
                 Name = a.Name,
                 Description = a.Description,
                 IsActive = a.IsActive,
-                Url = a.Url
+                Url = a.Url,
+                LogRetentionValue = a.LogRetentionValue,
+                LogRetentionUnit = a.LogRetentionUnit,
+                MyRole = role?.Name
             };
         }
 
@@ -94,7 +101,9 @@ namespace api.Services
                 Url = dto.Url,
                 IsActive = dto.IsActive ?? true,
                 Description = dto.Description,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                LogRetentionValue = dto.LogRetentionValue ?? 7,
+                LogRetentionUnit = dto.LogRetentionUnit ?? "days"
             };
 
             var member = new ApplicationMember
@@ -138,7 +147,9 @@ namespace api.Services
                     Name = app.Name,
                     Url = app.Url,
                     IsActive = app.IsActive,
-                    Description = app.Description
+                    Description = app.Description,
+                    LogRetentionValue = app.LogRetentionValue,
+                    LogRetentionUnit = app.LogRetentionUnit
                 },
                 SecretBase64 = secretBase64,
                 Version = new ApplicationSecretDto
@@ -172,6 +183,14 @@ namespace api.Services
             if (dto.Url is not null) entity.Url = dto.Url;
             if (dto.Description is not null) entity.Description = dto.Description;
             if (dto.IsActive.HasValue) entity.IsActive = dto.IsActive.Value;
+            if (dto.LogRetentionValue.HasValue) entity.LogRetentionValue = dto.LogRetentionValue.Value;
+            if (dto.LogRetentionUnit is not null)
+            {
+                var validUnits = new[] { "days", "weeks", "months", "years" };
+                if (!validUnits.Contains(dto.LogRetentionUnit))
+                    throw new ApiException(StatusCodes.Status400BadRequest, Shared.Keys.Errors.InvalidRetentionUnit);
+                entity.LogRetentionUnit = dto.LogRetentionUnit;
+            }
 
             await _db.SaveChangesAsync(ct);
 
@@ -181,7 +200,9 @@ namespace api.Services
                 Name = entity.Name,
                 Description = entity.Description,
                 IsActive = entity.IsActive,
-                Url = entity.Url
+                Url = entity.Url,
+                LogRetentionValue = entity.LogRetentionValue,
+                LogRetentionUnit = entity.LogRetentionUnit
             };
         }
 
@@ -505,6 +526,33 @@ namespace api.Services
                 Name = found.Value.name,
                 LastName = found.Value.lastName
             };
+        }
+
+        public async Task<int> PurgeLogs(Guid applicationId, Guid userId, CancellationToken ct)
+        {
+            if (!await ApplicationAccessHelper.CanMaintainApplicationAsync(_db, userId, applicationId, ct))
+                throw new ApiException(StatusCodes.Status403Forbidden, Shared.Keys.Errors.Forbidden);
+
+            var app = await _db.Application.AsNoTracking().FirstOrDefaultAsync(x => x.Id == applicationId, ct);
+            if (app is null)
+                throw new ApiException(StatusCodes.Status404NotFound, Shared.Keys.Errors.ApplicationNotFound);
+
+            var cutoff = app.LogRetentionUnit switch
+            {
+                "weeks"  => DateTime.UtcNow.AddDays(-(app.LogRetentionValue * 7)),
+                "months" => DateTime.UtcNow.AddMonths(-app.LogRetentionValue),
+                "years"  => DateTime.UtcNow.AddYears(-app.LogRetentionValue),
+                _        => DateTime.UtcNow.AddDays(-app.LogRetentionValue) // "days"
+            };
+
+            var toDelete = await _db.Log
+                .Where(l => l.RefApplication == applicationId && l.OccurredAtUtc < cutoff)
+                .ToListAsync(ct);
+
+            _db.Log.RemoveRange(toDelete);
+            await _db.SaveChangesAsync(ct);
+
+            return toDelete.Count;
         }
 
         public async Task<IEnumerable<RoleDto>> GetRoles(CancellationToken ct)

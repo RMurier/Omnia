@@ -39,6 +39,17 @@ namespace api.Data.Configurations
                 .HasColumnName("CREATED_AT")
                 .IsRequired();
 
+            builder.Property(x => x.LogRetentionValue)
+                .HasColumnName("LOG_RETENTION_VALUE")
+                .IsRequired()
+                .HasDefaultValue(7);
+
+            builder.Property(x => x.LogRetentionUnit)
+                .HasColumnName("LOG_RETENTION_UNIT")
+                .HasMaxLength(10)
+                .IsRequired()
+                .HasDefaultValue("days");
+
             // FK to Owner (User)
             builder.HasOne(x => x.Owner)
                 .WithMany(u => u.OwnedApplications)
@@ -60,7 +71,9 @@ namespace api.Data.Configurations
                     Description = "Application centrale",
                     IsActive = true,
                     Name = "Omnia",
-                    CreatedAt = new DateTime(2026, 01, 09, 17, 00, 00)
+                    CreatedAt = new DateTime(2026, 01, 09, 17, 00, 00),
+                    LogRetentionValue = 7,
+                    LogRetentionUnit = "days"
                 });
         }
     }

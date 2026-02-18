@@ -10,6 +10,7 @@ import ForgotPassword from "./pages/ForgotPassword.tsx";
 import ResetPassword from "./pages/ResetPassword.tsx";
 import ConfirmPasswordChange from "./pages/ConfirmPasswordChange.tsx";
 import AdminApplicationsPage from "./pages/Application.tsx";
+import ApplicationSettingsPage from "./pages/ApplicationSettings.tsx";
 import Header from "./components/Header.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Home from "./pages/Home.tsx";
@@ -19,6 +20,7 @@ import AdminActivityPage from "./pages/Activity.tsx";
 import Documentation from "./pages/docs/Documentation.tsx";
 import { useAuthStore } from "./stores/authStore";
 import { useThemeStore } from "./stores/themeStore";
+import { Toaster } from "sonner";
 import MePage from "./pages/Me.tsx";
 
 function Root() {
@@ -31,8 +33,10 @@ function Root() {
 
   return (
     <>
+      <Toaster position="top-right" richColors />
       <Header isAuthenticated={isAuthenticated} />
       <BrowserRouter>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/signin" element={<SignIn />} />
@@ -44,11 +48,13 @@ function Root() {
           <Route path="/me" element={<MePage />} />
           <Route path="/activity" element={<AdminActivityPage />} />
           <Route path="/applications" element={<AdminApplicationsPage />} />
+          <Route path="/applications/:id/settings" element={<ApplicationSettingsPage />} />
           <Route path="/logs" element={<LogsPage />} />
           <Route path="/mails" element={<MailsPage />} />
           <Route path="/docs" element={<Documentation />} />
           <Route path="/*" element={<NotFound />} />
         </Routes>
+        </div>
       </BrowserRouter>
     </>
   );

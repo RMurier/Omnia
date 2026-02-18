@@ -301,7 +301,7 @@ export default function LogsPage() {
   }, [filteredLogs]);
 
   const styles: Record<string, React.CSSProperties> = {
-    page: { padding: isMobile ? "12px 8px" : 20, maxWidth: "min(99vw, 3600px)", margin: "0 auto" },
+    page: { padding: isMobile ? "12px 8px" : 20, maxWidth: "min(99vw, 3600px)" },
     topBar: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 12 },
     title: { margin: 0, fontSize: 22, fontWeight: 900, color: "var(--color-text-primary)" },
     subtitle: { margin: "6px 0 0", color: "var(--color-text-muted)", fontSize: 14 },

@@ -22,5 +22,6 @@ namespace api.Interfaces
         Task CancelInvitation(Guid applicationId, Guid invitationId, Guid userId, CancellationToken ct);
         Task<CheckEmailResultDto> CheckEmail(Guid applicationId, string email, Guid userId, CancellationToken ct);
         Task<IEnumerable<RoleDto>> GetRoles(CancellationToken ct);
+        Task<int> PurgeLogs(Guid applicationId, Guid userId, CancellationToken ct);
     }
 }

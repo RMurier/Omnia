@@ -8,5 +8,8 @@
         public bool? IsActive { get; set; }
         public string? Description { get; set; }
         public int? CurrentKeyVersion { get; set; }
+        public int? LogRetentionValue { get; set; }
+        public string? LogRetentionUnit { get; set; }
+        public string? MyRole { get; set; }
     }
 }

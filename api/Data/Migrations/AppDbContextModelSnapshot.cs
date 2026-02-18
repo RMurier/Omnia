@@ -67,6 +67,18 @@ namespace api.Data.Migrations
                         .HasColumnType("bit")
                         .HasColumnName("IS_ACTIVE");
 
+                    b.Property<string>("LogRetentionUnit")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasColumnName("LOG_RETENTION_UNIT")
+                        .HasDefaultValue("days");
+
+                    b.Property<int>("LogRetentionValue")
+                        .HasColumnType("int")
+                        .HasColumnName("LOG_RETENTION_VALUE")
+                        .HasDefaultValue(7);
+
                     b.Property<string>("Name")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("NAME");
@@ -92,6 +104,8 @@ namespace api.Data.Migrations
                             CreatedAt = new DateTime(2026, 1, 9, 17, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Application centrale",
                             IsActive = true,
+                            LogRetentionUnit = "days",
+                            LogRetentionValue = 7,
                             Name = "Omnia",
                             RefOwner = new Guid("1c7850fa-2cf8-4716-9991-b26d4f169d21")
                         });

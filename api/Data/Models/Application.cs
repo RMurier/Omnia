@@ -9,6 +9,8 @@
         public string? Name { get; set; }
         public string? Url { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public int LogRetentionValue { get; set; } = 7;
+        public string LogRetentionUnit { get; set; } = "days";
 
         // Navigation properties
         public User? Owner { get; set; }

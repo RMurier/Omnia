@@ -35,6 +35,7 @@
                 public const string InvitationAlreadyPending = "Errors.InvitationAlreadyPending";
                 public const string InvalidResetToken = "Errors.InvalidResetToken";
                 public const string InvalidPasswordChangeToken = "Errors.InvalidPasswordChangeToken";
+                public const string InvalidRetentionUnit = "Errors.InvalidRetentionUnit";
             }
 
             public static class Email
