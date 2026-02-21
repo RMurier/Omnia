@@ -18,7 +18,9 @@
     "signoutButton": "Sign out",
     "signin": "Sign in",
     "myAccount": "My account",
-    "toggleMenu": "Toggle menu"
+    "toggleMenu": "Toggle menu",
+    "terms": "Terms",
+    "about": "About"
   },
   "home": {
     "heroTitle": "Omnia · Central platform",
@@ -58,8 +60,8 @@
     "subtitle": "Create an account to get started.",
     "email": "Email",
     "password": "Password",
-    "name": "First name (optional)",
-    "lastName": "Last name (optional)",
+    "name": "First name",
+    "lastName": "Last name",
     "emailPlaceholder": "e.g. john@example.com",
     "namePlaceholder": "e.g. John",
     "lastNamePlaceholder": "e.g. Doe",
@@ -74,7 +76,18 @@
     "resend": "Resend email",
     "resending": "Sending...",
     "resendOk": "Confirmation email sent again.",
-    "alreadyHaveAccount": "Already have an account? Sign in"
+    "alreadyHaveAccount": "Already have an account? Sign in",
+    "nameRequired": "First name and last name are required.",
+    "termsPrefix": "I have read and accept the",
+    "termsLink": "Terms of Service",
+    "termsRequired": "You must accept the Terms of Service to continue."
+  },
+  "terms": {
+    "title": "Terms of Service",
+    "current": "current",
+    "previousVersions": "Previous versions:",
+    "oldVersionBanner": "You are viewing an older version of the Terms of Service.",
+    "viewCurrent": "View current version"
   },
   "forgotPassword": {
     "title": "Forgot password",
@@ -120,7 +133,16 @@
     "subtitle": "This page doesn't exist or was moved. Check the URL or go back home.",
     "pathRequested": "Requested path:",
     "backHome": "Back to home",
-    "signin": "Sign in"
+    "signin": "Sign in",
+    "discordPrompt": "Found a bug or have a suggestion?",
+    "discordBtn": "Join us on Discord"
+  },
+  "about": {
+    "title": "About Omnia",
+    "description": "Omnia is a centralized monitoring platform built to unify logs, activity tracking, and application management across all your projects. It is designed to be simple, secure, and multi-tenant.",
+    "discordTitle": "Join the community",
+    "discordDescription": "Have a question, found a bug, or want to share a suggestion? Join us on Discord — we'd love to hear from you.",
+    "discordBtn": "Join Discord"
   },
   "me": {
     "title": "My account",
@@ -142,7 +164,22 @@
     "passwordChangeEmailSent": "A confirmation email has been sent. Please check your inbox to confirm the password change.",
     "languageTitle": "Language",
     "currentLanguage": "Current language:",
-    "error": "Error"
+    "error": "Error",
+    "gdprTitle": "My data",
+    "exportData": "Export my data",
+    "exporting": "Exporting...",
+    "deleteAccount": "Delete my account",
+    "deleteAccountConfirm": "Are you sure? This action is irreversible. All your data will be permanently deleted.",
+    "deleteAccountConfirmBtn": "Yes, delete my account",
+    "deleteAccountCancel": "Cancel",
+    "deleting": "Deleting...",
+    "appsToResolve": "You are the sole owner of the following applications. Please decide what to do with each before deleting your account:",
+    "appActionDelete": "Delete this application",
+    "appActionTransfer": "Transfer ownership to:",
+    "appNoMembers": "No other members — this application will be deleted.",
+    "appDecisionRequired": "Please resolve all applications before continuing.",
+    "transferPlaceholder": "Select a member",
+    "next": "Next"
   },
   "settings": {
     "title": "Settings",

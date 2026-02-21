@@ -80,6 +80,15 @@ namespace api.Data.Configurations
                 .HasColumnName("PASSWORD_CHANGED_AT")
                 .IsRequired(false);
 
+            builder.Property(x => x.TermsAcceptedAt)
+                .HasColumnName("TERMS_ACCEPTED_AT")
+                .IsRequired(false);
+
+            builder.Property(x => x.TermsVersion)
+                .HasColumnName("TERMS_VERSION")
+                .HasMaxLength(16)
+                .IsRequired(false);
+
             builder.HasIndex(x => x.Email)
                 .IsUnique()
                 .HasDatabaseName("UX_USER_EMAIL");

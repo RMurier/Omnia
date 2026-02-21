@@ -16,6 +16,7 @@ export default function SignUp() {
   const [success, setSuccess] = useState(false);
   const [resending, setResending] = useState(false);
   const [resendOk, setResendOk] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const [betaLoading, setBetaLoading] = useState(true);
   const [isBeta, setIsBeta] = useState(false);
@@ -32,6 +33,16 @@ export default function SignUp() {
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
+
+    if (!name.trim() || !lastName.trim()) {
+      setError(t("signup.nameRequired"));
+      return;
+    }
+    if (!termsAccepted) {
+      setError(t("signup.termsRequired"));
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -40,8 +51,9 @@ export default function SignUp() {
         body: JSON.stringify({
           email: email.trim(),
           password,
-          name: name.trim() || null,
-          lastName: lastName.trim() || null,
+          name: name.trim(),
+          lastName: lastName.trim(),
+          termsAccepted: true,
         }),
       });
       setSuccess(true);
@@ -269,6 +281,22 @@ export default function SignUp() {
               placeholder={t("signup.lastNamePlaceholder")}
               style={styles.input}
             />
+          </div>
+
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+            <input
+              id="terms"
+              type="checkbox"
+              checked={termsAccepted}
+              onChange={(e) => setTermsAccepted(e.target.checked)}
+              style={{ marginTop: 3, cursor: "pointer", accentColor: "var(--color-primary)", flexShrink: 0 }}
+            />
+            <label htmlFor="terms" style={{ fontSize: 14, color: "var(--color-text-secondary)", cursor: "pointer", lineHeight: 1.5 }}>
+              {t("signup.termsPrefix")}{" "}
+              <a href="/terms" target="_blank" rel="noreferrer" style={styles.a}>
+                {t("signup.termsLink")}
+              </a>
+            </label>
           </div>
 
           {error && <div style={styles.error}>{error}</div>}

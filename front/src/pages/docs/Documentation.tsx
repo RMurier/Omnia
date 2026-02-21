@@ -146,8 +146,12 @@ export default function Documentation() {
         transition: "transform 0.2s ease",
       }
     : {
+        position: "sticky",
+        top: 64,
+        height: "calc(100vh - 64px)",
         width: 280,
         flexShrink: 0,
+        alignSelf: "flex-start",
         background: "var(--color-surface)",
         borderRight: "1px solid var(--color-border)",
         overflowY: "auto",
@@ -155,7 +159,7 @@ export default function Documentation() {
       };
 
   return (
-    <div style={{ display: "flex", flex: 1, minHeight: 0, background: "var(--color-surface-sunken)" }}>
+    <div style={{ display: "flex", flex: 1, background: "var(--color-surface-sunken)" }}>
       {isTablet && sidebarOpen && (
         <div
           style={{ position: "fixed", inset: 0, background: "var(--color-overlay)", zIndex: 39 }}

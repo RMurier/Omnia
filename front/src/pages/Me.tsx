@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useAuthStore } from "../stores/authStore";
-import { authFetch } from "../utils/authFetch";
+import { authFetch, authFetchResponse } from "../utils/authFetch";
 import { useTranslation } from "react-i18next";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import { BREAKPOINTS } from "../hooks/breakpoints";
@@ -15,6 +15,16 @@ export default function MePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  type AppMember = { userId: string; name?: string; lastName?: string; email: string; role: string };
+  type SoloOwnedApp = { appId: string; appName: string; members: AppMember[] };
+  type AppDecision = { action: "Delete" | "Transfer"; transferToUserId?: string };
+
+  const [exporting, setExporting] = useState(false);
+  const [deleteStep, setDeleteStep] = useState<"idle" | "loading" | "apps" | "confirm" | "deleting">("idle");
+  const [soloApps, setSoloApps] = useState<SoloOwnedApp[]>([]);
+  const [decisions, setDecisions] = useState<Record<string, AppDecision>>({});
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     hydrateFromServer();
@@ -63,6 +73,70 @@ export default function MePage() {
       setLoading(false);
     }
   };
+
+  const onExport = useCallback(async () => {
+    setExporting(true);
+    try {
+      const res = await authFetchResponse("/auth/me/export");
+      if (!res.ok) return;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `omnia-data-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+    } finally {
+      setExporting(false);
+    }
+  }, []);
+
+  const onDeleteStart = useCallback(async () => {
+    setDeleteError(null);
+    setDeleteStep("loading");
+    try {
+      const apps = await authFetch<SoloOwnedApp[]>("/auth/me/solo-owned-apps");
+      setSoloApps(apps);
+      const initial: Record<string, AppDecision> = {};
+      apps.forEach((app) => {
+        initial[app.appId] = app.members.length === 0
+          ? { action: "Delete" }
+          : { action: "Delete" };
+      });
+      setDecisions(initial);
+      setDeleteStep(apps.length > 0 ? "apps" : "confirm");
+    } catch {
+      setDeleteStep("idle");
+    }
+  }, []);
+
+  const onDeleteConfirm = useCallback(async () => {
+    setDeleteError(null);
+    setDeleteStep("deleting");
+    try {
+      const appDecisions = Object.entries(decisions).map(([appId, d]) => ({
+        appId,
+        action: d.action,
+        transferToUserId: d.transferToUserId ?? null,
+      }));
+      await authFetch("/auth/me", {
+        method: "DELETE",
+        body: JSON.stringify({ appDecisions }),
+      });
+      window.location.href = "/";
+    } catch (err: any) {
+      setDeleteError(String(err?.message ?? err));
+      setDeleteStep("confirm");
+    }
+  }, [decisions]);
+
+  const allDecisionsValid = soloApps.every((app) => {
+    const d = decisions[app.appId];
+    if (!d) return false;
+    if (d.action === "Transfer" && !d.transferToUserId) return false;
+    return true;
+  });
 
   const styles: Record<string, React.CSSProperties> = {
     page: { padding: isMobile ? "12px 8px" : 24, maxWidth: 720, margin: "0 auto" },
@@ -161,6 +235,69 @@ export default function MePage() {
     },
     flag: { fontSize: 18, lineHeight: 1 },
     langHint: { color: "var(--color-text-muted)", fontSize: 13, marginTop: 8 },
+    dangerBtn: {
+      height: 44,
+      borderRadius: 10,
+      border: "1px solid var(--color-error-border)",
+      backgroundColor: "transparent",
+      color: "var(--color-error-text)",
+      cursor: "pointer",
+      fontWeight: 800,
+      fontSize: 14,
+    },
+    secondaryBtn: {
+      height: 44,
+      borderRadius: 10,
+      border: "1px solid var(--color-border-strong)",
+      backgroundColor: "transparent",
+      color: "var(--color-text-secondary)",
+      cursor: "pointer",
+      fontWeight: 800,
+      fontSize: 14,
+    },
+    overlay: {
+      position: "fixed" as const,
+      inset: 0,
+      backgroundColor: "rgba(0,0,0,0.5)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 1000,
+      padding: 16,
+    },
+    modal: {
+      backgroundColor: "var(--color-surface)",
+      border: "1px solid var(--color-border)",
+      borderRadius: 14,
+      padding: 24,
+      maxWidth: 540,
+      width: "100%",
+      maxHeight: "80vh",
+      overflowY: "auto" as const,
+    },
+    modalTitle: { margin: "0 0 16px", fontSize: 18, fontWeight: 900, color: "var(--color-text-primary)" },
+    appCard: {
+      border: "1px solid var(--color-border)",
+      borderRadius: 10,
+      padding: 16,
+      marginBottom: 12,
+      backgroundColor: "var(--color-surface-sunken)",
+    },
+    appName: { fontWeight: 800, fontSize: 15, marginBottom: 12, color: "var(--color-text-primary)" },
+    radioRow: { display: "flex", flexDirection: "column" as const, gap: 8 },
+    radioLabel: { display: "flex", alignItems: "center", gap: 8, fontSize: 14, cursor: "pointer", color: "var(--color-text-secondary)" },
+    select: {
+      marginTop: 8,
+      width: "100%",
+      height: 38,
+      borderRadius: 8,
+      border: "1px solid var(--color-border-strong)",
+      backgroundColor: "var(--color-surface)",
+      color: "var(--color-text-primary)",
+      padding: "0 10px",
+      fontSize: 14,
+    },
+    modalActions: { display: "flex", gap: 10, marginTop: 20, justifyContent: "flex-end" },
   };
 
   if (!isAuthenticated) {
@@ -291,7 +428,118 @@ export default function MePage() {
             </button>
           </form>
         </div>
+        <div style={styles.section}>
+          <h2 style={styles.sectionTitle}>{t("me.gdprTitle")}</h2>
+          <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
+            <button
+              type="button"
+              style={styles.secondaryBtn}
+              onClick={onExport}
+              disabled={exporting}
+            >
+              {exporting ? t("me.exporting") : t("me.exportData")}
+            </button>
+            <button
+              type="button"
+              style={styles.dangerBtn}
+              onClick={onDeleteStart}
+              disabled={deleteStep !== "idle"}
+            >
+              {t("me.deleteAccount")}
+            </button>
+          </div>
+        </div>
       </div>
+
+      {/* Delete modal — step: apps */}
+      {deleteStep === "apps" && (
+        <div style={styles.overlay}>
+          <div style={styles.modal}>
+            <h2 style={styles.modalTitle}>{t("me.deleteAccount")}</h2>
+            <p style={{ fontSize: 14, color: "var(--color-text-muted)", marginBottom: 16 }}>{t("me.appsToResolve")}</p>
+
+            {soloApps.map((app) => (
+              <div key={app.appId} style={styles.appCard}>
+                <div style={styles.appName}>{app.appName}</div>
+
+                {app.members.length === 0 ? (
+                  <p style={{ fontSize: 13, color: "var(--color-text-muted)", margin: 0 }}>{t("me.appNoMembers")}</p>
+                ) : (
+                  <div style={styles.radioRow}>
+                    <label style={styles.radioLabel}>
+                      <input
+                        type="radio"
+                        name={app.appId}
+                        checked={decisions[app.appId]?.action === "Delete"}
+                        onChange={() => setDecisions((d) => ({ ...d, [app.appId]: { action: "Delete" } }))}
+                      />
+                      {t("me.appActionDelete")}
+                    </label>
+                    <label style={styles.radioLabel}>
+                      <input
+                        type="radio"
+                        name={app.appId}
+                        checked={decisions[app.appId]?.action === "Transfer"}
+                        onChange={() => setDecisions((d) => ({ ...d, [app.appId]: { action: "Transfer" } }))}
+                      />
+                      {t("me.appActionTransfer")}
+                    </label>
+                    {decisions[app.appId]?.action === "Transfer" && (
+                      <select
+                        style={styles.select}
+                        value={decisions[app.appId]?.transferToUserId ?? ""}
+                        onChange={(e) => setDecisions((d) => ({ ...d, [app.appId]: { action: "Transfer", transferToUserId: e.target.value } }))}
+                      >
+                        <option value="">{t("me.transferPlaceholder")}</option>
+                        {app.members.map((m) => (
+                          <option key={m.userId} value={m.userId}>
+                            {m.name || m.lastName ? `${m.name ?? ""} ${m.lastName ?? ""}`.trim() : m.email} ({m.role})
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+
+            <div style={styles.modalActions}>
+              <button type="button" style={styles.secondaryBtn} onClick={() => setDeleteStep("idle")}>
+                {t("me.deleteAccountCancel")}
+              </button>
+              <button
+                type="button"
+                style={{ ...styles.dangerBtn, opacity: allDecisionsValid ? 1 : 0.5 }}
+                disabled={!allDecisionsValid}
+                onClick={() => setDeleteStep("confirm")}
+              >
+                {t("me.next")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete modal — step: confirm */}
+      {(deleteStep === "confirm" || deleteStep === "deleting") && (
+        <div style={styles.overlay}>
+          <div style={styles.modal}>
+            <h2 style={styles.modalTitle}>{t("me.deleteAccount")}</h2>
+            <p style={{ fontSize: 14, color: "var(--color-text-secondary)", marginBottom: 20 }}>{t("me.deleteAccountConfirm")}</p>
+            {deleteError && (
+              <div style={{ ...styles.error, marginBottom: 12 }}>{deleteError}</div>
+            )}
+            <div style={styles.modalActions}>
+              <button type="button" style={styles.secondaryBtn} onClick={() => setDeleteStep("idle")} disabled={deleteStep === "deleting"}>
+                {t("me.deleteAccountCancel")}
+              </button>
+              <button type="button" style={styles.dangerBtn} onClick={onDeleteConfirm} disabled={deleteStep === "deleting"}>
+                {deleteStep === "deleting" ? t("me.deleting") : t("me.deleteAccountConfirmBtn")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

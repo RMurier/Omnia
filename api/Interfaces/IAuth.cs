@@ -27,4 +27,7 @@ public interface IAuth
     string? DecryptEmail(string encryptedEmail);
     string? DecryptName(string? encryptedName);
     string? DecryptLastName(string? encryptedLastName);
+    Task<List<SoloOwnedAppDto>> GetSoloOwnedApps(Guid userId, CancellationToken ct);
+    Task DeleteAccount(Guid userId, List<AppDecisionDto> decisions, CancellationToken ct);
+    Task<ExportDataDto> ExportData(Guid userId, CancellationToken ct);
 }

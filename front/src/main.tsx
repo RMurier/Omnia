@@ -22,6 +22,8 @@ import { useAuthStore } from "./stores/authStore";
 import { useThemeStore } from "./stores/themeStore";
 import { Toaster } from "sonner";
 import MePage from "./pages/Me.tsx";
+import TermsPage from "./pages/Terms.tsx";
+import AboutPage from "./pages/About.tsx";
 
 function Root() {
   const { isAuthenticated, hydrateFromServer } = useAuthStore();
@@ -36,7 +38,7 @@ function Root() {
       <Toaster position="top-right" richColors />
       <Header isAuthenticated={isAuthenticated} />
       <BrowserRouter>
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
+        <div style={{ flex: 1 }}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/signin" element={<SignIn />} />
@@ -52,6 +54,8 @@ function Root() {
           <Route path="/logs" element={<LogsPage />} />
           <Route path="/mails" element={<MailsPage />} />
           <Route path="/docs" element={<Documentation />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/about" element={<AboutPage />} />
           <Route path="/*" element={<NotFound />} />
         </Routes>
         </div>

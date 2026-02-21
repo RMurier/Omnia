@@ -151,9 +151,9 @@ namespace api.Services
         public async Task<MailLogDto> Create(AddMailLogDto dto, CancellationToken ct)
         {
             if (dto.RefApplication is null || dto.RefApplication == Guid.Empty)
-                throw new ApiException(StatusCodes.Status400BadRequest, Shared.Keys.Errors.RefApplicationRequired);
+                throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.RefApplicationRequired);
             if (string.IsNullOrWhiteSpace(dto.Subject))
-                throw new ApiException(StatusCodes.Status400BadRequest, Shared.Keys.Errors.SubjectRequired);
+                throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.SubjectRequired);
 
             var appId = dto.RefApplication.Value;
             var plainFrom = (dto.FromAddress ?? "").Trim();
@@ -231,7 +231,7 @@ namespace api.Services
             if (entity is null) return null;
 
             if (!await ApplicationAccessHelper.CanMaintainApplicationAsync(_context, userId, entity.RefApplication, ct))
-                throw new ApiException(StatusCodes.Status403Forbidden, Shared.Keys.Errors.Forbidden);
+                throw new ApiException(StatusCodes.Status403Forbidden, ErrorKeys.Forbidden);
 
             var appId = entity.RefApplication;
 
@@ -368,7 +368,7 @@ namespace api.Services
             if (entity is null) return false;
 
             if (!await ApplicationAccessHelper.CanMaintainApplicationAsync(_context, userId, entity.RefApplication, ct))
-                throw new ApiException(StatusCodes.Status403Forbidden, Shared.Keys.Errors.Forbidden);
+                throw new ApiException(StatusCodes.Status403Forbidden, ErrorKeys.Forbidden);
 
             _context.MailLog.Remove(entity);
             await _context.SaveChangesAsync(ct);
