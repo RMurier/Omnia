@@ -204,7 +204,8 @@
     "refresh": "Refresh",
     "id": "Id",
     "status": "Status",
-    "delete": "Delete"
+    "delete": "Delete",
+    "error": "An error occurred"
   },
   "applications": {
     "title": "Applications",

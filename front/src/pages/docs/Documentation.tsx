@@ -133,7 +133,7 @@ export default function Documentation() {
   const sidebarStyle: React.CSSProperties = isTablet
     ? {
         position: "fixed",
-        top: 64,
+        top: 65,
         left: 0,
         bottom: 0,
         width: 280,
@@ -146,12 +146,8 @@ export default function Documentation() {
         transition: "transform 0.2s ease",
       }
     : {
-        position: "sticky",
-        top: 64,
-        height: "calc(100vh - 64px)",
         width: 280,
         flexShrink: 0,
-        alignSelf: "flex-start",
         background: "var(--color-surface)",
         borderRight: "1px solid var(--color-border)",
         overflowY: "auto",
@@ -159,7 +155,7 @@ export default function Documentation() {
       };
 
   return (
-    <div style={{ display: "flex", flex: 1, background: "var(--color-surface-sunken)" }}>
+    <div style={{ display: "flex", flex: 1, minHeight: 0, background: "var(--color-surface-sunken)" }}>
       {isTablet && sidebarOpen && (
         <div
           style={{ position: "fixed", inset: 0, background: "var(--color-overlay)", zIndex: 39 }}
@@ -208,7 +204,7 @@ export default function Documentation() {
         </button>
       )}
 
-      <main style={{ flex: 1, padding: isTablet ? "24px 16px" : "32px 48px", maxWidth: 900 }}>
+      <main style={{ flex: 1, overflowY: "auto", padding: isTablet ? "24px 16px" : "32px 48px", maxWidth: 900 }}>
         <h1 style={{ fontSize: 28, fontWeight: 800, color: "var(--color-text-primary)", margin: "0 0 8px" }}>{t("docs.title")}</h1>
         <p style={{ fontSize: 15, color: "var(--color-text-muted)", marginBottom: 32 }}>{t("docs.subtitle")}</p>
         <CategoryComponent />

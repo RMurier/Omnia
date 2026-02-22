@@ -204,7 +204,8 @@
     "refresh": "Rafraîchir",
     "id": "Id",
     "status": "Statut",
-    "delete": "Supprimer"
+    "delete": "Supprimer",
+    "error": "Une erreur est survenue"
   },
   "applications": {
     "title": "Applications",

@@ -114,7 +114,7 @@ export async function authFetch<T>(path: string, options: AuthFetchOptions = {})
 
   if (!res.ok) {
     const raw = await res.text().catch(() => "");
-    let msg = raw || `HTTP ${res.status}`;
+    let msg = raw || i18n.t("common.error");
     try {
       const j = JSON.parse(raw);
       msg = j?.message || j?.error || msg;
@@ -132,7 +132,7 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
 
   if (!res.ok) {
     const raw = await res.text().catch(() => "");
-    let msg = raw || `HTTP ${res.status}`;
+    let msg = raw || i18n.t("common.error");
     try {
       const j = JSON.parse(raw);
       msg = j?.message || j?.error || msg;
@@ -153,7 +153,7 @@ export async function signin(email: string, password: string): Promise<void> {
 
   if (!res.ok) {
     const raw = await res.text().catch(() => "");
-    let msg = raw || `HTTP ${res.status}`;
+    let msg = raw || i18n.t("common.error");
     try {
       const j = JSON.parse(raw);
       msg = j?.message || j?.error || msg;

@@ -43,7 +43,6 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
     () => [
       { label: t("nav.applications"), href: "/applications" },
       { label: t("nav.logs"), href: "/logs" },
-      { label: t("nav.mails"), href: "/mails" },
       { label: t("nav.activity"), href: "/activity" },
     ],
     []

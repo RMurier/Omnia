@@ -34,11 +34,11 @@ function Root() {
   }, [hydrateFromServer]);
 
   return (
-    <>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <Toaster position="top-right" richColors />
       <Header isAuthenticated={isAuthenticated} />
       <BrowserRouter>
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/signin" element={<SignIn />} />
@@ -60,7 +60,7 @@ function Root() {
         </Routes>
         </div>
       </BrowserRouter>
-    </>
+    </div>
   );
 }
 
