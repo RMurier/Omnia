@@ -528,33 +528,6 @@ namespace api.Services
             };
         }
 
-        public async Task<int> PurgeLogs(Guid applicationId, Guid userId, CancellationToken ct)
-        {
-            if (!await ApplicationAccessHelper.CanMaintainApplicationAsync(_db, userId, applicationId, ct))
-                throw new ApiException(StatusCodes.Status403Forbidden, ErrorKeys.Forbidden);
-
-            var app = await _db.Application.AsNoTracking().FirstOrDefaultAsync(x => x.Id == applicationId, ct);
-            if (app is null)
-                throw new ApiException(StatusCodes.Status404NotFound, ErrorKeys.ApplicationNotFound);
-
-            var cutoff = app.LogRetentionUnit switch
-            {
-                "weeks"  => DateTime.UtcNow.AddDays(-(app.LogRetentionValue * 7)),
-                "months" => DateTime.UtcNow.AddMonths(-app.LogRetentionValue),
-                "years"  => DateTime.UtcNow.AddYears(-app.LogRetentionValue),
-                _        => DateTime.UtcNow.AddDays(-app.LogRetentionValue) // "days"
-            };
-
-            var toDelete = await _db.Log
-                .Where(l => l.RefApplication == applicationId && l.OccurredAtUtc < cutoff)
-                .ToListAsync(ct);
-
-            _db.Log.RemoveRange(toDelete);
-            await _db.SaveChangesAsync(ct);
-
-            return toDelete.Count;
-        }
-
         public async Task<IEnumerable<RoleDto>> GetRoles(CancellationToken ct)
         {
             return await _db.RoleApplication
