@@ -103,7 +103,9 @@ namespace api.Data.Configurations
                     LastName = "7mKmhERhwYiFtwf2l6BJMQ==",
                     Password = "wWwFqHINsN9P0TzRMd1d5yJQ9pz1nvw5ck0uRuVJu/D2kPPH/U/HylErGpB9g5RXA4mS8FqnAgdhXSuOgpabNQ==",
                     Salt = "vhLKoFuOfVK46NC4W056EkXEEsYAQogvnd/kOg4HU80=",
-                    EmailConfirmed = true
+                    EmailConfirmed = true,
+                    TermsAcceptedAt = DateTime.UtcNow,
+                    TermsVersion = "1.0"
                 });
         }
     }
