@@ -105,7 +105,7 @@ namespace api.Data.Configurations
                     Salt = "vhLKoFuOfVK46NC4W056EkXEEsYAQogvnd/kOg4HU80=",
                     EmailConfirmed = true,
                     TermsAcceptedAt = DateTime.UtcNow,
-                    TermsVersion = "1.0"
+                    TermsVersion = TermsKeys.CurrentVersion
                 });
         }
     }
