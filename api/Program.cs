@@ -136,6 +136,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 {
     // The --connection flag in CI/CD will automatically override 'cs' here
     options.UseSqlServer(cs);
+    options.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
     if (builder.Environment.IsDevelopment())
     {
         options.EnableDetailedErrors();
