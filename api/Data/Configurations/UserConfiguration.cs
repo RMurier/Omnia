@@ -80,6 +80,15 @@ namespace api.Data.Configurations
                 .HasColumnName("PASSWORD_CHANGED_AT")
                 .IsRequired(false);
 
+            builder.Property(x => x.TermsAcceptedAt)
+                .HasColumnName("TERMS_ACCEPTED_AT")
+                .IsRequired(false);
+
+            builder.Property(x => x.TermsVersion)
+                .HasColumnName("TERMS_VERSION")
+                .HasMaxLength(16)
+                .IsRequired(false);
+
             builder.HasIndex(x => x.Email)
                 .IsUnique()
                 .HasDatabaseName("UX_USER_EMAIL");
@@ -94,7 +103,9 @@ namespace api.Data.Configurations
                     LastName = "7mKmhERhwYiFtwf2l6BJMQ==",
                     Password = "wWwFqHINsN9P0TzRMd1d5yJQ9pz1nvw5ck0uRuVJu/D2kPPH/U/HylErGpB9g5RXA4mS8FqnAgdhXSuOgpabNQ==",
                     Salt = "vhLKoFuOfVK46NC4W056EkXEEsYAQogvnd/kOg4HU80=",
-                    EmailConfirmed = true
+                    EmailConfirmed = true,
+                    TermsAcceptedAt = DateTime.UtcNow,
+                    TermsVersion = TermsKeys.CurrentVersion
                 });
         }
     }

@@ -96,9 +96,9 @@ namespace api.Services
         public async Task<LogDto> Create(AddLogDto dto, CancellationToken ct)
         {
             if (dto.RefApplication is null || dto.RefApplication == Guid.Empty)
-                throw new ApiException(StatusCodes.Status400BadRequest, Shared.Keys.Errors.RefApplicationRequired);
+                throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.RefApplicationRequired);
             if (string.IsNullOrWhiteSpace(dto.Message))
-                throw new ApiException(StatusCodes.Status400BadRequest, Shared.Keys.Errors.MessageRequired);
+                throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.MessageRequired);
 
             var appId = dto.RefApplication.Value;
             var plainMessage = dto.Message.Trim();
@@ -140,7 +140,7 @@ namespace api.Services
             if (entity is null) return null;
 
             if (!await ApplicationAccessHelper.CanMaintainApplicationAsync(_context, userId, entity.RefApplication, ct))
-                throw new ApiException(StatusCodes.Status403Forbidden, Shared.Keys.Errors.Forbidden);
+                throw new ApiException(StatusCodes.Status403Forbidden, ErrorKeys.Forbidden);
 
             var appId = entity.RefApplication;
             string? plainMessage = null;
@@ -207,7 +207,7 @@ namespace api.Services
             if (entity is null) return false;
 
             if (!await ApplicationAccessHelper.CanMaintainApplicationAsync(_context, userId, entity.RefApplication, ct))
-                throw new ApiException(StatusCodes.Status403Forbidden, Shared.Keys.Errors.Forbidden);
+                throw new ApiException(StatusCodes.Status403Forbidden, ErrorKeys.Forbidden);
 
             _context.Log.Remove(entity);
             await _context.SaveChangesAsync(ct);

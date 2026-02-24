@@ -108,10 +108,7 @@ export default function Documentation() {
   const CategoryComponent = currentCategory.component;
 
   const scrollToSection = (sectionId: string) => {
-    const el = document.getElementById(sectionId);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth", block: "start" });
     if (isTablet) setSidebarOpen(false);
   };
 
@@ -120,166 +117,68 @@ export default function Documentation() {
     if (isTablet) setSidebarOpen(false);
   };
 
-  const styles: Record<string, React.CSSProperties> = {
-    page: {
-      display: "flex",
-      minHeight: "calc(100vh - 64px)",
-      background: "var(--color-surface-sunken)",
-      position: "relative",
-    },
-    overlay: {
-      position: "fixed",
-      inset: 0,
-      background: "var(--color-overlay)",
-      zIndex: 39,
-    },
-    sidebar: {
-      width: 280,
-      minWidth: 280,
-      background: "var(--color-surface)",
-      borderRight: "1px solid var(--color-border)",
-      padding: "24px 0",
-      ...(isTablet
-        ? {
-            position: "fixed",
-            top: 64,
-            left: 0,
-            bottom: 0,
-            zIndex: 40,
-            transform: sidebarOpen ? "translateX(0)" : "translateX(-100%)",
-            transition: "transform 0.2s ease",
-            overflowY: "auto",
-          }
-        : {
-            position: "sticky",
-            top: "64px",
-            height: "calc(100vh - 64px)",
-            overflowY: "auto",
-          }),
-    },
-    sidebarTitle: {
-      fontSize: 12,
-      fontWeight: 700,
-      textTransform: "uppercase",
-      letterSpacing: 0.5,
-      color: "var(--color-text-muted)",
-      padding: "0 20px",
-      marginBottom: 12,
-    },
-    categoryList: {
-      listStyle: "none",
-      margin: 0,
-      padding: 0,
-    },
-    categoryItem: {
-      marginBottom: 4,
-    },
-    categoryBtn: {
-      width: "100%",
-      textAlign: "left",
-      padding: "10px 20px",
-      border: "none",
-      background: "transparent",
-      cursor: "pointer",
-      fontSize: 14,
-      fontWeight: 600,
-      color: "var(--color-text-secondary)",
-      transition: "background 0.15s, color 0.15s",
-    },
-    categoryBtnActive: {
-      background: "var(--color-sidebar-active-bg)",
-      color: "var(--color-sidebar-active-text)",
-      borderLeft: "3px solid var(--color-sidebar-active-border)",
-    },
-    sectionList: {
-      listStyle: "none",
-      margin: 0,
-      padding: "4px 0 8px 32px",
-    },
-    sectionItem: {
-      marginBottom: 2,
-    },
-    sectionBtn: {
-      width: "100%",
-      textAlign: "left",
-      padding: "6px 12px",
-      border: "none",
-      background: "transparent",
-      cursor: "pointer",
-      fontSize: 13,
-      color: "var(--color-text-muted)",
-      borderRadius: 4,
-    },
-    main: {
-      flex: 1,
-      padding: isTablet ? "24px 16px" : "32px 48px",
-      maxWidth: 900,
-    },
-    header: {
-      marginBottom: 32,
-      display: "flex",
-      alignItems: "center",
-      gap: 12,
-    },
-    title: {
-      fontSize: 28,
-      fontWeight: 800,
-      color: "var(--color-text-primary)",
-      margin: 0,
-    },
-    subtitle: {
-      fontSize: 15,
-      color: "var(--color-text-muted)",
-      marginTop: 8,
-    },
-    toggleBtn: {
-      position: "fixed",
-      bottom: 20,
-      left: 16,
-      zIndex: 38,
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      width: 48,
-      height: 48,
-      borderRadius: 14,
-      border: "none",
-      backgroundColor: "var(--color-primary)",
-      boxShadow: "0 4px 20px rgba(99,102,241,0.4)",
-      cursor: "pointer",
-      padding: 0,
-      flexShrink: 0,
-    },
-  };
+  const navBtnStyle = (active: boolean): React.CSSProperties => ({
+    width: "100%",
+    textAlign: "left",
+    padding: "10px 20px",
+    border: "none",
+    borderLeft: active ? "3px solid var(--color-sidebar-active-border)" : "3px solid transparent",
+    background: active ? "var(--color-sidebar-active-bg)" : "transparent",
+    cursor: "pointer",
+    fontSize: 14,
+    fontWeight: 600,
+    color: active ? "var(--color-sidebar-active-text)" : "var(--color-text-secondary)",
+  });
+
+  const sidebarStyle: React.CSSProperties = isTablet
+    ? {
+        position: "fixed",
+        top: 65,
+        left: 0,
+        bottom: 0,
+        width: 280,
+        zIndex: 40,
+        background: "var(--color-surface)",
+        borderRight: "1px solid var(--color-border)",
+        overflowY: "auto",
+        padding: "24px 0",
+        transform: sidebarOpen ? "translateX(0)" : "translateX(-100%)",
+        transition: "transform 0.2s ease",
+      }
+    : {
+        width: 280,
+        flexShrink: 0,
+        background: "var(--color-surface)",
+        borderRight: "1px solid var(--color-border)",
+        overflowY: "auto",
+        padding: "24px 0",
+      };
 
   return (
-    <div style={styles.page}>
-      {/* Overlay for mobile sidebar */}
+    <div style={{ display: "flex", flex: 1, minHeight: 0, background: "var(--color-surface-sunken)" }}>
       {isTablet && sidebarOpen && (
-        <div style={styles.overlay} onClick={() => setSidebarOpen(false)} />
+        <div
+          style={{ position: "fixed", inset: 0, background: "var(--color-overlay)", zIndex: 39 }}
+          onClick={() => setSidebarOpen(false)}
+        />
       )}
 
-      <aside style={styles.sidebar}>
-        <div style={styles.sidebarTitle}>{t("docs.navigation")}</div>
-        <ul style={styles.categoryList}>
+      <aside style={sidebarStyle}>
+        <p style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "var(--color-text-muted)", padding: "0 20px", marginBottom: 12 }}>
+          {t("docs.navigation")}
+        </p>
+        <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
           {categories.map((cat) => (
-            <li key={cat.key} style={styles.categoryItem}>
-              <button
-                style={{
-                  ...styles.categoryBtn,
-                  ...(activeCategory === cat.key ? styles.categoryBtnActive : {}),
-                }}
-                onClick={() => onCategoryClick(cat.key)}
-                type="button"
-              >
+            <li key={cat.key}>
+              <button style={navBtnStyle(activeCategory === cat.key)} onClick={() => onCategoryClick(cat.key)} type="button">
                 {t(cat.labelKey)}
               </button>
               {activeCategory === cat.key && (
-                <ul style={styles.sectionList}>
+                <ul style={{ listStyle: "none", margin: 0, padding: "4px 0 8px 32px" }}>
                   {cat.sections.map((sec) => (
-                    <li key={sec.id} style={styles.sectionItem}>
+                    <li key={sec.id}>
                       <button
-                        style={styles.sectionBtn}
+                        style={{ width: "100%", textAlign: "left", padding: "6px 12px", border: "none", background: "transparent", cursor: "pointer", fontSize: 13, color: "var(--color-text-muted)", borderRadius: 4 }}
                         onClick={() => scrollToSection(sec.id)}
                         type="button"
                       >
@@ -297,24 +196,17 @@ export default function Documentation() {
       {isTablet && (
         <button
           type="button"
-          style={styles.toggleBtn}
+          style={{ position: "fixed", bottom: 20, left: 16, zIndex: 41, display: "inline-flex", alignItems: "center", justifyContent: "center", width: 48, height: 48, borderRadius: 14, border: "none", background: "var(--color-primary)", boxShadow: "0 4px 20px rgba(99,102,241,0.4)", cursor: "pointer" }}
           onClick={() => setSidebarOpen((v) => !v)}
           aria-label={t("docs.toggleSidebar")}
         >
-          {sidebarOpen
-            ? <X size={22} style={{ color: "#fff" }} />
-            : <Menu size={22} style={{ color: "#fff" }} />
-          }
+          {sidebarOpen ? <X size={22} style={{ color: "#fff" }} /> : <Menu size={22} style={{ color: "#fff" }} />}
         </button>
       )}
 
-      <main style={styles.main}>
-        <div style={styles.header}>
-          <div>
-            <h1 style={styles.title}>{t("docs.title")}</h1>
-            <p style={styles.subtitle}>{t("docs.subtitle")}</p>
-          </div>
-        </div>
+      <main style={{ flex: 1, overflowY: "auto", padding: isTablet ? "24px 16px" : "32px 48px", maxWidth: 900 }}>
+        <h1 style={{ fontSize: 28, fontWeight: 800, color: "var(--color-text-primary)", margin: "0 0 8px" }}>{t("docs.title")}</h1>
+        <p style={{ fontSize: 15, color: "var(--color-text-muted)", marginBottom: 32 }}>{t("docs.subtitle")}</p>
         <CategoryComponent />
       </main>
     </div>

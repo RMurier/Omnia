@@ -618,7 +618,7 @@ export default function AdminActivityPage() {
   }, [seriesRaw, fromLocal, toLocal, spacingUnit, spacingStep, appsMode, selectedAppIds, filterOneApp, appNameById]);
 
   const styles: Record<string, React.CSSProperties> = {
-    page: { padding: isMobile ? 12 : 24, maxWidth: 1280, margin: "0 auto" },
+    page: { padding: isMobile ? 12 : 24 },
     topBar: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 16, flexWrap: "wrap" },
     title: { margin: 0, fontSize: 22, fontWeight: 900, color: "var(--color-text-primary)" },
     subtitle: { margin: "6px 0 0 0", color: "var(--color-text-muted)", fontSize: 14 },

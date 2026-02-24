@@ -50,7 +50,9 @@ namespace api.Services
                     Name = a.Name,
                     Url = a.Url,
                     IsActive = a.IsActive,
-                    Description = a.Description
+                    Description = a.Description,
+                    LogRetentionValue = a.LogRetentionValue,
+                    LogRetentionUnit = a.LogRetentionUnit
                 })
                 .ToListAsync(ct);
         }
@@ -66,13 +68,18 @@ namespace api.Services
 
             if (a is null) return null;
 
+            var role = await ApplicationAccessHelper.GetUserRoleAsync(_db, userId, id, ct);
+
             return new ApplicationDto()
             {
                 Id = a.Id,
                 Name = a.Name,
                 Description = a.Description,
                 IsActive = a.IsActive,
-                Url = a.Url
+                Url = a.Url,
+                LogRetentionValue = a.LogRetentionValue,
+                LogRetentionUnit = a.LogRetentionUnit,
+                MyRole = role?.Name
             };
         }
 
@@ -80,11 +87,11 @@ namespace api.Services
         {
             var name = (dto.Name ?? string.Empty).Trim();
             if (name.Length < 2)
-                throw new ApiException(StatusCodes.Status400BadRequest, Shared.Keys.Errors.ApplicationNameTooShort);
+                throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.ApplicationNameTooShort);
 
             var exists = await _db.Application.AsNoTracking().AnyAsync(x => x.Name == name, ct);
             if (exists)
-                throw new ApiException(StatusCodes.Status409Conflict, Shared.Keys.Errors.ApplicationNameExists);
+                throw new ApiException(StatusCodes.Status409Conflict, ErrorKeys.ApplicationNameExists);
 
             var app = new Application
             {
@@ -94,7 +101,9 @@ namespace api.Services
                 Url = dto.Url,
                 IsActive = dto.IsActive ?? true,
                 Description = dto.Description,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                LogRetentionValue = dto.LogRetentionValue ?? 7,
+                LogRetentionUnit = dto.LogRetentionUnit ?? "days"
             };
 
             var member = new ApplicationMember
@@ -138,7 +147,9 @@ namespace api.Services
                     Name = app.Name,
                     Url = app.Url,
                     IsActive = app.IsActive,
-                    Description = app.Description
+                    Description = app.Description,
+                    LogRetentionValue = app.LogRetentionValue,
+                    LogRetentionUnit = app.LogRetentionUnit
                 },
                 SecretBase64 = secretBase64,
                 Version = new ApplicationSecretDto
@@ -155,7 +166,7 @@ namespace api.Services
         public async Task<ApplicationDto?> Update(Guid id, ApplicationDto dto, Guid userId, CancellationToken ct)
         {
             if (!await ApplicationAccessHelper.CanMaintainApplicationAsync(_db, userId, id, ct))
-                throw new ApiException(StatusCodes.Status403Forbidden, Shared.Keys.Errors.Forbidden);
+                throw new ApiException(StatusCodes.Status403Forbidden, ErrorKeys.Forbidden);
 
             var entity = await _db.Application.FirstOrDefaultAsync(x => x.Id == id, ct);
             if (entity is null) return null;
@@ -164,7 +175,7 @@ namespace api.Services
             {
                 var name = dto.Name.Trim();
                 if (name.Length < 2)
-                    throw new ApiException(StatusCodes.Status400BadRequest, Shared.Keys.Errors.ApplicationNameTooShort);
+                    throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.ApplicationNameTooShort);
 
                 entity.Name = name;
             }
@@ -172,6 +183,14 @@ namespace api.Services
             if (dto.Url is not null) entity.Url = dto.Url;
             if (dto.Description is not null) entity.Description = dto.Description;
             if (dto.IsActive.HasValue) entity.IsActive = dto.IsActive.Value;
+            if (dto.LogRetentionValue.HasValue) entity.LogRetentionValue = dto.LogRetentionValue.Value;
+            if (dto.LogRetentionUnit is not null)
+            {
+                var validUnits = new[] { "days", "weeks", "months", "years" };
+                if (!validUnits.Contains(dto.LogRetentionUnit))
+                    throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.InvalidRetentionUnit);
+                entity.LogRetentionUnit = dto.LogRetentionUnit;
+            }
 
             await _db.SaveChangesAsync(ct);
 
@@ -181,14 +200,16 @@ namespace api.Services
                 Name = entity.Name,
                 Description = entity.Description,
                 IsActive = entity.IsActive,
-                Url = entity.Url
+                Url = entity.Url,
+                LogRetentionValue = entity.LogRetentionValue,
+                LogRetentionUnit = entity.LogRetentionUnit
             };
         }
 
         public async Task<bool> Delete(Guid id, Guid userId, CancellationToken ct)
         {
             if (!await ApplicationAccessHelper.IsApplicationOwnerAsync(_db, userId, id, ct))
-                throw new ApiException(StatusCodes.Status403Forbidden, Shared.Keys.Errors.Forbidden);
+                throw new ApiException(StatusCodes.Status403Forbidden, ErrorKeys.Forbidden);
 
             var entity = await _db.Application.FirstOrDefaultAsync(x => x.Id == id, ct);
             if (entity is null) return false;
@@ -201,7 +222,7 @@ namespace api.Services
         public async Task<IEnumerable<ApplicationSecretDto>> GetVersions(Guid applicationId, Guid userId, CancellationToken ct)
         {
             if (!await ApplicationAccessHelper.CanAccessApplicationAsync(_db, userId, applicationId, ct))
-                throw new ApiException(StatusCodes.Status403Forbidden, Shared.Keys.Errors.Forbidden);
+                throw new ApiException(StatusCodes.Status403Forbidden, ErrorKeys.Forbidden);
 
             return await _db.ApplicationSecret
                 .AsNoTracking()
@@ -221,10 +242,10 @@ namespace api.Services
         public async Task<(ApplicationSecretDto version, string secretBase64)> CreateVersion(Guid applicationId, Guid userId, CancellationToken ct)
         {
             if (!await ApplicationAccessHelper.CanMaintainApplicationAsync(_db, userId, applicationId, ct))
-                throw new ApiException(StatusCodes.Status403Forbidden, Shared.Keys.Errors.Forbidden);
+                throw new ApiException(StatusCodes.Status403Forbidden, ErrorKeys.Forbidden);
 
             var app = await _db.Application.FirstOrDefaultAsync(x => x.Id == applicationId, ct);
-            if (app is null) throw new ApiException(StatusCodes.Status404NotFound, Shared.Keys.Errors.ApplicationNotFound);
+            if (app is null) throw new ApiException(StatusCodes.Status404NotFound, ErrorKeys.ApplicationNotFound);
 
             var maxVersion = await _db.ApplicationSecret
                 .AsNoTracking()
@@ -238,7 +259,7 @@ namespace api.Services
 
             secretBase64 = secretBase64.Trim();
             if (!Convert.TryFromBase64String(secretBase64, new Span<byte>(new byte[secretBase64.Length]), out _))
-                throw new ApiException(StatusCodes.Status500InternalServerError, Shared.Keys.Errors.SecretInvalid);
+                throw new ApiException(StatusCodes.Status500InternalServerError, ErrorKeys.SecretInvalid);
 
             var secret = new ApplicationSecret
             {
@@ -270,7 +291,7 @@ namespace api.Services
         public async Task<bool> SetVersionActive(Guid applicationId, int version, bool isActive, Guid userId, CancellationToken ct)
         {
             if (!await ApplicationAccessHelper.CanMaintainApplicationAsync(_db, userId, applicationId, ct))
-                throw new ApiException(StatusCodes.Status403Forbidden, Shared.Keys.Errors.Forbidden);
+                throw new ApiException(StatusCodes.Status403Forbidden, ErrorKeys.Forbidden);
 
             var row = await _db.ApplicationSecret
                 .FirstOrDefaultAsync(x => x.RefApplication == applicationId && x.Version == version, ct);
@@ -295,7 +316,7 @@ namespace api.Services
         public async Task<IEnumerable<ApplicationMemberDto>> GetMembers(Guid applicationId, Guid userId, CancellationToken ct)
         {
             if (!await ApplicationAccessHelper.CanAccessApplicationAsync(_db, userId, applicationId, ct))
-                throw new ApiException(StatusCodes.Status403Forbidden, Shared.Keys.Errors.Forbidden);
+                throw new ApiException(StatusCodes.Status403Forbidden, ErrorKeys.Forbidden);
 
             var members = await _db.ApplicationMember
                 .AsNoTracking()
@@ -325,7 +346,7 @@ namespace api.Services
         public async Task<IEnumerable<PendingInvitationDto>> GetPendingInvitations(Guid applicationId, Guid userId, CancellationToken ct)
         {
             if (!await ApplicationAccessHelper.CanMaintainApplicationAsync(_db, userId, applicationId, ct))
-                throw new ApiException(StatusCodes.Status403Forbidden, Shared.Keys.Errors.Forbidden);
+                throw new ApiException(StatusCodes.Status403Forbidden, ErrorKeys.Forbidden);
 
             var invitations = await _db.ApplicationInvitation
                 .AsNoTracking()
@@ -351,14 +372,14 @@ namespace api.Services
         public async Task<InviteMemberResultDto> InviteMember(Guid applicationId, InviteMemberRequest request, Guid userId, CancellationToken ct)
         {
             if (!await ApplicationAccessHelper.CanMaintainApplicationAsync(_db, userId, applicationId, ct))
-                throw new ApiException(StatusCodes.Status403Forbidden, Shared.Keys.Errors.Forbidden);
+                throw new ApiException(StatusCodes.Status403Forbidden, ErrorKeys.Forbidden);
 
             if (!ValidRoleIds.Contains(request.RefRoleApplication))
-                throw new ApiException(StatusCodes.Status400BadRequest, Shared.Keys.Errors.InvalidRole);
+                throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.InvalidRole);
 
             var app = await _db.Application.AsNoTracking().FirstOrDefaultAsync(x => x.Id == applicationId, ct);
             if (app is null)
-                throw new ApiException(StatusCodes.Status404NotFound, Shared.Keys.Errors.ApplicationNotFound);
+                throw new ApiException(StatusCodes.Status404NotFound, ErrorKeys.ApplicationNotFound);
 
             string plainEmail = (request.Email ?? "").Trim().ToLowerInvariant();
             string encryptedEmail = _auth.EncryptEmail(plainEmail);
@@ -374,7 +395,7 @@ namespace api.Services
                 bool alreadyMember = await _db.ApplicationMember
                     .AnyAsync(m => m.RefApplication == applicationId && m.RefUser == targetUserId, ct);
                 if (alreadyMember)
-                    throw new ApiException(StatusCodes.Status409Conflict, Shared.Keys.Errors.MemberAlreadyExists);
+                    throw new ApiException(StatusCodes.Status409Conflict, ErrorKeys.MemberAlreadyExists);
 
                 // Add as member
                 _db.ApplicationMember.Add(new ApplicationMember
@@ -406,7 +427,7 @@ namespace api.Services
                 bool invExists = await _db.ApplicationInvitation
                     .AnyAsync(i => i.RefApplication == applicationId && i.Email == encryptedEmail, ct);
                 if (invExists)
-                    throw new ApiException(StatusCodes.Status409Conflict, Shared.Keys.Errors.InvitationAlreadyPending);
+                    throw new ApiException(StatusCodes.Status409Conflict, ErrorKeys.InvitationAlreadyPending);
 
                 _db.ApplicationInvitation.Add(new ApplicationInvitation
                 {
@@ -430,15 +451,15 @@ namespace api.Services
         public async Task UpdateMemberRole(Guid applicationId, Guid memberId, UpdateMemberRoleRequest request, Guid userId, CancellationToken ct)
         {
             if (!await ApplicationAccessHelper.IsApplicationOwnerAsync(_db, userId, applicationId, ct))
-                throw new ApiException(StatusCodes.Status403Forbidden, Shared.Keys.Errors.Forbidden);
+                throw new ApiException(StatusCodes.Status403Forbidden, ErrorKeys.Forbidden);
 
             if (!ValidRoleIds.Contains(request.RefRoleApplication))
-                throw new ApiException(StatusCodes.Status400BadRequest, Shared.Keys.Errors.InvalidRole);
+                throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.InvalidRole);
 
             var member = await _db.ApplicationMember
                 .FirstOrDefaultAsync(m => m.Id == memberId && m.RefApplication == applicationId, ct);
             if (member is null)
-                throw new ApiException(StatusCodes.Status404NotFound, Shared.Keys.Errors.NotFound);
+                throw new ApiException(StatusCodes.Status404NotFound, ErrorKeys.NotFound);
 
             // If changing from Owner, ensure there's at least one other owner
             if (member.RefRoleApplication == RoleApplication.Ids.Owner && request.RefRoleApplication != RoleApplication.Ids.Owner)
@@ -446,7 +467,7 @@ namespace api.Services
                 int ownerCount = await _db.ApplicationMember
                     .CountAsync(m => m.RefApplication == applicationId && m.RefRoleApplication == RoleApplication.Ids.Owner, ct);
                 if (ownerCount <= 1)
-                    throw new ApiException(StatusCodes.Status400BadRequest, Shared.Keys.Errors.CannotRemoveLastOwner);
+                    throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.CannotRemoveLastOwner);
             }
 
             member.RefRoleApplication = request.RefRoleApplication;
@@ -456,12 +477,12 @@ namespace api.Services
         public async Task RemoveMember(Guid applicationId, Guid memberId, Guid userId, CancellationToken ct)
         {
             if (!await ApplicationAccessHelper.IsApplicationOwnerAsync(_db, userId, applicationId, ct))
-                throw new ApiException(StatusCodes.Status403Forbidden, Shared.Keys.Errors.Forbidden);
+                throw new ApiException(StatusCodes.Status403Forbidden, ErrorKeys.Forbidden);
 
             var member = await _db.ApplicationMember
                 .FirstOrDefaultAsync(m => m.Id == memberId && m.RefApplication == applicationId, ct);
             if (member is null)
-                throw new ApiException(StatusCodes.Status404NotFound, Shared.Keys.Errors.NotFound);
+                throw new ApiException(StatusCodes.Status404NotFound, ErrorKeys.NotFound);
 
             // Cannot remove the last owner
             if (member.RefRoleApplication == RoleApplication.Ids.Owner)
@@ -469,7 +490,7 @@ namespace api.Services
                 int ownerCount = await _db.ApplicationMember
                     .CountAsync(m => m.RefApplication == applicationId && m.RefRoleApplication == RoleApplication.Ids.Owner, ct);
                 if (ownerCount <= 1)
-                    throw new ApiException(StatusCodes.Status400BadRequest, Shared.Keys.Errors.CannotRemoveLastOwner);
+                    throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.CannotRemoveLastOwner);
             }
 
             _db.ApplicationMember.Remove(member);
@@ -479,12 +500,12 @@ namespace api.Services
         public async Task CancelInvitation(Guid applicationId, Guid invitationId, Guid userId, CancellationToken ct)
         {
             if (!await ApplicationAccessHelper.CanMaintainApplicationAsync(_db, userId, applicationId, ct))
-                throw new ApiException(StatusCodes.Status403Forbidden, Shared.Keys.Errors.Forbidden);
+                throw new ApiException(StatusCodes.Status403Forbidden, ErrorKeys.Forbidden);
 
             var inv = await _db.ApplicationInvitation
                 .FirstOrDefaultAsync(i => i.Id == invitationId && i.RefApplication == applicationId, ct);
             if (inv is null)
-                throw new ApiException(StatusCodes.Status404NotFound, Shared.Keys.Errors.NotFound);
+                throw new ApiException(StatusCodes.Status404NotFound, ErrorKeys.NotFound);
 
             _db.ApplicationInvitation.Remove(inv);
             await _db.SaveChangesAsync(ct);
@@ -493,7 +514,7 @@ namespace api.Services
         public async Task<CheckEmailResultDto> CheckEmail(Guid applicationId, string email, Guid userId, CancellationToken ct)
         {
             if (!await ApplicationAccessHelper.CanMaintainApplicationAsync(_db, userId, applicationId, ct))
-                throw new ApiException(StatusCodes.Status403Forbidden, Shared.Keys.Errors.Forbidden);
+                throw new ApiException(StatusCodes.Status403Forbidden, ErrorKeys.Forbidden);
 
             var found = await _auth.FindUserByEmail(email, ct);
             if (!found.HasValue)

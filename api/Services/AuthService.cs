@@ -112,7 +112,7 @@ public class AuthService : IAuth
     public async Task<LoginResponse> Login(LoginRequest request, CancellationToken ct)
     {
         if (request == null || string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
-            throw new ApiException(StatusCodes.Status401Unauthorized, Shared.Keys.Errors.InvalidCredentials);
+            throw new ApiException(StatusCodes.Status401Unauthorized, ErrorKeys.InvalidCredentials);
 
         string pepper = GetPepper();
         string emailKey = GetEmailKey();
@@ -122,14 +122,14 @@ public class AuthService : IAuth
 
         User? user = await _context.User.FirstOrDefaultAsync(u => u.Email == encryptedEmail, ct);
         if (user == null || string.IsNullOrWhiteSpace(user.Password) || string.IsNullOrWhiteSpace(user.Salt))
-            throw new ApiException(StatusCodes.Status401Unauthorized, Shared.Keys.Errors.InvalidCredentials);
+            throw new ApiException(StatusCodes.Status401Unauthorized, ErrorKeys.InvalidCredentials);
 
         string computedHash = AuthHelper.HashPassword(request.Password, user.Salt, pepper);
         if (!AuthHelper.VerifyPassword(user.Password, computedHash))
-            throw new ApiException(StatusCodes.Status401Unauthorized, Shared.Keys.Errors.InvalidCredentials);
+            throw new ApiException(StatusCodes.Status401Unauthorized, ErrorKeys.InvalidCredentials);
 
         if (!user.EmailConfirmed)
-            throw new ApiException(StatusCodes.Status401Unauthorized, Shared.Keys.Errors.EmailNotConfirmed);
+            throw new ApiException(StatusCodes.Status401Unauthorized, ErrorKeys.EmailNotConfirmed);
 
         string accessToken = GenerateToken(user.Id);
         string refreshToken = GenerateRefreshToken(user.Id);
@@ -145,13 +145,16 @@ public class AuthService : IAuth
     {
         bool isBeta = string.Equals(_config["AppSettings:IsBeta"], "true", StringComparison.OrdinalIgnoreCase);
         if (isBeta)
-            throw new ApiException(StatusCodes.Status400BadRequest, Shared.Keys.Errors.BetaRegistrationDisabled);
+            throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.BetaRegistrationDisabled);
 
         if (request == null || string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
-            throw new ApiException(StatusCodes.Status400BadRequest, Shared.Keys.Errors.EmailPasswordRequired);
+            throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.EmailPasswordRequired);
 
         if (request.Password.Length < 6)
-            throw new ApiException(StatusCodes.Status400BadRequest, Shared.Keys.Errors.PasswordTooShort);
+            throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.PasswordTooShort);
+
+        if (!request.TermsAccepted)
+            throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.TermsNotAccepted);
 
         string pepper = GetPepper();
         string emailKey = GetEmailKey();
@@ -163,7 +166,7 @@ public class AuthService : IAuth
 
         bool exists = await _context.User.AnyAsync(u => u.Email == encryptedEmail, ct);
         if (exists)
-            throw new ApiException(StatusCodes.Status400BadRequest, Shared.Keys.Errors.EmailAlreadyUsed);
+            throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.EmailAlreadyUsed);
 
         string salt = AuthHelper.GenerateSalt();
         string passwordHash = AuthHelper.HashPassword(request.Password, salt, pepper);
@@ -178,7 +181,9 @@ public class AuthService : IAuth
             Password = passwordHash,
             Salt = salt,
             EmailConfirmed = false,
-            EmailConfirmationToken = confirmationToken
+            EmailConfirmationToken = confirmationToken,
+            TermsAcceptedAt = DateTime.UtcNow,
+            TermsVersion = TermsKeys.CurrentVersion
         };
 
         _context.User.Add(user);
@@ -381,13 +386,13 @@ public class AuthService : IAuth
     public async Task ChangePassword(Guid userId, string currentPassword, string newPassword, CancellationToken ct)
     {
         var user = await _context.User.FirstOrDefaultAsync(x => x.Id == userId, ct);
-        if (user is null) throw new ApiException(StatusCodes.Status401Unauthorized, Shared.Keys.Errors.UserNotFound);
+        if (user is null) throw new ApiException(StatusCodes.Status401Unauthorized, ErrorKeys.UserNotFound);
 
         var pepper = GetPepper();
 
         var computedHash = AuthHelper.HashPassword(currentPassword, user.Salt, pepper);
         if (!AuthHelper.VerifyPassword(user.Password, computedHash))
-            throw new ApiException(StatusCodes.Status401Unauthorized, Shared.Keys.Errors.CurrentPasswordInvalid);
+            throw new ApiException(StatusCodes.Status401Unauthorized, ErrorKeys.CurrentPasswordInvalid);
 
         var newSalt = AuthHelper.GenerateSalt();
         var newHash = AuthHelper.HashPassword(newPassword, newSalt, pepper);
@@ -409,7 +414,7 @@ public class AuthService : IAuth
     public async Task ConfirmPasswordChange(string token, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(token))
-            throw new ApiException(StatusCodes.Status400BadRequest, Shared.Keys.Errors.InvalidPasswordChangeToken);
+            throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.InvalidPasswordChangeToken);
 
         var user = await _context.User.FirstOrDefaultAsync(
             u => u.PasswordChangeToken == token, ct);
@@ -420,7 +425,7 @@ public class AuthService : IAuth
             || string.IsNullOrWhiteSpace(user.PendingPassword)
             || string.IsNullOrWhiteSpace(user.PendingSalt))
         {
-            throw new ApiException(StatusCodes.Status400BadRequest, Shared.Keys.Errors.InvalidPasswordChangeToken);
+            throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.InvalidPasswordChangeToken);
         }
 
         user.Password = user.PendingPassword;
@@ -437,11 +442,11 @@ public class AuthService : IAuth
     public async Task ConfirmEmail(string token, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(token))
-            throw new ApiException(StatusCodes.Status400BadRequest, Shared.Keys.Errors.InvalidConfirmationToken);
+            throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.InvalidConfirmationToken);
 
         var user = await _context.User.FirstOrDefaultAsync(u => u.EmailConfirmationToken == token, ct);
         if (user is null)
-            throw new ApiException(StatusCodes.Status400BadRequest, Shared.Keys.Errors.InvalidConfirmationToken);
+            throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.InvalidConfirmationToken);
 
         user.EmailConfirmed = true;
         user.EmailConfirmationToken = null;
@@ -473,11 +478,11 @@ public class AuthService : IAuth
         string confirmLink = $"{frontendUrl}/confirm-email?token={token}";
 
         string lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
-        string subject = _t[Shared.Keys.Email.Confirm.Subject].Value;
-        string title = _t[Shared.Keys.Email.Confirm.Title].Value;
-        string body = _t[Shared.Keys.Email.Confirm.Body].Value;
-        string button = _t[Shared.Keys.Email.Confirm.Button].Value;
-        string footer = _t[Shared.Keys.Email.Confirm.Footer].Value;
+        string subject = _t[EmailKeys.Confirm.Subject].Value;
+        string title = _t[EmailKeys.Confirm.Title].Value;
+        string body = _t[EmailKeys.Confirm.Body].Value;
+        string button = _t[EmailKeys.Confirm.Button].Value;
+        string footer = _t[EmailKeys.Confirm.Footer].Value;
 
         string htmlBody = $@"<!DOCTYPE html>
 <html lang=""{lang}"">
@@ -542,13 +547,13 @@ public class AuthService : IAuth
     public async Task ResetPassword(string token, string newPassword, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(token))
-            throw new ApiException(StatusCodes.Status400BadRequest, Shared.Keys.Errors.InvalidResetToken);
+            throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.InvalidResetToken);
 
         var user = await _context.User.FirstOrDefaultAsync(
             u => u.PasswordResetToken == token, ct);
 
         if (user is null || user.PasswordResetTokenExpiresAt is null || user.PasswordResetTokenExpiresAt < DateTime.UtcNow)
-            throw new ApiException(StatusCodes.Status400BadRequest, Shared.Keys.Errors.InvalidResetToken);
+            throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.InvalidResetToken);
 
         var pepper = GetPepper();
         var newSalt = AuthHelper.GenerateSalt();
@@ -570,12 +575,12 @@ public class AuthService : IAuth
         string resetLink = $"{frontendUrl}/reset-password?token={token}";
 
         string lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
-        string subject = _t[Shared.Keys.Email.Reset.Subject].Value;
-        string title = _t[Shared.Keys.Email.Reset.Title].Value;
-        string body = _t[Shared.Keys.Email.Reset.Body].Value;
-        string button = _t[Shared.Keys.Email.Reset.Button].Value;
-        string expires = _t[Shared.Keys.Email.Reset.Expires].Value;
-        string footer = _t[Shared.Keys.Email.Reset.Footer].Value;
+        string subject = _t[EmailKeys.Reset.Subject].Value;
+        string title = _t[EmailKeys.Reset.Title].Value;
+        string body = _t[EmailKeys.Reset.Body].Value;
+        string button = _t[EmailKeys.Reset.Button].Value;
+        string expires = _t[EmailKeys.Reset.Expires].Value;
+        string footer = _t[EmailKeys.Reset.Footer].Value;
 
         string htmlBody = $@"<!DOCTYPE html>
 <html lang=""{lang}"">
@@ -629,12 +634,12 @@ public class AuthService : IAuth
         string confirmLink = $"{frontendUrl}/confirm-password-change?token={token}";
 
         string lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
-        string subject = _t[Shared.Keys.Email.ChangePassword.Subject].Value;
-        string title = _t[Shared.Keys.Email.ChangePassword.Title].Value;
-        string body = _t[Shared.Keys.Email.ChangePassword.Body].Value;
-        string button = _t[Shared.Keys.Email.ChangePassword.Button].Value;
-        string expires = _t[Shared.Keys.Email.ChangePassword.Expires].Value;
-        string footer = _t[Shared.Keys.Email.ChangePassword.Footer].Value;
+        string subject = _t[EmailKeys.ChangePassword.Subject].Value;
+        string title = _t[EmailKeys.ChangePassword.Title].Value;
+        string body = _t[EmailKeys.ChangePassword.Body].Value;
+        string button = _t[EmailKeys.ChangePassword.Button].Value;
+        string expires = _t[EmailKeys.ChangePassword.Expires].Value;
+        string footer = _t[EmailKeys.ChangePassword.Footer].Value;
 
         string htmlBody = $@"<!DOCTYPE html>
 <html lang=""{lang}"">
@@ -716,4 +721,118 @@ public class AuthService : IAuth
 
     public string? DecryptLastName(string? encryptedLastName)
         => string.IsNullOrWhiteSpace(encryptedLastName) ? null : DecryptDeterministic(GetLastNameKey(), encryptedLastName);
+
+    public async Task<List<SoloOwnedAppDto>> GetSoloOwnedApps(Guid userId, CancellationToken ct)
+    {
+        List<Guid> ownedAppIds = await _context.ApplicationMember
+            .Where(m => m.RefUser == userId && m.RefRoleApplication == RoleApplication.Ids.Owner)
+            .Select(m => m.RefApplication)
+            .ToListAsync(ct);
+
+        List<SoloOwnedAppDto> result = new();
+        string emailKey = GetEmailKey();
+        string nameKey = GetNameKey();
+        string lastNameKey = GetLastNameKey();
+
+        foreach (Guid appId in ownedAppIds)
+        {
+            int otherOwners = await _context.ApplicationMember
+                .CountAsync(m => m.RefApplication == appId
+                    && m.RefRoleApplication == RoleApplication.Ids.Owner
+                    && m.RefUser != userId, ct);
+
+            if (otherOwners > 0) continue;
+
+            Application? app = await _context.Application
+                .AsNoTracking()
+                .FirstOrDefaultAsync(a => a.Id == appId, ct);
+
+            if (app is null) continue;
+
+            List<ApplicationMember> members = await _context.ApplicationMember
+                .AsNoTracking()
+                .Where(m => m.RefApplication == appId && m.RefUser != userId)
+                .ToListAsync(ct);
+
+            List<AppMemberDto> memberDtos = new();
+            foreach (ApplicationMember member in members)
+            {
+                User? memberUser = await _context.User
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(u => u.Id == member.RefUser, ct);
+
+                if (memberUser is null) continue;
+
+                memberDtos.Add(new AppMemberDto
+                {
+                    UserId = member.RefUser,
+                    Email = DecryptDeterministic(emailKey, memberUser.Email) ?? string.Empty,
+                    Name = string.IsNullOrWhiteSpace(memberUser.Name) ? null : DecryptDeterministic(nameKey, memberUser.Name),
+                    LastName = string.IsNullOrWhiteSpace(memberUser.LastName) ? null : DecryptDeterministic(lastNameKey, memberUser.LastName),
+                    Role = member.RefRoleApplication == RoleApplication.Ids.Owner ? "Owner"
+                         : member.RefRoleApplication == RoleApplication.Ids.Maintainer ? "Maintainer"
+                         : "Viewer"
+                });
+            }
+
+            result.Add(new SoloOwnedAppDto
+            {
+                AppId = appId,
+                AppName = app.Name,
+                Members = memberDtos
+            });
+        }
+
+        return result;
+    }
+
+    public async Task<ExportDataDto> ExportData(Guid userId, CancellationToken ct)
+    {
+        User? user = await _context.User.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user is null)
+            throw new ApiException(StatusCodes.Status404NotFound, ErrorKeys.UserNotFound);
+
+        return new ExportDataDto
+        {
+            Email = DecryptDeterministic(GetEmailKey(), user.Email) ?? string.Empty,
+            Name = string.IsNullOrWhiteSpace(user.Name) ? null : DecryptDeterministic(GetNameKey(), user.Name),
+            LastName = string.IsNullOrWhiteSpace(user.LastName) ? null : DecryptDeterministic(GetLastNameKey(), user.LastName),
+            TermsAcceptedAt = user.TermsAcceptedAt,
+            TermsVersion = user.TermsVersion,
+            ExportedAt = DateTime.UtcNow
+        };
+    }
+
+    public async Task DeleteAccount(Guid userId, List<AppDecisionDto> decisions, CancellationToken ct)
+    {
+        User? user = await _context.User.FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user is null)
+            throw new ApiException(StatusCodes.Status404NotFound, ErrorKeys.UserNotFound);
+
+        foreach (AppDecisionDto decision in decisions)
+        {
+            if (decision.Action == AppDecisionAction.Delete)
+            {
+                Application? app = await _context.Application.FirstOrDefaultAsync(a => a.Id == decision.AppId, ct);
+                if (app is not null)
+                    _context.Application.Remove(app);
+            }
+            else if (decision.Action == AppDecisionAction.Transfer && decision.TransferToUserId.HasValue)
+            {
+                ApplicationMember? targetMember = await _context.ApplicationMember
+                    .FirstOrDefaultAsync(m => m.RefApplication == decision.AppId && m.RefUser == decision.TransferToUserId.Value, ct);
+
+                if (targetMember is not null)
+                    targetMember.RefRoleApplication = RoleApplication.Ids.Owner;
+            }
+        }
+
+        List<ApplicationMember> memberships = await _context.ApplicationMember
+            .Where(m => m.RefUser == userId)
+            .ToListAsync(ct);
+        _context.ApplicationMember.RemoveRange(memberships);
+
+        _context.User.Remove(user);
+        await _context.SaveChangesAsync(ct);
+    }
 }

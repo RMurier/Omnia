@@ -19,6 +19,8 @@ namespace api.Data.Models
         public string? PasswordChangeToken { get; set; }
         public DateTime? PasswordChangeTokenExpiresAt { get; set; }
         public DateTime? PasswordChangedAt { get; set; }
+        public DateTime? TermsAcceptedAt { get; set; }
+        public string? TermsVersion { get; set; }
         [NotMapped]
         public string? AccessToken { get; set; } = default!;
         [NotMapped]

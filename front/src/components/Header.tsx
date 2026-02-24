@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useAuthStore } from "../stores/authStore";
 import { useThemeStore } from "../stores/themeStore";
 import { signout } from "../utils/authFetch";
@@ -26,6 +26,15 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
   const toggleTheme = useThemeStore((s) => s.toggleTheme);
   const isMobile = useMediaQuery(BREAKPOINTS.mobile);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isBeta, setIsBeta] = useState(false);
+
+  useEffect(() => {
+    const base = import.meta.env.VITE_API_BASE_URL ?? "/api";
+    fetch(`${base}/auth/beta-status`)
+      .then((r) => r.json())
+      .then((data) => setIsBeta(!!data.isBeta))
+      .catch(() => {});
+  }, []);
 
   const currentLang = (i18n.language || "en").toLowerCase();
   const isFr = currentLang.startsWith("fr");
@@ -34,7 +43,6 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
     () => [
       { label: t("nav.applications"), href: "/applications" },
       { label: t("nav.logs"), href: "/logs" },
-      { label: t("nav.mails"), href: "/mails" },
       { label: t("nav.activity"), href: "/activity" },
     ],
     []
@@ -243,6 +251,18 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
       color: "#ffffff",
     },
 
+    betaBadge: {
+      fontSize: 10,
+      fontWeight: 700,
+      padding: "2px 6px",
+      borderRadius: 4,
+      backgroundColor: "var(--color-warning)",
+      color: "#000000",
+      letterSpacing: "0.07em",
+      textTransform: "uppercase" as const,
+      lineHeight: 1,
+    },
+
     /* Mobile menu */
     hamburger: {
       display: "inline-flex",
@@ -298,6 +318,7 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
       <header style={styles.header}>
         <div style={styles.left}>
           <a href="/" style={styles.logo}>{t("app.name")}</a>
+          {isBeta && <span style={styles.betaBadge}>Beta</span>}
         </div>
 
         <button
@@ -322,6 +343,9 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
             ))}
             <a href="/docs" style={styles.mobileLink}>
               {t("nav.docs")}
+            </a>
+            <a href="/about" style={styles.mobileLink}>
+              {t("header.about")}
             </a>
 
             <div style={styles.mobileDivider} />
@@ -394,6 +418,11 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
                 </button>
               </>
             )}
+
+            <div style={styles.mobileDivider} />
+            <a href="/terms" style={{ ...styles.mobileLink, fontSize: 13, color: "var(--color-text-muted)", fontWeight: 500 }}>
+              {t("header.terms")}
+            </a>
           </div>
         )}
       </header>
@@ -405,6 +434,7 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
     <header style={styles.header}>
       <div style={styles.left}>
         <a href="/" style={styles.logo}>{t("app.name")}</a>
+        {isBeta && <span style={styles.betaBadge}>Beta</span>}
       </div>
 
       <nav style={styles.nav} aria-label={t("header.mainNav")}>
@@ -419,6 +449,11 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
           <li>
             <a href="/docs" style={styles.link}>
               {t("nav.docs")}
+            </a>
+          </li>
+          <li>
+            <a href="/about" style={styles.link}>
+              {t("header.about")}
             </a>
           </li>
         </ul>
@@ -466,6 +501,15 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
                 </button>
               </div>
             </div>
+
+            {/* Terms */}
+            <div style={{ height: 1, background: "var(--color-border)", margin: "6px 0 2px" }} />
+            <a
+              href="/terms"
+              style={{ display: "block", padding: "6px 6px", fontSize: 13, color: "var(--color-text-muted)", textDecoration: "none", borderRadius: 6 }}
+            >
+              {t("header.terms")}
+            </a>
           </div>
         </details>
 

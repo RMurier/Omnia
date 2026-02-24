@@ -18,7 +18,9 @@
     "signoutButton": "Se déconnecter",
     "signin": "Connexion",
     "myAccount": "Mon compte",
-    "toggleMenu": "Ouvrir le menu"
+    "toggleMenu": "Ouvrir le menu",
+    "terms": "CGU",
+    "about": "À propos"
   },
   "home": {
     "heroTitle": "Omnia · Plateforme centrale",
@@ -58,8 +60,8 @@
     "subtitle": "Crée un compte pour commencer.",
     "email": "Email",
     "password": "Mot de passe",
-    "name": "Prénom (optionnel)",
-    "lastName": "Nom (optionnel)",
+    "name": "Prénom",
+    "lastName": "Nom",
     "emailPlaceholder": "ex: john@example.com",
     "namePlaceholder": "ex: Jean",
     "lastNamePlaceholder": "ex: Dupont",
@@ -74,7 +76,18 @@
     "resend": "Renvoyer l'email",
     "resending": "Envoi...",
     "resendOk": "Email de confirmation renvoyé.",
-    "alreadyHaveAccount": "Déjà un compte ? Se connecter"
+    "alreadyHaveAccount": "Déjà un compte ? Se connecter",
+    "nameRequired": "Le prénom et le nom sont obligatoires.",
+    "termsPrefix": "J'ai lu et j'accepte les",
+    "termsLink": "Conditions Générales d'Utilisation",
+    "termsRequired": "Vous devez accepter les CGU pour continuer."
+  },
+  "terms": {
+    "title": "Conditions Générales d'Utilisation",
+    "current": "actuelle",
+    "previousVersions": "Versions précédentes :",
+    "oldVersionBanner": "Vous consultez une ancienne version des CGU.",
+    "viewCurrent": "Voir la version actuelle"
   },
   "forgotPassword": {
     "title": "Mot de passe oublié",
@@ -120,7 +133,16 @@
     "subtitle": "Cette page n'existe pas ou a été déplacée. Vérifie l'URL ou retourne à l'accueil.",
     "pathRequested": "Chemin demandé :",
     "backHome": "Retour à l'accueil",
-    "signin": "Connexion"
+    "signin": "Connexion",
+    "discordPrompt": "Un bug ou une suggestion ?",
+    "discordBtn": "Nous rejoindre sur Discord"
+  },
+  "about": {
+    "title": "À propos d'Omnia",
+    "description": "Omnia est une plateforme de monitoring centralisée conçue pour unifier les logs, le suivi d'activité et la gestion des applications de tous tes projets. Simple, sécurisée et multi-tenant.",
+    "discordTitle": "Rejoindre la communauté",
+    "discordDescription": "Une question, un bug ou une suggestion ? Rejoins-nous sur Discord — on serait ravis de t'entendre.",
+    "discordBtn": "Rejoindre Discord"
   },
   "me": {
     "title": "Mon compte",
@@ -142,7 +164,22 @@
     "passwordChangeEmailSent": "Un email de confirmation a été envoyé. Vérifie ta boîte de réception pour confirmer le changement de mot de passe.",
     "languageTitle": "Langue",
     "currentLanguage": "Langue actuelle :",
-    "error": "Erreur"
+    "error": "Erreur",
+    "gdprTitle": "Mes données",
+    "exportData": "Exporter mes données",
+    "exporting": "Export en cours...",
+    "deleteAccount": "Supprimer mon compte",
+    "deleteAccountConfirm": "Es-tu sûr ? Cette action est irréversible. Toutes tes données seront définitivement supprimées.",
+    "deleteAccountConfirmBtn": "Oui, supprimer mon compte",
+    "deleteAccountCancel": "Annuler",
+    "deleting": "Suppression...",
+    "appsToResolve": "Tu es le seul propriétaire des applications suivantes. Décide ce qu'il faut en faire avant de supprimer ton compte :",
+    "appActionDelete": "Supprimer cette application",
+    "appActionTransfer": "Transférer la propriété à :",
+    "appNoMembers": "Aucun autre membre — cette application sera supprimée.",
+    "appDecisionRequired": "Veuillez résoudre toutes les applications avant de continuer.",
+    "transferPlaceholder": "Sélectionner un membre",
+    "next": "Suivant"
   },
   "settings": {
     "title": "Paramètres",
@@ -167,7 +204,8 @@
     "refresh": "Rafraîchir",
     "id": "Id",
     "status": "Statut",
-    "delete": "Supprimer"
+    "delete": "Supprimer",
+    "error": "Une erreur est survenue"
   },
   "applications": {
     "title": "Applications",
@@ -221,6 +259,7 @@
     "inviteEmailPlaceholder": "ex: john@example.com",
     "inviteRole": "Rôle",
     "inviteBtn": "Inviter",
+    "inviteEmailRequired": "Veuillez saisir une adresse email valide.",
     "inviting": "Invitation...",
     "inviteSuccessAdded": "Utilisateur ajouté comme membre.",
     "inviteSuccessSent": "Invitation envoyée. L'utilisateur sera ajouté lorsqu'il créera son compte.",
@@ -235,7 +274,31 @@
     "roleOwner": "Propriétaire",
     "roleMaintainer": "Mainteneur",
     "roleViewer": "Lecteur",
-    "refreshMembers": "Rafraîchir"
+    "refreshMembers": "Rafraîchir",
+    "settings": "Paramètres",
+    "settingsTitle": "Paramètres — {{name}}",
+    "tabGeneral": "Général",
+    "tabMembers": "Membres",
+    "tabLogs": "Logs",
+    "logRetention": "Rétention des logs et des activités",
+    "logRetentionHelp": "Les logs et activités plus anciens que ce seuil seront supprimés lors de la purge.",
+    "logRetentionValue": "Valeur",
+    "logRetentionUnit": "Unité",
+    "unitDays": "Jours",
+    "unitWeeks": "Semaines",
+    "unitMonths": "Mois",
+    "unitYears": "Années",
+    "purgeNow": "Purger maintenant",
+    "purging": "Purge...",
+    "purgeSuccess": "{{count}} log(s) supprimé(s).",
+    "purgeConfirm": "Supprimer tous les logs de plus de {{value}} {{unit}} pour \"{{name}}\" ?",
+    "generalHintEditable": "En tant que mainteneur ou propriétaire, vous pouvez modifier les paramètres généraux de cette application.",
+    "generalHintReadonly": "Vous pouvez consulter les paramètres de cette application mais ne pouvez pas les modifier.",
+    "membersHintEditable": "Gérez les membres et les invitations en attente de cette application.",
+    "membersHintReadonly": "Vous pouvez consulter les membres de cette application.",
+    "ownerOnly": "Propriétaire uniquement",
+    "purgeNowHint": "Déclenchez manuellement une purge pour supprimer tous les logs de plus de {{value}} {{unit}}.",
+    "maintainerOnly": "Seuls les mainteneurs et propriétaires peuvent déclencher une purge manuelle."
   },
   "logs": {
     "title": "Logs",

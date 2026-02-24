@@ -21,10 +21,10 @@ namespace api.Services
         public async Task<ActivityDto> Create(ActivityDto dto, CancellationToken ct)
         {
             if (dto.RefApplication is null || dto.RefApplication == Guid.Empty)
-                throw new ApiException(StatusCodes.Status400BadRequest, Shared.Keys.Errors.RefApplicationRequired);
+                throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.RefApplicationRequired);
 
             if (dto.AnonymousUserId is null || dto.AnonymousUserId == Guid.Empty)
-                throw new ApiException(StatusCodes.Status400BadRequest, Shared.Keys.Errors.AnonymousUserIdRequired);
+                throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.AnonymousUserIdRequired);
 
             var entity = new Activity
             {

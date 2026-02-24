@@ -85,8 +85,53 @@ public sealed class AuthController : ControllerBase
             await _auth.RevokeRefreshToken(refreshToken, ct);
 
         ExpireCookie("access_token", "/");
-        ExpireCookie("refresh_token", "/api/auth/refresh");
+        ExpireCookie("refresh_token", "/");
         return Ok(new { ok = true });
+    }
+
+    [HttpGet("me/solo-owned-apps")]
+    public async Task<IActionResult> GetSoloOwnedApps(CancellationToken ct)
+    {
+        Guid? userId = GetUserIdFromClaims();
+        if (userId is null)
+            return Unauthorized(new { message = _t[ErrorKeys.Unauthorized].Value });
+
+        List<SoloOwnedAppDto> apps = await _auth.GetSoloOwnedApps(userId.Value, ct);
+        return Ok(apps);
+    }
+
+    [HttpGet("me/export")]
+    public async Task<IActionResult> ExportData(CancellationToken ct)
+    {
+        Guid? userId = GetUserIdFromClaims();
+        if (userId is null)
+            return Unauthorized(new { message = _t[ErrorKeys.Unauthorized].Value });
+
+        ExportDataDto data = await _auth.ExportData(userId.Value, ct);
+        byte[] bytes = System.Text.Encoding.UTF8.GetBytes(
+            System.Text.Json.JsonSerializer.Serialize(data, new System.Text.Json.JsonSerializerOptions { WriteIndented = true })
+        );
+        return File(bytes, "application/json", $"omnia-data-{DateTime.UtcNow:yyyyMMdd}.json");
+    }
+
+    [HttpDelete("me")]
+    public async Task<IActionResult> DeleteAccount([FromBody] DeleteAccountRequest request, CancellationToken ct)
+    {
+        Guid? userId = GetUserIdFromClaims();
+        if (userId is null)
+            return Unauthorized(new { message = _t[ErrorKeys.Unauthorized].Value });
+
+        try
+        {
+            await _auth.DeleteAccount(userId.Value, request?.AppDecisions ?? new(), ct);
+            ExpireCookie("access_token", "/");
+            ExpireCookie("refresh_token", "/");
+            return Ok(new { ok = true });
+        }
+        catch (ApiException ex)
+        {
+            return StatusCode(ex.StatusCode, new { message = _t[ex.Key].Value });
+        }
     }
 
     [HttpGet("me")]
@@ -94,11 +139,11 @@ public sealed class AuthController : ControllerBase
     {
         var userId = GetUserIdFromClaims();
         if (userId is null)
-            return Unauthorized(new { message = _t[Shared.Keys.Errors.Unauthorized].Value });
+            return Unauthorized(new { message = _t[ErrorKeys.Unauthorized].Value });
 
         var me = await _auth.GetMe(userId.Value, ct);
         if (me is null)
-            return Unauthorized(new { message = _t[Shared.Keys.Errors.Unauthorized].Value });
+            return Unauthorized(new { message = _t[ErrorKeys.Unauthorized].Value });
 
         return Ok(me);
     }
@@ -162,10 +207,10 @@ public sealed class AuthController : ControllerBase
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request, CancellationToken ct)
     {
         if (request is null || string.IsNullOrWhiteSpace(request.Token) || string.IsNullOrWhiteSpace(request.NewPassword))
-            return BadRequest(new { message = _t[Shared.Keys.Errors.RequiredFields].Value });
+            return BadRequest(new { message = _t[ErrorKeys.RequiredFields].Value });
 
         if (request.NewPassword.Length < 6)
-            return BadRequest(new { message = _t[Shared.Keys.Errors.PasswordTooShort].Value });
+            return BadRequest(new { message = _t[ErrorKeys.PasswordTooShort].Value });
 
         try
         {
@@ -182,14 +227,14 @@ public sealed class AuthController : ControllerBase
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequestDto request, CancellationToken ct)
     {
         if (request is null || string.IsNullOrWhiteSpace(request.CurrentPassword) || string.IsNullOrWhiteSpace(request.NewPassword))
-            return BadRequest(new { message = _t["Errors.RequiredFields"].Value });
+            return BadRequest(new { message = _t[ErrorKeys.RequiredFields].Value });
 
         if (request.NewPassword.Length < 6)
-            return BadRequest(new { message = _t["Errors.PasswordTooShort"].Value });
+            return BadRequest(new { message = _t[ErrorKeys.PasswordTooShort].Value });
 
         var userId = GetUserIdFromClaims();
         if (userId is null)
-            return Unauthorized(new { message = _t["Errors.Unauthorized"].Value });
+            return Unauthorized(new { message = _t[ErrorKeys.Unauthorized].Value });
 
         try
         {
@@ -235,7 +280,7 @@ public sealed class AuthController : ControllerBase
             HttpOnly = true,
             Secure = secure,
             SameSite = SameSiteMode.Lax,
-            Path = "/api/auth/refresh",
+            Path = "/",
             MaxAge = TimeSpan.FromDays(refreshDays)
         });
     }
