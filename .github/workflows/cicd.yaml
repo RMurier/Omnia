@@ -87,7 +87,6 @@ jobs:
       - name: Run Database Migrations
         run: |
           cd api
-          # Fix: Copy example config to bypass JWT/Security validation errors during build
           cp appsettings.example.json appsettings.json
           dotnet restore
           dotnet ef database update --connection "${{ env.DB_CONNECTION }}"
@@ -141,7 +140,6 @@ jobs:
       - name: Run Database Migrations
         run: |
           cd api
-          # Fix: Copy example config to bypass JWT/Security validation errors during build
           cp appsettings.example.json appsettings.json
           dotnet restore
           dotnet ef database update --connection "${{ env.DB_CONNECTION }}"
