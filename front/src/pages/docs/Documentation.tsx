@@ -204,7 +204,7 @@ export default function Documentation() {
         </button>
       )}
 
-      <main style={{ flex: 1, overflowY: "auto", padding: isTablet ? "24px 16px" : "32px 48px", maxWidth: 900 }}>
+      <main style={{ flex: 1, padding: isTablet ? "24px 16px" : "32px 48px", width: "stretch" }}>
         <h1 style={{ fontSize: 28, fontWeight: 800, color: "var(--color-text-primary)", margin: "0 0 8px" }}>{t("docs.title")}</h1>
         <p style={{ fontSize: 15, color: "var(--color-text-muted)", marginBottom: 32 }}>{t("docs.subtitle")}</p>
         <CategoryComponent />
