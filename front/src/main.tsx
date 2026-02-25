@@ -38,7 +38,7 @@ function Root() {
       <Toaster position="top-right" richColors />
       <Header isAuthenticated={isAuthenticated} />
       <BrowserRouter>
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflowY: "auto" }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/signin" element={<SignIn />} />

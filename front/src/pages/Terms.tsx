@@ -44,6 +44,7 @@ export default function TermsPage() {
   };
 
   return (
+    <div style={{ flex: 1, overflowY: "auto" }}>
     <div className="animate-page" style={styles.page}>
       {isOldVersion && (
         <div style={styles.banner}>
@@ -64,6 +65,7 @@ export default function TermsPage() {
           </a>
         ))}
       </div>
+    </div>
     </div>
   );
 }
