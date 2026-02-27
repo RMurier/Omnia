@@ -179,7 +179,14 @@
     "appNoMembers": "Aucun autre membre — cette application sera supprimée.",
     "appDecisionRequired": "Veuillez résoudre toutes les applications avant de continuer.",
     "transferPlaceholder": "Sélectionner un membre",
-    "next": "Suivant"
+    "next": "Suivant",
+    "dashboardTitle": "Tableau de bord",
+    "dashboardSubtitle": "Aperçu des logs d'erreur – 7 derniers jours",
+    "dashboardChartTitle": "Erreurs par jour",
+    "dashboardPodiumTitle": "Top applications",
+    "dashboardNoData": "Aucun log d'erreur sur les 7 derniers jours.",
+    "dashboardLoading": "Chargement du tableau de bord...",
+    "dashboardErrors": "erreurs"
   },
   "settings": {
     "title": "Paramètres",

@@ -17,5 +17,7 @@ namespace api.Interfaces
         Task<IReadOnlyList<LogDto>> GetDistinct(string? category, string? level, Guid[]? refsApplication, DateTime? fromUtc, DateTime? toUtc, bool? isPatched, Guid userId, CancellationToken ct);
 
         Task<List<LogDto>> MarkPatched(IEnumerable<Guid> ids, bool isPatched, Guid userId, CancellationToken ct);
+
+        Task<DashboardStatsDto> GetDashboard(Guid userId, CancellationToken ct);
     }
 }

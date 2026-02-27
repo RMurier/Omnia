@@ -179,7 +179,14 @@
     "appNoMembers": "No other members — this application will be deleted.",
     "appDecisionRequired": "Please resolve all applications before continuing.",
     "transferPlaceholder": "Select a member",
-    "next": "Next"
+    "next": "Next",
+    "dashboardTitle": "Dashboard",
+    "dashboardSubtitle": "Error log overview – last 7 days",
+    "dashboardChartTitle": "Errors per day",
+    "dashboardPodiumTitle": "Top applications",
+    "dashboardNoData": "No error logs in the last 7 days.",
+    "dashboardLoading": "Loading dashboard...",
+    "dashboardErrors": "errors"
   },
   "settings": {
     "title": "Settings",

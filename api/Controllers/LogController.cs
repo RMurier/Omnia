@@ -136,6 +136,17 @@ namespace api.Controllers
             return Ok(items);
         }
 
+        [HttpGet("dashboard")]
+        public async Task<ActionResult<DashboardStatsDto>> GetDashboard(CancellationToken ct)
+        {
+            var userId = GetUserIdFromClaims();
+            if (userId is null)
+                return Unauthorized(new { message = _t["Errors.Unauthorized"].Value });
+
+            var stats = await _log.GetDashboard(userId.Value, ct);
+            return Ok(stats);
+        }
+
         [HttpPatch("patch")]
         public async Task<ActionResult<List<LogDto>>> MarkPatchedMany([FromBody] PatchLogsRequest req, CancellationToken ct = default)
         {

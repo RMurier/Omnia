@@ -316,6 +316,36 @@ namespace api.Services
             return result;
         }
 
+        public async Task<DashboardStatsDto> GetDashboard(Guid userId, CancellationToken ct)
+        {
+            var accessibleIds = await ApplicationAccessHelper.GetAccessibleApplicationIdsAsync(_context, userId, ct);
+
+            var fromUtc = DateTime.UtcNow.Date.AddDays(-6);
+
+            var logs = await _context.Log
+                .AsNoTracking()
+                .Where(x => accessibleIds.Contains(x.RefApplication) && x.OccurredAtUtc >= fromUtc)
+                .Select(x => new { x.RefApplication, x.OccurredAtUtc })
+                .ToListAsync(ct);
+
+            var apps = await _context.Application
+                .AsNoTracking()
+                .Where(a => accessibleIds.Contains(a.Id))
+                .ToDictionaryAsync(a => a.Id, a => a.Name ?? a.Id.ToString(), ct);
+
+            var dailySeries = logs
+                .GroupBy(x => new { Date = x.OccurredAtUtc.Date.ToString("yyyy-MM-dd"), x.RefApplication })
+                .Select(g => new DashboardDaySeriesDto
+                {
+                    Date = g.Key.Date,
+                    RefApplication = g.Key.RefApplication,
+                    Count = g.LongCount()
+                })
+                .ToList();
+
+            return new DashboardStatsDto { Apps = apps, DailySeries = dailySeries };
+        }
+
         private static string ComputeFingerprint(
             Guid refApplication,
             string? category,
