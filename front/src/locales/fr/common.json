@@ -186,6 +186,7 @@
     "dashboardPodiumTitle": "Top applications",
     "dashboardNoData": "Aucun log d'erreur sur les 7 derniers jours.",
     "dashboardLoading": "Chargement du tableau de bord...",
+    "dashboardError": "erreur",
     "dashboardErrors": "erreurs"
   },
   "settings": {

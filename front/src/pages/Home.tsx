@@ -228,7 +228,7 @@ function Podium({
 }: {
   apps: Record<string, string>;
   dailySeries: DashboardDaySeries[];
-  errorsLabel: string;
+  errorsLabel: (n: number) => string;
 }) {
   const ranked = useMemo(() => {
     const totals: Record<string, number> = {};
@@ -296,7 +296,7 @@ function Podium({
               {entry.name}
             </span>
             <span style={{ fontSize: 11, color: "var(--color-text-muted)", fontWeight: 700, marginTop: 2 }}>
-              {entry.total} {errorsLabel}
+              {entry.total} {errorsLabel(entry.total)}
             </span>
           </div>
         );
@@ -523,7 +523,7 @@ export default function Home() {
               {/* Podium */}
               <div style={styles.dashCard}>
                 <h2 style={styles.dashCardTitle}>{t("me.dashboardPodiumTitle")}</h2>
-                <Podium apps={dashboard.apps} dailySeries={dashboard.dailySeries} errorsLabel={t("me.dashboardErrors")} />
+                <Podium apps={dashboard.apps} dailySeries={dashboard.dailySeries} errorsLabel={(n) => n === 1 ? t("me.dashboardError") : t("me.dashboardErrors")} />
               </div>
             </div>
           )}

@@ -186,6 +186,7 @@
     "dashboardPodiumTitle": "Top applications",
     "dashboardNoData": "No error logs in the last 7 days.",
     "dashboardLoading": "Loading dashboard...",
+    "dashboardError": "error",
     "dashboardErrors": "errors"
   },
   "settings": {
