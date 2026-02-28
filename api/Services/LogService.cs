@@ -346,6 +346,48 @@ namespace api.Services
             return new DashboardStatsDto { Apps = apps, DailySeries = dailySeries };
         }
 
+        public async Task<DashboardStatsDto> GetOrgDashboard(Guid orgId, Guid userId, CancellationToken ct)
+        {
+            // Verify user has access to this org
+            bool hasAccess = await _context.OrganizationMember
+                .AsNoTracking()
+                .AnyAsync(m => m.RefOrganization == orgId && m.RefUser == userId, ct);
+
+            if (!hasAccess)
+                throw new ApiException(StatusCodes.Status403Forbidden, ErrorKeys.Forbidden);
+
+            var orgAppIds = await _context.Application
+                .AsNoTracking()
+                .Where(a => a.RefOrganization == orgId)
+                .Select(a => a.Id)
+                .ToListAsync(ct);
+
+            var fromUtc = DateTime.UtcNow.Date.AddDays(-6);
+
+            var logs = await _context.Log
+                .AsNoTracking()
+                .Where(x => orgAppIds.Contains(x.RefApplication) && x.OccurredAtUtc >= fromUtc)
+                .Select(x => new { x.RefApplication, x.OccurredAtUtc })
+                .ToListAsync(ct);
+
+            var apps = await _context.Application
+                .AsNoTracking()
+                .Where(a => orgAppIds.Contains(a.Id))
+                .ToDictionaryAsync(a => a.Id, a => a.Name ?? a.Id.ToString(), ct);
+
+            var dailySeries = logs
+                .GroupBy(x => new { Date = x.OccurredAtUtc.Date.ToString("yyyy-MM-dd"), x.RefApplication })
+                .Select(g => new DashboardDaySeriesDto
+                {
+                    Date = g.Key.Date,
+                    RefApplication = g.Key.RefApplication,
+                    Count = g.LongCount()
+                })
+                .ToList();
+
+            return new DashboardStatsDto { Apps = apps, DailySeries = dailySeries };
+        }
+
         private static string ComputeFingerprint(
             Guid refApplication,
             string? category,

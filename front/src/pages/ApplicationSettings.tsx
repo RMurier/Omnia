@@ -18,7 +18,10 @@ type AppDto = {
   logRetentionValue?: number | null;
   logRetentionUnit?: string | null;
   myRole?: string | null;
+  refOrganization?: string | null;
 };
+
+type OrgItem = { id: string; name: string; myRole?: string | null };
 
 type RoleItem = {
   id: string;
@@ -70,6 +73,8 @@ export default function ApplicationSettingsPage() {
   const myRole = app?.myRole ?? "";
   const isMaintainerOrOwner = myRole === "Owner" || myRole === "Maintainer";
   const isOwner = myRole === "Owner";
+  const isOrgApp = !!app?.refOrganization;
+  const showMembersTab = !isOrgApp || isMaintainerOrOwner;
 
   // ── General tab ───────────────────────────────────────────
   const [gName, setGName]               = useState("");
@@ -101,6 +106,13 @@ export default function ApplicationSettingsPage() {
   const [checking, setChecking]                     = useState(false);
   const [memberBusy, setMemberBusy]                 = useState(false);
 
+  // ── Transfer state ────────────────────────────────────────
+  const [orgs, setOrgs]                             = useState<OrgItem[]>([]);
+  const [transferOrgId, setTransferOrgId]           = useState("");
+  const [transferring, setTransferring]             = useState(false);
+  const [transferOwnerMemberId, setTransferOwnerMemberId] = useState("");
+  const [transferringOwnership, setTransferringOwnership] = useState(false);
+
   // ── Load app ──────────────────────────────────────────────
   const loadApp = async () => {
     if (!id) return;
@@ -116,6 +128,10 @@ export default function ApplicationSettingsPage() {
       setGIsActive(data.isActive ?? true);
       setRetentionValue(data.logRetentionValue ?? 7);
       setRetentionUnit(data.logRetentionUnit ?? "days");
+      // Pre-load members for personal app owners (needed for transfer ownership dropdown)
+      if (data.myRole === "Owner" && !data.refOrganization) {
+        loadMembersForApp(id);
+      }
     } catch (e: any) {
       setError(String(e?.message ?? e));
     } finally {
@@ -123,7 +139,7 @@ export default function ApplicationSettingsPage() {
     }
   };
 
-  useEffect(() => { loadApp(); }, [id]);
+  useEffect(() => { loadApp(); loadOrgs(); }, [id]);
 
   // ── Members loaders ───────────────────────────────────────
   const loadRoles = async () => {
@@ -137,17 +153,36 @@ export default function ApplicationSettingsPage() {
     } catch {}
   };
 
+  const loadOrgs = async () => {
+    try {
+      const data = await authFetch<OrgItem[]>("/organization");
+      setOrgs(data ?? []);
+    } catch {}
+  };
+
+  const loadMembersForApp = async (appId: string) => {
+    try {
+      const [m, inv] = await Promise.all([
+        authFetch<MemberItem[]>(`/application/${appId}/members`, { method: "GET" }),
+        authFetch<PendingInvitation[]>(`/application/${appId}/invitations`, { method: "GET" }),
+      ]);
+      setMembers(m ?? []);
+      setPendingInvitations(inv ?? []);
+    } catch {}
+  };
+
   const loadMembers = async () => {
     if (!id) return;
     setMembersLoading(true);
     setMembersError(null);
     try {
-      const [m, inv] = await Promise.all([
-        authFetch<MemberItem[]>(`/application/${id}/members`, { method: "GET" }),
-        authFetch<PendingInvitation[]>(`/application/${id}/invitations`, { method: "GET" }),
-      ]);
-      setMembers(m ?? []);
-      setPendingInvitations(inv ?? []);
+      if (app?.refOrganization) {
+        const m = await authFetch<MemberItem[]>(`/organization/${app.refOrganization}/members`);
+        setMembers(m ?? []);
+        setPendingInvitations([]);
+      } else {
+        await loadMembersForApp(id);
+      }
     } catch (e: any) {
       setMembersError(String(e?.message ?? e));
     } finally {
@@ -280,6 +315,42 @@ export default function ApplicationSettingsPage() {
     }
   };
 
+  const onTransferToOrg = async () => {
+    if (!id || !transferOrgId || !globalThis.confirm(t("applications.confirmTransferToOrg"))) return;
+    setTransferring(true);
+    try {
+      await authFetch<void>(`/organization/transfer-app-to-org?appId=${id}`, {
+        method: "POST",
+        body: JSON.stringify({ refOrganization: transferOrgId }),
+      });
+      toast.success(t("applications.transferToOrgSuccess"));
+      navigate(`/organizations/${transferOrgId}`);
+    } catch (e: any) {
+      toast.error(String(e?.message ?? e));
+    } finally {
+      setTransferring(false);
+    }
+  };
+
+  const onTransferOwnership = async () => {
+    if (!id || !transferOwnerMemberId || !globalThis.confirm(t("applications.confirmTransferOwnership"))) return;
+    setTransferringOwnership(true);
+    try {
+      const member = members.find((m) => m.memberId === transferOwnerMemberId);
+      await authFetch<void>(`/organization/transfer-app-ownership?appId=${id}`, {
+        method: "POST",
+        body: JSON.stringify({ newOwnerUserId: member?.userId }),
+      });
+      toast.success(t("applications.transferOwnershipSuccess"));
+      await loadApp();
+      await loadMembers();
+    } catch (e: any) {
+      toast.error(String(e?.message ?? e));
+    } finally {
+      setTransferringOwnership(false);
+    }
+  };
+
   const inviteableRoles = isOwner ? roles : roles.filter((r) => r.name !== "Owner");
 
   const unitLabel = (unit: string) =>
@@ -394,7 +465,7 @@ inviteBox: { border: "1px dashed var(--color-border-strong)", borderRadius: 10, 
       {/* Mobile: horizontal tab bar */}
       {isTablet && (
         <div style={s.tabBar}>
-          {(["general", "members", "logs"] as Tab[]).map((k) => (
+          {(["general", ...(showMembersTab ? ["members"] : []), "logs"] as Tab[]).map((k) => (
             <button key={k} style={tabStyle(tab === k)} onClick={() => switchTab(k)}>
               {t(`applications.tab${k.charAt(0).toUpperCase() + k.slice(1)}`)}
             </button>
@@ -407,7 +478,7 @@ inviteBox: { border: "1px dashed var(--color-border-strong)", borderRadius: 10, 
         {/* Desktop: left sidebar */}
         {!isTablet && (
           <aside style={s.sideMenu}>
-            {(["general", "members", "logs"] as Tab[]).map((k) => (
+            {(["general", ...(showMembersTab ? ["members"] : []), "logs"] as Tab[]).map((k) => (
               <button key={k} style={sideMenuBtnStyle(tab === k)} onClick={() => switchTab(k)}>
                 {t(`applications.tab${k.charAt(0).toUpperCase() + k.slice(1)}`)}
               </button>
@@ -491,6 +562,78 @@ inviteBox: { border: "1px dashed var(--color-border-strong)", borderRadius: 10, 
                 )}
               </div>
             </form>
+
+            {/* Transfer actions — personal app, Owner only */}
+            {isOwner && !isOrgApp && (
+              <div style={{ marginTop: 32, display: "grid", gap: 16 }}>
+                <div style={{ height: 1, background: "var(--color-border)" }} />
+
+                {/* Transfer to org */}
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "var(--color-text-secondary)", marginBottom: 6 }}>
+                    {t("applications.transferToOrgTitle")}
+                  </div>
+                  <div style={{ fontSize: 13, color: "var(--color-text-muted)", marginBottom: 10 }}>
+                    {t("applications.transferToOrgHint")}
+                  </div>
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                    <select
+                      style={{ ...s.input, width: "auto", minWidth: 200 }}
+                      value={transferOrgId}
+                      onChange={(e) => setTransferOrgId(e.target.value)}
+                    >
+                      <option value="">— {t("organizations.select")} —</option>
+                      {orgs
+                        .filter((o) => o.myRole === "Owner" || o.myRole === "Maintainer")
+                        .map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+                    </select>
+                    <button
+                      type="button"
+                      style={{ ...s.dangerBtn, ...(transferring || !transferOrgId ? s.btnDisabled : {}) }}
+                      onClick={onTransferToOrg}
+                      disabled={transferring || !transferOrgId}
+                    >
+                      {transferring ? t("applications.transferring") : t("applications.transferToOrgBtn")}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Transfer ownership */}
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "var(--color-text-secondary)", marginBottom: 6 }}>
+                    {t("applications.transferOwnershipTitle")}
+                  </div>
+                  <div style={{ fontSize: 13, color: "var(--color-text-muted)", marginBottom: 10 }}>
+                    {t("applications.transferOwnershipHint")}
+                  </div>
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                    <select
+                      style={{ ...s.input, width: "auto", minWidth: 200 }}
+                      value={transferOwnerMemberId}
+                      onChange={(e) => setTransferOwnerMemberId(e.target.value)}
+                    >
+                      <option value="">— {t("applications.selectMember")} —</option>
+                      {members
+                        .filter((m) => m.email !== myEmail)
+                        .map((m) => <option key={m.memberId} value={m.memberId}>{m.name || m.email}</option>)}
+                    </select>
+                    <button
+                      type="button"
+                      style={{ ...s.dangerBtn, ...(transferringOwnership || !transferOwnerMemberId ? s.btnDisabled : {}) }}
+                      onClick={onTransferOwnership}
+                      disabled={transferringOwnership || !transferOwnerMemberId}
+                    >
+                      {transferringOwnership ? t("applications.transferring") : t("applications.transferOwnershipBtn")}
+                    </button>
+                  </div>
+                  {members.filter((m) => m.email !== myEmail).length === 0 && (
+                    <div style={{ fontSize: 12, color: "var(--color-text-muted)", marginTop: 6 }}>
+                      {t("applications.noMembersToTransfer")}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -499,13 +642,17 @@ inviteBox: { border: "1px dashed var(--color-border-strong)", borderRadius: 10, 
           <div style={s.section}>
             <h2 style={s.sectionTitle}>{t("applications.tabMembers")}</h2>
             <p style={s.sectionHint}>
-              {isMaintainerOrOwner ? t("applications.membersHintEditable") : t("applications.membersHintReadonly")}
+              {isOrgApp
+                ? t("applications.membersHintOrg")
+                : isMaintainerOrOwner
+                  ? t("applications.membersHintEditable")
+                  : t("applications.membersHintReadonly")}
             </p>
 
             {membersError && <div style={s.errorBox}>{membersError}</div>}
 
-            {/* Invite form — Maintainer+ only */}
-            {isMaintainerOrOwner && (
+            {/* Invite form — Maintainer+ only, personal apps only */}
+            {isMaintainerOrOwner && !isOrgApp && (
               <div style={{ ...s.inviteBox, marginBottom: 20 }}>
                 <div style={{ fontWeight: 700, fontSize: 13, color: "var(--color-text-primary)" }}>{t("applications.inviteTitle")}</div>
                 <div style={s.inlineRow}>
@@ -569,7 +716,7 @@ inviteBox: { border: "1px dashed var(--color-border-strong)", borderRadius: 10, 
                     <th style={s.th}>Email</th>
                     <th style={s.th}>{t("applications.name")}</th>
                     <th style={s.th}>{t("applications.inviteRole")}</th>
-                    {isOwner && <th style={{ ...s.th, textAlign: "right" }}>{t("common.actions")}</th>}
+                    {isOwner && !isOrgApp && <th style={{ ...s.th, textAlign: "right" }}>{t("common.actions")}</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -578,7 +725,7 @@ inviteBox: { border: "1px dashed var(--color-border-strong)", borderRadius: 10, 
                       <td style={s.td}>{m.email ?? "—"}</td>
                       <td style={s.td}>{[m.name, m.lastName].filter(Boolean).join(" ") || "—"}</td>
                       <td style={s.td}>
-                        {isOwner && m.email !== myEmail ? (
+                        {isOwner && !isOrgApp && m.email !== myEmail ? (
                           <select
                             style={{ ...s.input, height: 32, fontSize: 12, padding: "0 6px" }}
                             value={m.role?.id ?? ""}
@@ -591,7 +738,7 @@ inviteBox: { border: "1px dashed var(--color-border-strong)", borderRadius: 10, 
                           <span style={s.badge}>{m.role?.name ?? "—"}</span>
                         )}
                       </td>
-                      {isOwner && m.email !== myEmail && (
+                      {isOwner && !isOrgApp && m.email !== myEmail && (
                         <td style={{ ...s.td, textAlign: "right" }}>
                           <button style={s.dangerBtn} onClick={() => onRemoveMember(m.memberId)} disabled={memberBusy}>
                             {t("applications.removeMember")}
@@ -604,8 +751,8 @@ inviteBox: { border: "1px dashed var(--color-border-strong)", borderRadius: 10, 
               </table>
             )}
 
-            {/* Pending invitations */}
-            {pendingInvitations.length > 0 && (
+            {/* Pending invitations — personal apps only */}
+            {!isOrgApp && pendingInvitations.length > 0 && (
               <div style={{ marginTop: 20 }}>
                 <div style={{ fontWeight: 700, fontSize: 13, color: "var(--color-text-secondary)", marginBottom: 4 }}>{t("applications.pendingInvitations")}</div>
                 <table style={s.table}>

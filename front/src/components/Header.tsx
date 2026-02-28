@@ -42,10 +42,11 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
   const navItems: NavItem[] = useMemo(
     () => [
       { label: t("nav.applications"), href: "/applications" },
+      { label: t("nav.organizations"), href: "/organizations" },
       { label: t("nav.logs"), href: "/logs" },
       { label: t("nav.activity"), href: "/activity" },
     ],
-    []
+    [t]
   );
 
   const displayName = name ? `${name}${lastName ? ` ${lastName}` : ""}` : email;

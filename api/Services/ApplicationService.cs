@@ -38,11 +38,12 @@ namespace api.Services
 
         public async Task<IEnumerable<ApplicationDto>> GetAll(Guid userId, CancellationToken ct)
         {
+            // Personal apps only: user is a member AND app has no org
             var accessibleIds = await ApplicationAccessHelper.GetAccessibleApplicationIdsAsync(_db, userId, ct);
 
             return await _db.Application
                 .AsNoTracking()
-                .Where(a => accessibleIds.Contains(a.Id))
+                .Where(a => accessibleIds.Contains(a.Id) && a.RefOrganization == null)
                 .OrderBy(a => a.Name)
                 .Select(a => new ApplicationDto()
                 {
@@ -68,7 +69,7 @@ namespace api.Services
 
             if (a is null) return null;
 
-            var role = await ApplicationAccessHelper.GetUserRoleAsync(_db, userId, id, ct);
+            var roleName = await ApplicationAccessHelper.GetUserRoleNameAsync(_db, userId, id, ct);
 
             return new ApplicationDto()
             {
@@ -79,7 +80,8 @@ namespace api.Services
                 Url = a.Url,
                 LogRetentionValue = a.LogRetentionValue,
                 LogRetentionUnit = a.LogRetentionUnit,
-                MyRole = role?.Name
+                RefOrganization = a.RefOrganization,
+                MyRole = roleName
             };
         }
 

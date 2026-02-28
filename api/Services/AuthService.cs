@@ -218,6 +218,35 @@ public class AuthService : IAuth
             await _context.SaveChangesAsync(ct);
         }
 
+        // Process pending org invitations for this email
+        var pendingOrgInvitations = await _context.OrganizationInvitation
+            .Where(i => i.Email == encryptedEmail)
+            .ToListAsync(ct);
+
+        foreach (var inv in pendingOrgInvitations)
+        {
+            var alreadyMember = await _context.OrganizationMember
+                .AnyAsync(m => m.RefOrganization == inv.RefOrganization && m.RefUser == user.Id, ct);
+
+            if (!alreadyMember)
+            {
+                _context.OrganizationMember.Add(new OrganizationMember
+                {
+                    Id = Guid.NewGuid(),
+                    RefOrganization = inv.RefOrganization,
+                    RefUser = user.Id,
+                    RefRoleOrganization = inv.RefRoleOrganization,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+        }
+
+        if (pendingOrgInvitations.Count > 0)
+        {
+            _context.OrganizationInvitation.RemoveRange(pendingOrgInvitations);
+            await _context.SaveChangesAsync(ct);
+        }
+
         await SendConfirmationEmail(normalizedEmail, confirmationToken, ct);
 
         return new CreateUserResponse

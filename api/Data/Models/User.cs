@@ -29,5 +29,7 @@ namespace api.Data.Models
         // Navigation properties
         public ICollection<Application>? OwnedApplications { get; set; } = new List<Application>();
         public ICollection<ApplicationMember>? ApplicationMemberships { get; set; } = new List<ApplicationMember>();
+        public ICollection<Organization>? OwnedOrganizations { get; set; } = new List<Organization>();
+        public ICollection<OrganizationMember>? OrganizationMemberships { get; set; } = new List<OrganizationMember>();
     }
 }

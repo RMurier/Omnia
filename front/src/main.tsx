@@ -24,6 +24,9 @@ import { Toaster } from "sonner";
 import MePage from "./pages/Me.tsx";
 import TermsPage from "./pages/Terms.tsx";
 import AboutPage from "./pages/About.tsx";
+import OrganizationsPage from "./pages/Organizations.tsx";
+import OrganizationHomePage from "./pages/OrganizationHome.tsx";
+import OrganizationSettingsPage from "./pages/OrganizationSettings.tsx";
 
 function Root() {
   const { isAuthenticated, hydrateFromServer } = useAuthStore();
@@ -53,6 +56,9 @@ function Root() {
           <Route path="/applications/:id/settings" element={<ApplicationSettingsPage />} />
           <Route path="/logs" element={<LogsPage />} />
           <Route path="/mails" element={<MailsPage />} />
+          <Route path="/organizations" element={<OrganizationsPage />} />
+          <Route path="/organizations/:id" element={<OrganizationHomePage />} />
+          <Route path="/organizations/:id/settings" element={<OrganizationSettingsPage />} />
           <Route path="/docs" element={<Documentation />} />
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/about" element={<AboutPage />} />

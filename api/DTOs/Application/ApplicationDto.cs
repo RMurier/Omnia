@@ -11,5 +11,6 @@
         public int? LogRetentionValue { get; set; }
         public string? LogRetentionUnit { get; set; }
         public string? MyRole { get; set; }
+        public Guid? RefOrganization { get; set; }
     }
 }
