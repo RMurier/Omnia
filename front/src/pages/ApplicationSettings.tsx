@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft } from "lucide-react";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import { BREAKPOINTS } from "../hooks/breakpoints";
-import { authFetch } from "../utils/authFetch";
+import { authFetch, authFetchResponse } from "../utils/authFetch";
 import { useAuthStore } from "../stores/authStore";
 import { toast } from "sonner";
 
@@ -60,6 +60,7 @@ const RETENTION_UNITS = ["days", "weeks", "months", "years"] as const;
 export default function ApplicationSettingsPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation();
   const isTablet = useMediaQuery(BREAKPOINTS.tablet);
   const myEmail = useAuthStore((s) => s.email);
@@ -119,7 +120,17 @@ export default function ApplicationSettingsPage() {
     setLoading(true);
     setError(null);
     try {
-      const data = await authFetch<AppDto>(`/application/${id}`, { method: "GET" });
+      const res = await authFetchResponse(`/application/${id}`, { method: "GET" });
+      if (res.status === 404) {
+        navigate(location.pathname, { replace: true, state: { notFound: true } });
+        return;
+      }
+      if (!res.ok) {
+        const raw = await res.text().catch(() => "");
+        setError(raw || t("common.error"));
+        return;
+      }
+      const data: AppDto = await res.json();
       if (!data) { setError(t("applications.empty")); return; }
       setApp(data);
       setGName(data.name ?? "");
@@ -421,8 +432,8 @@ export default function ApplicationSettingsPage() {
     successText: { fontSize: 13, color: "var(--color-success)", marginTop: 8 },
 inviteBox: { border: "1px dashed var(--color-border-strong)", borderRadius: 10, padding: 14, display: "grid", gap: 10, background: "var(--color-surface)" },
     table: { width: "100%", borderCollapse: "collapse", background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 12, overflow: "hidden", marginTop: 10 },
-    th: { textAlign: "left", fontSize: 12, letterSpacing: 0.4, textTransform: "uppercase", color: "var(--color-text-muted)", padding: "10px 12px", borderBottom: "1px solid var(--color-border)", background: "var(--color-surface-raised)" },
-    td: { padding: "10px 12px", borderBottom: "1px solid var(--color-border-td)", fontSize: 13, color: "var(--color-text-primary)", verticalAlign: "middle" },
+    th: { textAlign: "left", fontSize: 12, letterSpacing: 0.4, textTransform: "uppercase", color: "var(--color-text-secondary)", padding: "10px 12px", borderBottom: "1px solid var(--color-border)", background: "var(--color-surface-raised)" },
+    td: { padding: "10px 12px", borderBottom: "1px solid var(--color-border-td)", fontSize: 13, color: "var(--color-text-primary)", verticalAlign: "middle", background: "var(--color-surface)" },
     badge: { display: "inline-flex", alignItems: "center", gap: 6, padding: "3px 8px", borderRadius: 999, fontSize: 12, fontWeight: 600, border: "1px solid var(--color-border)", background: "var(--color-surface)" },
     inlineRow: { display: "flex", gap: 10, alignItems: "flex-end", flexWrap: "wrap" },
     mono: { fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" },

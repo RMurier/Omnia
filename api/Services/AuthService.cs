@@ -143,10 +143,6 @@ public class AuthService : IAuth
 
     public async Task<CreateUserResponse> Register(CreateUserRequest request, CancellationToken ct)
     {
-        bool isBeta = string.Equals(_config["AppSettings:IsBeta"], "true", StringComparison.OrdinalIgnoreCase);
-        if (isBeta)
-            throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.BetaRegistrationDisabled);
-
         if (request == null || string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
             throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.EmailPasswordRequired);
 

@@ -11,20 +11,20 @@ export default function SecretManagement() {
     list: { paddingLeft: 24, marginBottom: 16 },
     listItem: { marginBottom: 8 },
     warning: {
-      background: "#fef2f2",
-      border: "1px solid #fecaca",
+      background: "var(--color-error-bg)",
+      border: "1px solid var(--color-error-border)",
       borderRadius: 8,
       padding: 12,
       marginBottom: 16,
-      color: "#991b1b",
+      color: "var(--color-error-text)",
     },
     success: {
-      background: "#f0fdf4",
-      border: "1px solid #bbf7d0",
+      background: "var(--color-success-bg)",
+      border: "1px solid var(--color-success-border)",
       borderRadius: 8,
       padding: 12,
       marginBottom: 16,
-      color: "#166534",
+      color: "var(--color-success-text)",
     },
   };
 

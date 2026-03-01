@@ -95,6 +95,20 @@ namespace api.Services
             if (exists)
                 throw new ApiException(StatusCodes.Status409Conflict, ErrorKeys.ApplicationNameExists);
 
+            // If creating inside an org, verify the user is Owner or Maintainer of that org
+            if (dto.RefOrganization.HasValue)
+            {
+                bool canMaintainOrg = await _db.OrganizationMember
+                    .AsNoTracking()
+                    .AnyAsync(m =>
+                        m.RefOrganization == dto.RefOrganization.Value &&
+                        m.RefUser == userId &&
+                        (m.RefRoleOrganization == RoleOrganization.Ids.Owner ||
+                         m.RefRoleOrganization == RoleOrganization.Ids.Maintainer), ct);
+                if (!canMaintainOrg)
+                    throw new ApiException(StatusCodes.Status403Forbidden, ErrorKeys.NotOrgMaintainerOrOwner);
+            }
+
             var app = new Application
             {
                 Id = Guid.NewGuid(),
@@ -105,10 +119,13 @@ namespace api.Services
                 Description = dto.Description,
                 CreatedAt = DateTime.UtcNow,
                 LogRetentionValue = dto.LogRetentionValue ?? 7,
-                LogRetentionUnit = dto.LogRetentionUnit ?? "days"
+                LogRetentionUnit = dto.LogRetentionUnit ?? "days",
+                RefOrganization = dto.RefOrganization
             };
 
-            var member = new ApplicationMember
+            // For personal apps, create an app-level member record.
+            // For org apps, access is managed through org membership.
+            var member = dto.RefOrganization.HasValue ? null : new ApplicationMember
             {
                 Id = Guid.NewGuid(),
                 RefApplication = app.Id,
@@ -133,7 +150,7 @@ namespace api.Services
             await using var tx = await _db.Database.BeginTransactionAsync(ct);
 
             await _db.Application.AddAsync(app, ct);
-            await _db.ApplicationMember.AddAsync(member, ct);
+            if (member is not null) await _db.ApplicationMember.AddAsync(member, ct);
             await _db.ApplicationSecret.AddAsync(secret, ct);
             await _db.SaveChangesAsync(ct);
 

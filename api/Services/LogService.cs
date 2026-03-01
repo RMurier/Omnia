@@ -388,7 +388,7 @@ namespace api.Services
             return new DashboardStatsDto { Apps = apps, DailySeries = dailySeries };
         }
 
-        private static string ComputeFingerprint(
+        internal static string ComputeFingerprint(
             Guid refApplication,
             string? category,
             string? level,
@@ -403,7 +403,7 @@ namespace api.Services
             return Convert.ToHexString(bytes);
         }
 
-        private static string NormalizeMessage(string input)
+        internal static string NormalizeMessage(string input)
         {
             var s = input;
             s = Regex.Replace(s, @"\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b", "?", RegexOptions.IgnoreCase);
@@ -414,7 +414,7 @@ namespace api.Services
             return s;
         }
 
-        private static string[] TryExtractStackSignature(string payloadJson)
+        internal static string[] TryExtractStackSignature(string payloadJson)
         {
             try
             {
@@ -429,7 +429,7 @@ namespace api.Services
             return Array.Empty<string>();
         }
 
-        private static bool TryReadFrames(JsonElement el, out string[] frames)
+        internal static bool TryReadFrames(JsonElement el, out string[] frames)
         {
             frames = Array.Empty<string>();
 

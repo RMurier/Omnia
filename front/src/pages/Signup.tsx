@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { apiFetch } from "../utils/authFetch";
+import { useAuthStore } from "../stores/authStore";
 import { useTranslation } from "react-i18next";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import { BREAKPOINTS } from "../hooks/breakpoints";
@@ -18,17 +19,16 @@ export default function SignUp() {
   const [resendOk, setResendOk] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
 
-  const [betaLoading, setBetaLoading] = useState(true);
-  const [isBeta, setIsBeta] = useState(false);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const hydrated = useAuthStore((s) => s.hydrated);
 
   const isMobile = useMediaQuery(BREAKPOINTS.mobile);
 
   useEffect(() => {
-    apiFetch<{ isBeta: boolean }>("/auth/beta-status")
-      .then((r) => setIsBeta(r.isBeta))
-      .catch(() => {})
-      .finally(() => setBetaLoading(false));
-  }, []);
+    if (hydrated && isAuthenticated) {
+      window.location.replace("/");
+    }
+  }, [hydrated, isAuthenticated]);
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -146,43 +146,8 @@ export default function SignUp() {
     },
     link: { textAlign: "center" as const, marginTop: 16, fontSize: 14, color: "var(--color-text-muted)" },
     a: { color: "var(--color-primary)", textDecoration: "none" },
-    betaBox: {
-      padding: 16,
-      borderRadius: 8,
-      border: "1px solid var(--color-border)",
-      backgroundColor: "var(--color-surface-sunken)",
-      textAlign: "center" as const,
-      color: "var(--color-text-muted)",
-    },
   };
 
-  if (betaLoading) {
-    return (
-      <div className="animate-page" style={styles.page}>
-        <div style={styles.card}>
-          <p style={{ textAlign: "center", color: "var(--color-text-muted)" }}>{t("common.loading")}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (isBeta) {
-    return (
-      <div className="animate-page" style={styles.page}>
-        <div style={styles.card}>
-          <div style={styles.header}>
-            <h1 style={styles.title}>{t("signup.title")}</h1>
-          </div>
-          <div style={styles.betaBox}>
-            <p>{t("signup.betaClosed")}</p>
-          </div>
-          <div style={styles.link}>
-            <a href="/signin" style={styles.a}>{t("signup.alreadyHaveAccount")}</a>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   if (success) {
     return (

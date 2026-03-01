@@ -9,12 +9,12 @@ export default function ReactNative() {
   const styles: Record<string, React.CSSProperties> = {
     paragraph: { marginBottom: 16, lineHeight: 1.7 },
     note: {
-      background: "#fef3c7",
-      border: "1px solid #fcd34d",
+      background: "var(--color-warning-bg)",
+      border: "1px solid var(--color-warning-border)",
       borderRadius: 8,
       padding: 12,
       marginBottom: 16,
-      color: "#92400e",
+      color: "var(--color-warning-text)",
     },
   };
 

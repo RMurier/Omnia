@@ -294,8 +294,8 @@ public sealed class OrganizationService : IOrganization
 
     public async Task<IEnumerable<OrgPendingInvitationDto>> GetPendingInvitations(Guid orgId, Guid userId, CancellationToken ct)
     {
-        if (!await IsOrgOwnerAsync(orgId, userId, ct))
-            throw new ApiException(StatusCodes.Status403Forbidden, ErrorKeys.NotOrgOwner);
+        if (!await CanMaintainOrgAsync(orgId, userId, ct))
+            throw new ApiException(StatusCodes.Status403Forbidden, ErrorKeys.NotOrgMaintainerOrOwner);
 
         var invitations = await _db.OrganizationInvitation
             .AsNoTracking()
@@ -320,7 +320,12 @@ public sealed class OrganizationService : IOrganization
 
     public async Task<InviteOrgMemberResultDto> InviteMember(Guid orgId, InviteOrgMemberRequest request, Guid userId, CancellationToken ct)
     {
-        if (!await IsOrgOwnerAsync(orgId, userId, ct))
+        if (!await CanMaintainOrgAsync(orgId, userId, ct))
+            throw new ApiException(StatusCodes.Status403Forbidden, ErrorKeys.NotOrgMaintainerOrOwner);
+
+        // Maintainers cannot invite someone as Owner — only Owners can do that
+        bool isOwner = await IsOrgOwnerAsync(orgId, userId, ct);
+        if (!isOwner && request.RefRoleOrganization == RoleOrganization.Ids.Owner)
             throw new ApiException(StatusCodes.Status403Forbidden, ErrorKeys.NotOrgOwner);
 
         if (!ValidOrgRoleIds.Contains(request.RefRoleOrganization))
@@ -454,8 +459,8 @@ public sealed class OrganizationService : IOrganization
 
     public async Task CancelInvitation(Guid orgId, Guid invitationId, Guid userId, CancellationToken ct)
     {
-        if (!await IsOrgOwnerAsync(orgId, userId, ct))
-            throw new ApiException(StatusCodes.Status403Forbidden, ErrorKeys.NotOrgOwner);
+        if (!await CanMaintainOrgAsync(orgId, userId, ct))
+            throw new ApiException(StatusCodes.Status403Forbidden, ErrorKeys.NotOrgMaintainerOrOwner);
 
         var inv = await _db.OrganizationInvitation
             .FirstOrDefaultAsync(i => i.Id == invitationId && i.RefOrganization == orgId, ct);
@@ -468,8 +473,8 @@ public sealed class OrganizationService : IOrganization
 
     public async Task<CheckEmailResultDto> CheckEmail(Guid orgId, string email, Guid userId, CancellationToken ct)
     {
-        if (!await IsOrgOwnerAsync(orgId, userId, ct))
-            throw new ApiException(StatusCodes.Status403Forbidden, ErrorKeys.NotOrgOwner);
+        if (!await CanMaintainOrgAsync(orgId, userId, ct))
+            throw new ApiException(StatusCodes.Status403Forbidden, ErrorKeys.NotOrgMaintainerOrOwner);
 
         var found = await _auth.FindUserByEmail(email, ct);
         if (!found.HasValue)

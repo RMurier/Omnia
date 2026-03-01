@@ -18,15 +18,18 @@ export default function LogStructure() {
     th: {
       textAlign: "left",
       padding: "10px 12px",
-      background: "#f3f4f6",
-      borderBottom: "1px solid #e5e7eb",
+      background: "var(--color-surface-raised)",
+      borderBottom: "1px solid var(--color-border)",
       fontSize: 13,
       fontWeight: 700,
+      color: "var(--color-text-secondary)",
     },
     td: {
       padding: "10px 12px",
-      borderBottom: "1px solid #e5e7eb",
+      borderBottom: "1px solid var(--color-border)",
       fontSize: 13,
+      color: "var(--color-text-primary)",
+      background: "var(--color-surface)",
     },
   };
 
