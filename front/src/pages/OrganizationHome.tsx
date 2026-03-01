@@ -318,7 +318,7 @@ export default function OrganizationHomePage() {
     setOrgLoading(true);
     authFetch<OrgDto>(`/organization/${id}`)
       .then((data) => setOrg(data))
-      .catch(() => navigate("/organizations"))
+      .catch(() => {})
       .finally(() => setOrgLoading(false));
   }, [id, navigate]);
 
