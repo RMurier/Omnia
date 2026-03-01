@@ -116,7 +116,7 @@ export default function OrganizationSettingsPage() {
       setOrg(data);
       setGName(data.name);
     } catch {
-      navigate("/organizations");
+      // 403/404 handled automatically by NotFoundBoundary via authFetch
     } finally {
       setLoading(false);
     }

@@ -4,6 +4,21 @@ import i18n from "../i18n";
 const API_BASE_URL = "/api";
 const REFRESH_PATH = "/auth/refresh";
 
+// ─── Page-level not-found signal ────────────────────────────────────────────
+// NotFoundBoundary in main.tsx registers here. When a GET/HEAD request returns
+// 403 or 404, the boundary renders <NotFound /> in-place (URL preserved).
+let _pageNotFoundHandler: (() => void) | null = null;
+export function _setPageNotFoundHandler(fn: (() => void) | null): void {
+  _pageNotFoundHandler = fn;
+}
+function notifyNotFound(path: string, method: string, status: number): void {
+  const isReadRequest = method === "GET" || method === "HEAD";
+  const isAuthPath = path.startsWith("/auth/");
+  if (isReadRequest && !isAuthPath && (status === 403 || status === 404)) {
+    _pageNotFoundHandler?.();
+  }
+}
+
 function isOnSigninPage() {
   const p = globalThis.location.pathname || "";
   return p === "/signin" || p.startsWith("/signin/");
@@ -78,8 +93,12 @@ function shouldSuppressRedirect(path: string, opts?: AuthFetchOptions) {
 }
 
 export async function authFetchResponse(path: string, options: AuthFetchOptions = {}): Promise<Response> {
+  const method = (options.method ?? "GET").toUpperCase();
   const first = await rawFetch(path, options);
-  if (first.status !== 401) return first;
+  if (first.status !== 401) {
+    notifyNotFound(path, method, first.status);
+    return first;
+  }
 
   if (path === REFRESH_PATH) return first;
   if (path === "/auth/change-password") return first;
@@ -104,6 +123,7 @@ export async function authFetchResponse(path: string, options: AuthFetchOptions 
     }
   } else {
     useAuthStore.getState().setAuthenticated(true);
+    notifyNotFound(path, method, retry.status);
   }
 
   return retry;

@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route, Outlet, useLocation } from "react-router-dom";
+import { _setPageNotFoundHandler } from "./utils/authFetch";
 import "./index.css";
 import "./i18n.ts";
 import SignIn from "./pages/Signin.tsx";
@@ -30,7 +31,20 @@ import OrganizationSettingsPage from "./pages/OrganizationSettings.tsx";
 
 function NotFoundBoundary() {
   const location = useLocation();
-  if ((location.state as any)?.notFound) return <NotFound />;
+  const [notFound, setNotFound] = React.useState(false);
+
+  // Register the module-level callback so authFetch can signal 403/404
+  React.useEffect(() => {
+    _setPageNotFoundHandler(() => setNotFound(true));
+    return () => _setPageNotFoundHandler(null);
+  }, []);
+
+  // Reset when the user navigates to a different page
+  React.useEffect(() => {
+    setNotFound(false);
+  }, [location.key]);
+
+  if (notFound || (location.state as any)?.notFound) return <NotFound />;
   return <Outlet />;
 }
 
