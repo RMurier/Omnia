@@ -24,7 +24,7 @@ import { authFetchResponse, authFetch, apiFetch, signin, signout } from "../auth
 
 function mockFetch(responses: { status: number; body?: string; ok?: boolean }[]) {
   let call = 0;
-  return vi.fn(() => {
+  return vi.fn((_input: RequestInfo | URL, _init?: RequestInit) => {
     const r = responses[call] ?? responses[responses.length - 1];
     call++;
     const ok = r.ok ?? (r.status >= 200 && r.status < 300);
