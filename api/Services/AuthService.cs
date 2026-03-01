@@ -143,10 +143,6 @@ public class AuthService : IAuth
 
     public async Task<CreateUserResponse> Register(CreateUserRequest request, CancellationToken ct)
     {
-        bool isBeta = string.Equals(_config["AppSettings:IsBeta"], "true", StringComparison.OrdinalIgnoreCase);
-        if (isBeta)
-            throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.BetaRegistrationDisabled);
-
         if (request == null || string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
             throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.EmailPasswordRequired);
 
@@ -215,6 +211,35 @@ public class AuthService : IAuth
         if (pendingInvitations.Count > 0)
         {
             _context.ApplicationInvitation.RemoveRange(pendingInvitations);
+            await _context.SaveChangesAsync(ct);
+        }
+
+        // Process pending org invitations for this email
+        var pendingOrgInvitations = await _context.OrganizationInvitation
+            .Where(i => i.Email == encryptedEmail)
+            .ToListAsync(ct);
+
+        foreach (var inv in pendingOrgInvitations)
+        {
+            var alreadyMember = await _context.OrganizationMember
+                .AnyAsync(m => m.RefOrganization == inv.RefOrganization && m.RefUser == user.Id, ct);
+
+            if (!alreadyMember)
+            {
+                _context.OrganizationMember.Add(new OrganizationMember
+                {
+                    Id = Guid.NewGuid(),
+                    RefOrganization = inv.RefOrganization,
+                    RefUser = user.Id,
+                    RefRoleOrganization = inv.RefRoleOrganization,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+        }
+
+        if (pendingOrgInvitations.Count > 0)
+        {
+            _context.OrganizationInvitation.RemoveRange(pendingOrgInvitations);
             await _context.SaveChangesAsync(ct);
         }
 

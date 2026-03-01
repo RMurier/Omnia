@@ -18,6 +18,10 @@ namespace Data
         public DbSet<MailLog> MailLog { get; set; }
         public DbSet<SystemMailLog> SystemMailLog { get; set; }
         public DbSet<ApplicationInvitation> ApplicationInvitation { get; set; }
+        public DbSet<Organization> Organization { get; set; }
+        public DbSet<OrganizationMember> OrganizationMember { get; set; }
+        public DbSet<RoleOrganization> RoleOrganization { get; set; }
+        public DbSet<OrganizationInvitation> OrganizationInvitation { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

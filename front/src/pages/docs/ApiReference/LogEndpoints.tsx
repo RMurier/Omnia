@@ -9,12 +9,12 @@ export default function LogEndpoints() {
   const styles: Record<string, React.CSSProperties> = {
     paragraph: { marginBottom: 16, lineHeight: 1.7 },
     note: {
-      background: "#dbeafe",
-      border: "1px solid #3b82f6",
+      background: "var(--color-primary-bg)",
+      border: "1px solid var(--color-primary)",
       borderRadius: 8,
       padding: 12,
       marginBottom: 16,
-      color: "#1e40af",
+      color: "var(--color-text-primary)",
     },
   };
 

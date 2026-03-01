@@ -85,6 +85,10 @@ namespace api.Data.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("NAME");
 
+                    b.Property<Guid?>("RefOrganization")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("REF_ORGANIZATION");
+
                     b.Property<Guid>("RefOwner")
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("REF_OWNER");
@@ -94,6 +98,9 @@ namespace api.Data.Migrations
                         .HasColumnName("URL");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("RefOrganization")
+                        .HasDatabaseName("IX_T_APPLICATION_REF_ORGANIZATION");
 
                     b.HasIndex("RefOwner");
 
@@ -675,6 +682,172 @@ namespace api.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("api.Data.Models.Organization", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("ID");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("CREATED_AT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true)
+                        .HasColumnName("IS_ACTIVE");
+
+                    b.Property<DateTime?>("LastActiveAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("LAST_ACTIVE_AT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("NAME");
+
+                    b.Property<Guid>("RefOwner")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("REF_OWNER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RefOwner")
+                        .HasDatabaseName("IX_T_ORGANIZATION_REF_OWNER");
+
+                    b.ToTable("T_ORGANIZATION", (string)null);
+                });
+
+            modelBuilder.Entity("api.Data.Models.OrganizationMember", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("ID");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("CREATED_AT");
+
+                    b.Property<Guid>("RefOrganization")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("REF_ORGANIZATION");
+
+                    b.Property<Guid>("RefRoleOrganization")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("REF_ROLE_ORGANIZATION");
+
+                    b.Property<Guid>("RefUser")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("REF_USER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RefRoleOrganization")
+                        .HasDatabaseName("IX_T_ORGANIZATION_MEMBER_REF_ROLE");
+
+                    b.HasIndex("RefUser")
+                        .HasDatabaseName("IX_T_ORGANIZATION_MEMBER_REF_USER");
+
+                    b.HasIndex("RefOrganization", "RefUser")
+                        .IsUnique()
+                        .HasDatabaseName("UX_ORGANIZATION_MEMBER_ORG_USER");
+
+                    b.ToTable("T_ORGANIZATION_MEMBER", (string)null);
+                });
+
+            modelBuilder.Entity("api.Data.Models.OrganizationInvitation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("ID");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("CREATED_AT");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)")
+                        .HasColumnName("EMAIL");
+
+                    b.Property<Guid>("InvitedBy")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("INVITED_BY");
+
+                    b.Property<Guid>("RefOrganization")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("REF_ORGANIZATION");
+
+                    b.Property<Guid>("RefRoleOrganization")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("REF_ROLE_ORGANIZATION");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InvitedBy")
+                        .HasDatabaseName("IX_T_ORGANIZATION_INVITATION_INVITED_BY");
+
+                    b.HasIndex("RefRoleOrganization")
+                        .HasDatabaseName("IX_T_ORGANIZATION_INVITATION_REF_ROLE");
+
+                    b.HasIndex("RefOrganization", "Email")
+                        .IsUnique()
+                        .HasDatabaseName("UX_ORGANIZATION_INVITATION_ORG_EMAIL");
+
+                    b.ToTable("T_ORGANIZATION_INVITATION", (string)null);
+                });
+
+            modelBuilder.Entity("api.Data.Models.RoleOrganization", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("ID");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("DESCRIPTION");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("NAME");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("UX_ROLE_ORGANIZATION_NAME");
+
+                    b.ToTable("T_ROLE_ORGANIZATION", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a"),
+                            Description = "Full access. Can manage members, apps and delete the organization.",
+                            Name = "Owner"
+                        },
+                        new
+                        {
+                            Id = new Guid("e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b"),
+                            Description = "Can create and manage apps. Cannot manage organization members.",
+                            Name = "Maintainer"
+                        },
+                        new
+                        {
+                            Id = new Guid("f6a7b8c9-d0e1-4f2a-3b4c-5d6e7f8a9b0c"),
+                            Description = "Read-only access to all organization apps, logs and activities.",
+                            Name = "Viewer"
+                        });
+                });
+
             modelBuilder.Entity("api.Data.Models.Activity", b =>
                 {
                     b.HasOne("api.Data.Models.Application", "Application")
@@ -688,12 +861,20 @@ namespace api.Data.Migrations
 
             modelBuilder.Entity("api.Data.Models.Application", b =>
                 {
+                    b.HasOne("api.Data.Models.Organization", "Organization")
+                        .WithMany("Applications")
+                        .HasForeignKey("RefOrganization")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("FK_APPLICATION_ORGANIZATION");
+
                     b.HasOne("api.Data.Models.User", "Owner")
                         .WithMany("OwnedApplications")
                         .HasForeignKey("RefOwner")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("FK_APPLICATION_OWNER");
+
+                    b.Navigation("Organization");
 
                     b.Navigation("Owner");
                 });
@@ -815,6 +996,78 @@ namespace api.Data.Migrations
                     b.Navigation("Application");
                 });
 
+            modelBuilder.Entity("api.Data.Models.Organization", b =>
+                {
+                    b.HasOne("api.Data.Models.User", "Owner")
+                        .WithMany("OwnedOrganizations")
+                        .HasForeignKey("RefOwner")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_ORGANIZATION_OWNER");
+
+                    b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("api.Data.Models.OrganizationMember", b =>
+                {
+                    b.HasOne("api.Data.Models.Organization", "Organization")
+                        .WithMany("Members")
+                        .HasForeignKey("RefOrganization")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_ORGANIZATION_MEMBER_ORGANIZATION");
+
+                    b.HasOne("api.Data.Models.RoleOrganization", "RoleOrganization")
+                        .WithMany("OrganizationMembers")
+                        .HasForeignKey("RefRoleOrganization")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_ORGANIZATION_MEMBER_ROLE");
+
+                    b.HasOne("api.Data.Models.User", "User")
+                        .WithMany("OrganizationMemberships")
+                        .HasForeignKey("RefUser")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_ORGANIZATION_MEMBER_USER");
+
+                    b.Navigation("Organization");
+
+                    b.Navigation("RoleOrganization");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("api.Data.Models.OrganizationInvitation", b =>
+                {
+                    b.HasOne("api.Data.Models.User", "InvitedByUser")
+                        .WithMany()
+                        .HasForeignKey("InvitedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_ORGANIZATION_INVITATION_INVITEDBY");
+
+                    b.HasOne("api.Data.Models.Organization", "Organization")
+                        .WithMany()
+                        .HasForeignKey("RefOrganization")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_ORGANIZATION_INVITATION_ORGANIZATION");
+
+                    b.HasOne("api.Data.Models.RoleOrganization", "RoleOrganization")
+                        .WithMany()
+                        .HasForeignKey("RefRoleOrganization")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_ORGANIZATION_INVITATION_ROLE");
+
+                    b.Navigation("InvitedByUser");
+
+                    b.Navigation("Organization");
+
+                    b.Navigation("RoleOrganization");
+                });
+
             modelBuilder.Entity("api.Data.Models.Application", b =>
                 {
                     b.Navigation("Members");
@@ -827,11 +1080,20 @@ namespace api.Data.Migrations
                     b.Navigation("ApplicationMembers");
                 });
 
+            modelBuilder.Entity("api.Data.Models.RoleOrganization", b =>
+                {
+                    b.Navigation("OrganizationMembers");
+                });
+
             modelBuilder.Entity("api.Data.Models.User", b =>
                 {
                     b.Navigation("ApplicationMemberships");
 
                     b.Navigation("OwnedApplications");
+
+                    b.Navigation("OwnedOrganizations");
+
+                    b.Navigation("OrganizationMemberships");
                 });
 #pragma warning restore 612, 618
         }

@@ -316,7 +316,79 @@ namespace api.Services
             return result;
         }
 
-        private static string ComputeFingerprint(
+        public async Task<DashboardStatsDto> GetDashboard(Guid userId, CancellationToken ct)
+        {
+            var accessibleIds = await ApplicationAccessHelper.GetAccessibleApplicationIdsAsync(_context, userId, ct);
+
+            var fromUtc = DateTime.UtcNow.Date.AddDays(-6);
+
+            var logs = await _context.Log
+                .AsNoTracking()
+                .Where(x => accessibleIds.Contains(x.RefApplication) && x.OccurredAtUtc >= fromUtc)
+                .Select(x => new { x.RefApplication, x.OccurredAtUtc })
+                .ToListAsync(ct);
+
+            var apps = await _context.Application
+                .AsNoTracking()
+                .Where(a => accessibleIds.Contains(a.Id))
+                .ToDictionaryAsync(a => a.Id, a => a.Name ?? a.Id.ToString(), ct);
+
+            var dailySeries = logs
+                .GroupBy(x => new { Date = x.OccurredAtUtc.Date.ToString("yyyy-MM-dd"), x.RefApplication })
+                .Select(g => new DashboardDaySeriesDto
+                {
+                    Date = g.Key.Date,
+                    RefApplication = g.Key.RefApplication,
+                    Count = g.LongCount()
+                })
+                .ToList();
+
+            return new DashboardStatsDto { Apps = apps, DailySeries = dailySeries };
+        }
+
+        public async Task<DashboardStatsDto> GetOrgDashboard(Guid orgId, Guid userId, CancellationToken ct)
+        {
+            // Verify user has access to this org
+            bool hasAccess = await _context.OrganizationMember
+                .AsNoTracking()
+                .AnyAsync(m => m.RefOrganization == orgId && m.RefUser == userId, ct);
+
+            if (!hasAccess)
+                throw new ApiException(StatusCodes.Status403Forbidden, ErrorKeys.Forbidden);
+
+            var orgAppIds = await _context.Application
+                .AsNoTracking()
+                .Where(a => a.RefOrganization == orgId)
+                .Select(a => a.Id)
+                .ToListAsync(ct);
+
+            var fromUtc = DateTime.UtcNow.Date.AddDays(-6);
+
+            var logs = await _context.Log
+                .AsNoTracking()
+                .Where(x => orgAppIds.Contains(x.RefApplication) && x.OccurredAtUtc >= fromUtc)
+                .Select(x => new { x.RefApplication, x.OccurredAtUtc })
+                .ToListAsync(ct);
+
+            var apps = await _context.Application
+                .AsNoTracking()
+                .Where(a => orgAppIds.Contains(a.Id))
+                .ToDictionaryAsync(a => a.Id, a => a.Name ?? a.Id.ToString(), ct);
+
+            var dailySeries = logs
+                .GroupBy(x => new { Date = x.OccurredAtUtc.Date.ToString("yyyy-MM-dd"), x.RefApplication })
+                .Select(g => new DashboardDaySeriesDto
+                {
+                    Date = g.Key.Date,
+                    RefApplication = g.Key.RefApplication,
+                    Count = g.LongCount()
+                })
+                .ToList();
+
+            return new DashboardStatsDto { Apps = apps, DailySeries = dailySeries };
+        }
+
+        internal static string ComputeFingerprint(
             Guid refApplication,
             string? category,
             string? level,
@@ -331,7 +403,7 @@ namespace api.Services
             return Convert.ToHexString(bytes);
         }
 
-        private static string NormalizeMessage(string input)
+        internal static string NormalizeMessage(string input)
         {
             var s = input;
             s = Regex.Replace(s, @"\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b", "?", RegexOptions.IgnoreCase);
@@ -342,7 +414,7 @@ namespace api.Services
             return s;
         }
 
-        private static string[] TryExtractStackSignature(string payloadJson)
+        internal static string[] TryExtractStackSignature(string payloadJson)
         {
             try
             {
@@ -357,7 +429,7 @@ namespace api.Services
             return Array.Empty<string>();
         }
 
-        private static bool TryReadFrames(JsonElement el, out string[] frames)
+        internal static bool TryReadFrames(JsonElement el, out string[] frames)
         {
             frames = Array.Empty<string>();
 

@@ -271,11 +271,11 @@ export default function MailsPage() {
     error: { border: "1px solid var(--color-error)", background: "var(--color-error-bg)", color: "var(--color-error-text)", padding: 12, borderRadius: 10, marginBottom: 12, fontSize: 14 },
 
     card: { border: "1px solid var(--color-border)", borderRadius: 12, background: "var(--color-surface)", overflow: "hidden" },
-    listWrap: { overflow: "auto" },
+    listWrap: { overflow: "auto", background: "var(--color-surface)" },
 
     table: { width: "100%", borderCollapse: "collapse", tableLayout: "fixed", minWidth: 980 },
-    th: { position: "sticky", top: 0, zIndex: 2, textAlign: "left", fontSize: 12, letterSpacing: 0.4, textTransform: "uppercase", color: "var(--color-text-muted)", padding: "12px 14px", borderBottom: "1px solid var(--color-border)", background: "var(--color-surface-raised)", whiteSpace: "nowrap" },
-    td: { padding: "12px 14px", borderBottom: "1px solid var(--color-border-td)", verticalAlign: "top", color: "var(--color-text-primary)", fontSize: 14, overflow: "hidden", textOverflow: "ellipsis" },
+    th: { position: "sticky", top: 0, zIndex: 2, textAlign: "left", fontSize: 12, letterSpacing: 0.4, textTransform: "uppercase", color: "var(--color-text-secondary)", padding: "12px 14px", borderBottom: "1px solid var(--color-border)", background: "var(--color-surface-raised)", whiteSpace: "nowrap" },
+    td: { padding: "12px 14px", borderBottom: "1px solid var(--color-border-td)", verticalAlign: "top", color: "var(--color-text-primary)", fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", background: "var(--color-surface)" },
     tdMuted: { color: "var(--color-text-muted)", fontSize: 12, marginTop: 6 },
 
     groupRow: { cursor: "pointer" },

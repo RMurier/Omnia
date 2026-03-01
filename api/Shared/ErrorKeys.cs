@@ -33,5 +33,15 @@ namespace api
         public const string InvalidPasswordChangeToken = "Errors.InvalidPasswordChangeToken";
         public const string InvalidRetentionUnit = "Errors.InvalidRetentionUnit";
         public const string TermsNotAccepted = "Errors.TermsNotAccepted";
+        public const string OrganizationNotFound = "Errors.OrganizationNotFound";
+        public const string OrganizationNameTooShort = "Errors.OrganizationNameTooShort";
+        public const string NotOrgOwner = "Errors.NotOrgOwner";
+        public const string NotOrgMaintainerOrOwner = "Errors.NotOrgMaintainerOrOwner";
+        public const string OrgMemberAlreadyExists = "Errors.OrgMemberAlreadyExists";
+        public const string OrgInvitationAlreadyPending = "Errors.OrgInvitationAlreadyPending";
+        public const string AppNotPersonal = "Errors.AppNotPersonal";
+        public const string AppAlreadyInOrg = "Errors.AppAlreadyInOrg";
+        public const string NotAppOwner = "Errors.NotAppOwner";
+        public const string CannotTransferToSelf = "Errors.CannotTransferToSelf";
     }
 }

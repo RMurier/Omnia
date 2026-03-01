@@ -50,6 +50,18 @@ namespace api.Data.Configurations
                 .IsRequired()
                 .HasDefaultValue("days");
 
+            builder.Property(x => x.RefOrganization)
+                .HasColumnName("REF_ORGANIZATION")
+                .IsRequired(false);
+
+            // FK to Organization
+            builder.HasOne(x => x.Organization)
+                .WithMany(o => o.Applications)
+                .HasForeignKey(x => x.RefOrganization)
+                .HasConstraintName("FK_APPLICATION_ORGANIZATION")
+                .OnDelete(DeleteBehavior.SetNull)
+                .IsRequired(false);
+
             // FK to Owner (User)
             builder.HasOne(x => x.Owner)
                 .WithMany(u => u.OwnedApplications)

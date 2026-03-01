@@ -184,8 +184,8 @@ export default function AdminApplicationsPage() {
     btnDisabled: { opacity: 0.7, cursor: "not-allowed" },
     card: { border: "1px solid var(--color-border)", borderRadius: 12, background: "var(--color-surface)", overflow: "hidden" },
     table: { width: "100%", borderCollapse: "collapse" },
-    th: { textAlign: "left", fontSize: 12, letterSpacing: 0.4, textTransform: "uppercase", color: "var(--color-text-muted)", padding: "12px 14px", borderBottom: "1px solid var(--color-border)", background: "var(--color-surface-raised)" },
-    td: { padding: "12px 14px", borderBottom: "1px solid var(--color-border-td)", verticalAlign: "top", color: "var(--color-text-primary)", fontSize: 14 },
+    th: { textAlign: "left", fontSize: 12, letterSpacing: 0.4, textTransform: "uppercase", color: "var(--color-text-secondary)", padding: "12px 14px", borderBottom: "1px solid var(--color-border)", background: "var(--color-surface-raised)" },
+    td: { padding: "12px 14px", borderBottom: "1px solid var(--color-border-td)", verticalAlign: "top", color: "var(--color-text-primary)", fontSize: 14, background: "var(--color-surface)" },
     tdMuted: { color: "var(--color-text-muted)", fontSize: 13, marginTop: 4 },
     rowActions: { display: "flex", gap: 10, justifyContent: "flex-end", flexWrap: "wrap" },
     smallBtn: { padding: "8px 10px", borderRadius: 8, border: "1px solid var(--color-border-strong)", background: "var(--color-surface)", color: "var(--color-text-primary)", cursor: "pointer", fontWeight: 600, fontSize: 13 },
@@ -214,8 +214,8 @@ export default function AdminApplicationsPage() {
     versionsTitleRow: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 10, flexWrap: "wrap" },
     versionsTitle: { margin: 0, fontSize: 14, fontWeight: 800, color: "var(--color-text-primary)" },
     versionsTable: { width: "100%", borderCollapse: "collapse", background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 12, overflow: "hidden" },
-    versionsTh: { textAlign: "left", fontSize: 12, letterSpacing: 0.4, textTransform: "uppercase", color: "var(--color-text-muted)", padding: "10px 12px", borderBottom: "1px solid var(--color-border)", background: "var(--color-surface-raised)" },
-    versionsTd: { padding: "10px 12px", borderBottom: "1px solid var(--color-border-td)", fontSize: 13, color: "var(--color-text-primary)", verticalAlign: "top" },
+    versionsTh: { textAlign: "left", fontSize: 12, letterSpacing: 0.4, textTransform: "uppercase", color: "var(--color-text-secondary)", padding: "10px 12px", borderBottom: "1px solid var(--color-border)", background: "var(--color-surface-raised)" },
+    versionsTd: { padding: "10px 12px", borderBottom: "1px solid var(--color-border-td)", fontSize: 13, color: "var(--color-text-primary)", verticalAlign: "top", background: "var(--color-surface)" },
   };
 
   return (
@@ -234,7 +234,7 @@ export default function AdminApplicationsPage() {
       {error && <div style={s.error}>{error}</div>}
 
       <div className="hover-lift" style={s.card}>
-        <div style={{ overflowX: "auto" }}>
+        <div style={{ overflowX: "auto", background: "var(--color-surface)" }}>
           <table style={s.table}>
             <thead>
               <tr>

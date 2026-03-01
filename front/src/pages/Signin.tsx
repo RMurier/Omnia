@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { signin } from "../utils/authFetch";
 import { useAuthStore } from "../stores/authStore";
 import { useTranslation } from "react-i18next";
@@ -13,12 +13,21 @@ export default function SignIn() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const hydrated = useAuthStore((s) => s.hydrated);
+
   const from = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get("from") || "/";
   }, []);
 
   const isMobile = useMediaQuery(BREAKPOINTS.mobile);
+
+  useEffect(() => {
+    if (hydrated && isAuthenticated) {
+      window.location.replace("/");
+    }
+  }, [hydrated, isAuthenticated]);
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

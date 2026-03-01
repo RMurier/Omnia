@@ -151,6 +151,7 @@ builder.Services.AddMemoryCache();
 
 builder.Services.AddScoped<IAuth, AuthService>();
 builder.Services.AddScoped<IApplication, ApplicationService>();
+builder.Services.AddScoped<IOrganization, OrganizationService>();
 builder.Services.AddScoped<IApplicationSecretProtector, ApplicationSecretProtector>();
 builder.Services.AddScoped<IActivity, ActivityService>();
 builder.Services.AddScoped<ILog, LogService>();
@@ -166,6 +167,14 @@ builder.Services.AddScoped<IHmacNonceStore, EfHmacNonceStore>();
 builder.Services.AddScoped<HmacValidator>();
 
 var app = builder.Build();
+
+// Apply pending EF Core migrations on startup
+if (!EF.IsDesignTime)
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+}
 
 app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
