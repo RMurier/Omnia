@@ -533,6 +533,13 @@
     "rangeFrom": "Du",
     "rangeTo": "au"
   },
+  "betaBanner": {
+    "badge": "Bêta",
+    "title": "Omnia est en bêta",
+    "message": "Tu pourrais rencontrer des bugs ou des comportements inattendus. Rejoins notre Discord pour signaler les problèmes et rester informé des dernières nouveautés.",
+    "dismiss": "J'ai compris",
+    "discord": "Rejoindre Discord"
+  },
   "errors": {
     "NotFound": "Ressource introuvable.",
     "Unauthorized": "Non autorisé.",

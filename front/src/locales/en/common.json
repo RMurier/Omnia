@@ -533,6 +533,13 @@
     "rangeFrom": "From",
     "rangeTo": "to"
   },
+  "betaBanner": {
+    "badge": "Beta",
+    "title": "Omnia is in beta",
+    "message": "You may encounter bugs or unexpected behavior. Join our Discord to report issues and stay up to date with the latest news.",
+    "dismiss": "Got it",
+    "discord": "Join Discord"
+  },
   "errors": {
     "NotFound": "Resource not found.",
     "Unauthorized": "Unauthorized.",

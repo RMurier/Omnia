@@ -28,6 +28,8 @@ import AboutPage from "./pages/About.tsx";
 import OrganizationsPage from "./pages/Organizations.tsx";
 import OrganizationHomePage from "./pages/OrganizationHome.tsx";
 import OrganizationSettingsPage from "./pages/OrganizationSettings.tsx";
+import BetaBanner from "./components/BetaBanner.tsx";
+import { trackVisit } from "./utils/activityTracker.ts";
 
 function NotFoundBoundary() {
   const location = useLocation();
@@ -54,11 +56,13 @@ function Root() {
   React.useEffect(() => {
     hydrateFromServer();
     useThemeStore.getState().initTheme();
+    trackVisit();
   }, [hydrateFromServer]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <Toaster position="top-right" richColors />
+      <BetaBanner />
       <Header isAuthenticated={isAuthenticated} />
       <BrowserRouter>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflowY: "auto" }}>

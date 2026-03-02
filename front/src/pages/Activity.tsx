@@ -524,6 +524,7 @@ export default function AdminActivityPage() {
   }
 
   function refresh() {
+    setToLocal(toDatetimeLocalFromIsoUtc(new Date().toISOString()));
     loadApps();
     loadSeries();
   }

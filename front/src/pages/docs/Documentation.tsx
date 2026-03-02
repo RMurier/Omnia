@@ -201,7 +201,26 @@ export default function Documentation() {
           onClick={() => setSidebarOpen((v) => !v)}
           aria-label={t("docs.toggleSidebar")}
         >
-          {sidebarOpen ? <X size={22} style={{ color: "#fff" }} /> : <Menu size={22} style={{ color: "#fff" }} />}
+          <div style={{ position: "relative", width: 22, height: 22 }}>
+            <span style={{
+              position: "absolute", inset: 0,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              transition: "opacity 0.2s ease, transform 0.2s ease",
+              opacity: sidebarOpen ? 0 : 1,
+              transform: sidebarOpen ? "rotate(90deg) scale(0.5)" : "rotate(0deg) scale(1)",
+            }}>
+              <Menu size={22} style={{ color: "#fff" }} />
+            </span>
+            <span style={{
+              position: "absolute", inset: 0,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              transition: "opacity 0.2s ease, transform 0.2s ease",
+              opacity: sidebarOpen ? 1 : 0,
+              transform: sidebarOpen ? "rotate(0deg) scale(1)" : "rotate(-90deg) scale(0.5)",
+            }}>
+              <X size={22} style={{ color: "#fff" }} />
+            </span>
+          </div>
         </button>
       )}
 
