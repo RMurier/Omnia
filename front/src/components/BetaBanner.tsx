@@ -116,7 +116,7 @@ export default function BetaBanner() {
             {t("betaBanner.dismiss")}
           </button>
           <a
-            href="https://discord.gg/KtM9hD5VPn"
+            href="https://discord.gg/v947VjM9Rk"
             target="_blank"
             rel="noopener noreferrer"
             style={styles.btnDiscord}

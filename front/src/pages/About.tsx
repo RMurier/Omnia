@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import { BREAKPOINTS } from "../hooks/breakpoints";
 
-const DISCORD_URL = "https://discord.gg/KtM9hD5VPn";
+const DISCORD_URL = "https://discord.gg/v947VjM9Rk";
 
 function DiscordIcon() {
   return (
