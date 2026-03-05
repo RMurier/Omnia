@@ -126,6 +126,7 @@ export default function SignIn() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder={t("signin.emailPlaceholder")}
+              maxLength={254}
               style={styles.input}
             />
           </div>

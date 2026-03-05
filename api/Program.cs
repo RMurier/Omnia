@@ -148,6 +148,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddDataProtection();
 builder.Services.AddAuthorization();
 builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient();
 
 builder.Services.AddScoped<IAuth, AuthService>();
 builder.Services.AddScoped<IApplication, ApplicationService>();

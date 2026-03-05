@@ -91,6 +91,15 @@ namespace api.Services
             if (name.Length < 2)
                 throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.ApplicationNameTooShort);
 
+            if (name.Length > 100)
+                throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.ApplicationNameTooLong);
+
+            if (dto.Description is not null && dto.Description.Length > 500)
+                throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.DescriptionTooLong);
+
+            if (dto.Url is not null && dto.Url.Length > 2048)
+                throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.UrlTooLong);
+
             var exists = await _db.Application.AsNoTracking().AnyAsync(x => x.Name == name, ct);
             if (exists)
                 throw new ApiException(StatusCodes.Status409Conflict, ErrorKeys.ApplicationNameExists);
@@ -196,11 +205,27 @@ namespace api.Services
                 if (name.Length < 2)
                     throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.ApplicationNameTooShort);
 
+                if (name.Length > 100)
+                    throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.ApplicationNameTooLong);
+
                 entity.Name = name;
             }
 
-            if (dto.Url is not null) entity.Url = dto.Url;
-            if (dto.Description is not null) entity.Description = dto.Description;
+            if (dto.Url is not null)
+            {
+                if (dto.Url.Length > 2048)
+                    throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.UrlTooLong);
+
+                entity.Url = dto.Url;
+            }
+
+            if (dto.Description is not null)
+            {
+                if (dto.Description.Length > 500)
+                    throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.DescriptionTooLong);
+
+                entity.Description = dto.Description;
+            }
             if (dto.IsActive.HasValue) entity.IsActive = dto.IsActive.Value;
             if (dto.LogRetentionValue.HasValue) entity.LogRetentionValue = dto.LogRetentionValue.Value;
             if (dto.LogRetentionUnit is not null)

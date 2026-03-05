@@ -4,6 +4,7 @@ using Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace api.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260302195659_FixErrorLogMessageLength")]
+    partial class FixErrorLogMessageLength
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -60,8 +63,7 @@ namespace api.Data.Migrations
                         .HasColumnName("CREATED_AT");
 
                     b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
+                        .HasColumnType("nvarchar(max)")
                         .HasColumnName("DESCRIPTION");
 
                     b.Property<bool>("IsActive")
@@ -83,8 +85,7 @@ namespace api.Data.Migrations
                         .HasColumnName("LOG_RETENTION_VALUE");
 
                     b.Property<string>("Name")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
+                        .HasColumnType("nvarchar(max)")
                         .HasColumnName("NAME");
 
                     b.Property<Guid?>("RefOrganization")
@@ -96,8 +97,7 @@ namespace api.Data.Migrations
                         .HasColumnName("REF_OWNER");
 
                     b.Property<string>("Url")
-                        .HasMaxLength(2048)
-                        .HasColumnType("nvarchar(2048)")
+                        .HasColumnType("nvarchar(max)")
                         .HasColumnName("URL");
 
                     b.HasKey("Id");
@@ -840,7 +840,7 @@ namespace api.Data.Migrations
                             Name = "c8Tpx9kHQj0Xio6wAidnkg==",
                             Password = "wWwFqHINsN9P0TzRMd1d5yJQ9pz1nvw5ck0uRuVJu/D2kPPH/U/HylErGpB9g5RXA4mS8FqnAgdhXSuOgpabNQ==",
                             Salt = "vhLKoFuOfVK46NC4W056EkXEEsYAQogvnd/kOg4HU80=",
-                            TermsAcceptedAt = new DateTime(2026, 3, 5, 0, 55, 30, 375, DateTimeKind.Utc).AddTicks(381),
+                            TermsAcceptedAt = new DateTime(2026, 3, 2, 19, 56, 58, 407, DateTimeKind.Utc).AddTicks(1652),
                             TermsVersion = "1.0"
                         });
                 });

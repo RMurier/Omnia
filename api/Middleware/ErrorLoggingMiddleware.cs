@@ -1,10 +1,6 @@
-﻿using api.Data.Models;
-using Data;
-using System.Diagnostics;
-using System.Security.Cryptography;
-using System.Text;
+﻿using api.DTOs.Log;
+using api.Interfaces;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 
 namespace api.Middlewares
 {
@@ -12,6 +8,7 @@ namespace api.Middlewares
     {
         private readonly RequestDelegate _next;
         private readonly ILogger<ErrorLoggingMiddleware> _logger;
+        private readonly IServiceScopeFactory _scopeFactory;
 
         private static readonly Guid RefApplicationId =
             Guid.Parse("6932a69e-eaa0-4e9c-b4cf-d7a9c6524e4c");
@@ -21,13 +18,14 @@ namespace api.Middlewares
             WriteIndented = false
         };
 
-        public ErrorLoggingMiddleware(RequestDelegate next, ILogger<ErrorLoggingMiddleware> logger)
+        public ErrorLoggingMiddleware(RequestDelegate next, ILogger<ErrorLoggingMiddleware> logger, IServiceScopeFactory scopeFactory)
         {
             _next = next;
             _logger = logger;
+            _scopeFactory = scopeFactory;
         }
 
-        public async Task InvokeAsync(HttpContext context, AppDbContext db)
+        public async Task InvokeAsync(HttpContext context)
         {
             try
             {
@@ -38,45 +36,29 @@ namespace api.Middlewares
                 try
                 {
                     var now = DateTime.UtcNow;
+                    var payloadJson = JsonSerializer.Serialize(BuildPayload(context, ex, now), JsonOpts);
 
-                    var payload = BuildPayload(context, ex, now);
-                    var payloadJson = JsonSerializer.Serialize(payload, JsonOpts);
+                    await using var scope = _scopeFactory.CreateAsyncScope();
+                    var logService = scope.ServiceProvider.GetRequiredService<ILog>();
 
-                    var stackSig = ExtractStackSignature(ex, maxFrames: 3);
-                    var fingerprint = ComputeFingerprint(
-                        refApplication: RefApplicationId,
-                        category: "exception",
-                        level: "error",
-                        message: ex.Message,
-                        stackSignature: stackSig,
-                        httpMethod: context.Request.Method,
-                        path: context.Request.Path.Value ?? ""
-                    );
-
-                    var error = new ErrorLog
+                    await logService.Create(new AddLogDto
                     {
-                        Id = Guid.NewGuid(),
                         RefApplication = RefApplicationId,
                         Category = "exception",
                         Level = "error",
                         Message = Truncate(ex.Message, 1024),
-                        Fingerprint = fingerprint,
                         PayloadJson = payloadJson,
-                        IsPatched = false,
                         OccurredAtUtc = now
-                    };
+                    }, CancellationToken.None);
 
-                    db.Log.Add(error);
-                    await db.SaveChangesAsync();
-
-                    _logger.LogError(ex, "Unhandled exception logged. Fingerprint={Fingerprint}", fingerprint);
+                    _logger.LogError(ex, "Unhandled exception logged.");
                 }
                 catch (Exception logEx)
                 {
                     _logger.LogError(logEx, "Failed to persist ErrorLog");
                 }
 
-                throw; 
+                throw;
             }
         }
 
@@ -106,7 +88,7 @@ namespace api.Middlewares
                     host = ctx.Request.Host.Value,
                     scheme = ctx.Request.Scheme
                 },
-                trace = new
+                traceContext = new
                 {
                     traceId,
                     spanId = System.Diagnostics.Activity.Current?.SpanId.ToString()
@@ -151,54 +133,6 @@ namespace api.Middlewares
             }
 
             return sig.ToArray();
-        }
-
-        private static string ComputeFingerprint(
-            Guid refApplication,
-            string? category,
-            string? level,
-            string message,
-            IEnumerable<string>? stackSignature,
-            string httpMethod,
-            string path)
-        {
-            var normalized = NormalizeMessage(message);
-            var stackPart = stackSignature != null ? string.Join(">", stackSignature) : "";
-
-            var raw = $"{refApplication}|{category}|{level}|{httpMethod}|{path}|{normalized}|{stackPart}";
-
-            using var sha = SHA256.Create();
-            var bytes = sha.ComputeHash(Encoding.UTF8.GetBytes(raw));
-            return Convert.ToHexString(bytes);
-        }
-
-        private static string NormalizeMessage(string input)
-        {
-            if (string.IsNullOrWhiteSpace(input)) return "";
-
-            var s = input;
-
-            s = Regex.Replace(s,
-                @"\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b",
-                "?",
-                RegexOptions.IgnoreCase);
-
-            s = Regex.Replace(s,
-                @"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}",
-                "?");
-
-            s = Regex.Replace(s,
-                @"https?:\/\/\S+",
-                "?",
-                RegexOptions.IgnoreCase);
-
-            s = Regex.Replace(s,
-                @"\b\d+\b",
-                "?");
-
-            s = Regex.Replace(s, @"\s+", " ").Trim();
-
-            return s;
         }
 
         private static string Truncate(string s, int max)

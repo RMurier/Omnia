@@ -363,16 +363,16 @@ export default function AdminApplicationsPage() {
                 <div style={s.form}>
                   <div style={s.field}>
                     <label style={s.label}>{t("applications.name")}</label>
-                    <input style={s.input} value={createName} onChange={(e) => setCreateName(e.target.value)} placeholder={t("applications.namePlaceholder")} />
+                    <input style={s.input} value={createName} onChange={(e) => setCreateName(e.target.value)} placeholder={t("applications.namePlaceholder")} maxLength={100} />
                   </div>
                   <div style={s.field}>
                     <label style={s.label}>{t("applications.description")}</label>
-                    <textarea style={s.textarea} value={createDescription} onChange={(e) => setCreateDescription(e.target.value)} placeholder={t("applications.shortDescriptionPlaceholder")} />
+                    <textarea style={s.textarea} value={createDescription} onChange={(e) => setCreateDescription(e.target.value)} placeholder={t("applications.shortDescriptionPlaceholder")} maxLength={500} />
                   </div>
                   <div style={s.row}>
                     <div style={s.field}>
                       <label style={s.label}>{t("applications.url")}</label>
-                      <input style={s.input} value={createUrl} onChange={(e) => setCreateUrl(e.target.value)} placeholder={t("applications.urlPlaceholder")} />
+                      <input style={s.input} value={createUrl} onChange={(e) => setCreateUrl(e.target.value)} placeholder={t("applications.urlPlaceholder")} maxLength={2048} />
                     </div>
                     <div style={s.field}>
                       <label style={s.label}>{t("applications.isActive")}</label>

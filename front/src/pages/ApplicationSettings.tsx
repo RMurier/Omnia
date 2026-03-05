@@ -519,6 +519,7 @@ inviteBox: { border: "1px dashed var(--color-border-strong)", borderRadius: 10, 
                     value={gName}
                     onChange={(e) => setGName(e.target.value)}
                     placeholder={t("applications.namePlaceholder")}
+                    maxLength={100}
                     disabled={!isMaintainerOrOwner}
                   />
                 </div>
@@ -529,6 +530,7 @@ inviteBox: { border: "1px dashed var(--color-border-strong)", borderRadius: 10, 
                     value={gDescription}
                     onChange={(e) => setGDescription(e.target.value)}
                     placeholder={t("applications.shortDescriptionPlaceholder")}
+                    maxLength={500}
                     disabled={!isMaintainerOrOwner}
                   />
                 </div>
@@ -540,6 +542,7 @@ inviteBox: { border: "1px dashed var(--color-border-strong)", borderRadius: 10, 
                       value={gUrl}
                       onChange={(e) => setGUrl(e.target.value)}
                       placeholder={t("applications.urlPlaceholder")}
+                      maxLength={2048}
                       disabled={!isMaintainerOrOwner}
                     />
                   </div>
@@ -675,6 +678,7 @@ inviteBox: { border: "1px dashed var(--color-border-strong)", borderRadius: 10, 
                       onChange={(e) => { setInviteEmail(e.target.value); setCheckResult(null); setInviteMsg(null); }}
                       onBlur={() => inviteEmail.trim() && onCheckEmail()}
                       placeholder={t("applications.inviteEmailPlaceholder")}
+                      maxLength={254}
                     />
                   </div>
                   <div style={{ minWidth: 120 }}>

@@ -195,6 +195,7 @@ export default function SignUp() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder={t("signup.emailPlaceholder")}
+              maxLength={254}
               style={styles.input}
             />
           </div>
@@ -231,6 +232,7 @@ export default function SignUp() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={t("signup.namePlaceholder")}
+              maxLength={100}
               style={styles.input}
             />
           </div>
@@ -244,6 +246,7 @@ export default function SignUp() {
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
               placeholder={t("signup.lastNamePlaceholder")}
+              maxLength={100}
               style={styles.input}
             />
           </div>

@@ -533,6 +533,13 @@
     "rangeFrom": "Du",
     "rangeTo": "au"
   },
+  "betaBanner": {
+    "badge": "Bêta",
+    "title": "Omnia est en bêta",
+    "message": "Tu pourrais rencontrer des bugs ou des comportements inattendus. Rejoins notre Discord pour signaler les problèmes et rester informé des dernières nouveautés.",
+    "dismiss": "J'ai compris",
+    "discord": "Rejoindre Discord"
+  },
   "errors": {
     "NotFound": "Ressource introuvable.",
     "Unauthorized": "Non autorisé.",
@@ -574,7 +581,13 @@
     "AppNotPersonal": "Cette application n'est pas une application personnelle.",
     "AppAlreadyInOrg": "Cette application appartient déjà à une organisation.",
     "NotAppOwner": "Vous devez être propriétaire de l'application pour effectuer cette action.",
-    "CannotTransferToSelf": "Vous ne pouvez pas transférer la propriété à vous-même."
+    "CannotTransferToSelf": "Vous ne pouvez pas transférer la propriété à vous-même.",
+    "OrgNameTooLong": "Le nom de l'organisation est trop long (max 100 caractères).",
+    "ApplicationNameTooLong": "Le nom de l'application est trop long (max 100 caractères).",
+    "DescriptionTooLong": "La description est trop longue (max 500 caractères).",
+    "UrlTooLong": "L'URL est trop longue (max 2048 caractères).",
+    "FirstNameTooLong": "Le prénom est trop long (max 100 caractères).",
+    "LastNameTooLong": "Le nom est trop long (max 100 caractères)."
   },
   "docs": {
     "title": "Documentation",

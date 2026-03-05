@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useAuthStore } from "../stores/authStore";
 import { useThemeStore } from "../stores/themeStore";
 import { signout } from "../utils/authFetch";
@@ -26,7 +26,25 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
   const toggleTheme = useThemeStore((s) => s.toggleTheme);
   const isMobile = useMediaQuery(BREAKPOINTS.mobile);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [isBeta, setIsBeta] = useState(false);
+
+  const settingsRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
+        setSettingsOpen(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const base = import.meta.env.VITE_API_BASE_URL ?? "/api";
@@ -328,10 +346,26 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
           onClick={() => setMobileMenuOpen((v) => !v)}
           aria-label={t("header.toggleMenu")}
         >
-          {mobileMenuOpen
-            ? <X size={20} style={{ color: "var(--color-text-primary)" }} />
-            : <Menu size={20} style={{ color: "var(--color-text-primary)" }} />
-          }
+          <div style={{ position: "relative", width: 20, height: 20 }}>
+            <span style={{
+              position: "absolute", inset: 0,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              transition: "opacity 0.2s ease, transform 0.2s ease",
+              opacity: mobileMenuOpen ? 0 : 1,
+              transform: mobileMenuOpen ? "rotate(90deg) scale(0.5)" : "rotate(0deg) scale(1)",
+            }}>
+              <Menu size={20} style={{ color: "var(--color-text-primary)" }} />
+            </span>
+            <span style={{
+              position: "absolute", inset: 0,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              transition: "opacity 0.2s ease, transform 0.2s ease",
+              opacity: mobileMenuOpen ? 1 : 0,
+              transform: mobileMenuOpen ? "rotate(0deg) scale(1)" : "rotate(-90deg) scale(0.5)",
+            }}>
+              <X size={20} style={{ color: "var(--color-text-primary)" }} />
+            </span>
+          </div>
         </button>
 
         {mobileMenuOpen && (
@@ -460,95 +494,99 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
         </ul>
 
         {/* Settings dropdown */}
-        <details style={styles.details}>
-          <summary style={styles.settingsBtn}>
+        <div ref={settingsRef} style={styles.details}>
+          <button type="button" style={styles.settingsBtn} onClick={() => setSettingsOpen((v) => !v)}>
             <Settings size={18} style={{ color: "var(--color-text-muted)" }} />
-          </summary>
+          </button>
 
-          <div style={styles.settingsMenu}>
-            {/* Theme toggle */}
-            <div style={styles.settingsRow}>
-              <span style={styles.settingsLabel}>{t("settings.theme")}</span>
-              <button
-                type="button"
-                style={styles.themeToggle}
-                onClick={toggleTheme}
-                aria-label={theme === "dark" ? t("settings.themeLight") : t("settings.themeDark")}
-              >
-                {theme === "dark"
-                  ? <Sun size={18} style={{ color: "var(--color-warning)" }} />
-                  : <Moon size={18} style={{ color: "var(--color-text-muted)" }} />
-                }
-              </button>
-            </div>
-
-            {/* Language selector */}
-            <div style={styles.settingsRow}>
-              <span style={styles.settingsLabel}>{t("settings.language")}</span>
-              <div style={styles.langPill}>
+          {settingsOpen && (
+            <div style={styles.settingsMenu}>
+              {/* Theme toggle */}
+              <div style={styles.settingsRow}>
+                <span style={styles.settingsLabel}>{t("settings.theme")}</span>
                 <button
                   type="button"
-                  style={{ ...styles.langBtn, ...(!isFr ? styles.langBtnActive : {}) }}
-                  onClick={() => i18n.changeLanguage("en")}
+                  style={styles.themeToggle}
+                  onClick={toggleTheme}
+                  aria-label={theme === "dark" ? t("settings.themeLight") : t("settings.themeDark")}
                 >
-                  EN
-                </button>
-                <button
-                  type="button"
-                  style={{ ...styles.langBtn, ...(isFr ? styles.langBtnActive : {}) }}
-                  onClick={() => i18n.changeLanguage("fr")}
-                >
-                  FR
+                  {theme === "dark"
+                    ? <Sun size={18} style={{ color: "var(--color-warning)" }} />
+                    : <Moon size={18} style={{ color: "var(--color-text-muted)" }} />
+                  }
                 </button>
               </div>
-            </div>
 
-            {/* Terms */}
-            <div style={{ height: 1, background: "var(--color-border)", margin: "6px 0 2px" }} />
-            <a
-              href="/terms"
-              style={{ display: "block", padding: "6px 6px", fontSize: 13, color: "var(--color-text-muted)", textDecoration: "none", borderRadius: 6 }}
-            >
-              {t("header.terms")}
-            </a>
-          </div>
-        </details>
+              {/* Language selector */}
+              <div style={styles.settingsRow}>
+                <span style={styles.settingsLabel}>{t("settings.language")}</span>
+                <div style={styles.langPill}>
+                  <button
+                    type="button"
+                    style={{ ...styles.langBtn, ...(!isFr ? styles.langBtnActive : {}) }}
+                    onClick={() => i18n.changeLanguage("en")}
+                  >
+                    EN
+                  </button>
+                  <button
+                    type="button"
+                    style={{ ...styles.langBtn, ...(isFr ? styles.langBtnActive : {}) }}
+                    onClick={() => i18n.changeLanguage("fr")}
+                  >
+                    FR
+                  </button>
+                </div>
+              </div>
+
+              {/* Terms */}
+              <div style={{ height: 1, background: "var(--color-border)", margin: "6px 0 2px" }} />
+              <a
+                href="/terms"
+                style={{ display: "block", padding: "6px 6px", fontSize: 13, color: "var(--color-text-muted)", textDecoration: "none", borderRadius: 6 }}
+              >
+                {t("header.terms")}
+              </a>
+            </div>
+          )}
+        </div>
 
         {!isAuthenticated ? (
           <a href="/signin" style={styles.primaryButton}>
             {t("header.signin")}
           </a>
         ) : (
-          <details style={styles.details}>
-            <summary style={styles.summary}>
+          <div ref={userMenuRef} style={styles.details}>
+            <button type="button" style={styles.summary} onClick={() => setUserMenuOpen((v) => !v)}>
               <span style={styles.dot}>{initial}</span>
               <span>{displayName ?? t("header.myAccount")}</span>
               <span style={styles.caret} />
-            </summary>
+            </button>
 
-            <div style={styles.menu} role="menu" aria-label={t("header.userMenu")}>
-              <div style={styles.menuHeader}>
-                <p style={styles.menuName}>{displayName ?? t("header.myAccount")}</p>
-                <p style={styles.menuSub}>{t("header.manageProfile")}</p>
+            {userMenuOpen && (
+              <div style={styles.menu} role="menu" aria-label={t("header.userMenu")}>
+                <div style={styles.menuHeader}>
+                  <p style={styles.menuName}>{displayName ?? t("header.myAccount")}</p>
+                  <p style={styles.menuSub}>{t("header.manageProfile")}</p>
+                </div>
+
+                <a href="/me" style={styles.itemLink} role="menuitem">
+                  {t("header.profile")}
+                </a>
+
+                <button
+                  type="button"
+                  style={styles.itemBtn}
+                  role="menuitem"
+                  onClick={async () => {
+                    await signout();
+                    window.location.href = "/signin";
+                  }}
+                >
+                  {t("header.signoutButton")}
+                </button>
               </div>
-
-              <a href="/me" style={styles.itemLink} role="menuitem">
-                {t("header.profile")}
-              </a>
-
-              <button
-                type="button"
-                style={styles.itemBtn}
-                role="menuitem"
-                onClick={async () => {
-                  await signout();
-                  window.location.href = "/signin";
-                }}
-              >
-                {t("header.signoutButton")}
-              </button>
-            </div>
-          </details>
+            )}
+          </div>
         )}
       </nav>
     </header>

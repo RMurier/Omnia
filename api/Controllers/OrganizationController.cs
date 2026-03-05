@@ -28,7 +28,6 @@ public sealed class OrganizationController : ControllerBase
         return Guid.TryParse(userIdStr, out var userId) ? userId : null;
     }
 
-    // ── Org CRUD ─────────────────────────────────────────────────────────
 
     [HttpGet]
     public async Task<ActionResult<List<OrganizationDto>>> GetAll(CancellationToken ct)
@@ -52,6 +51,9 @@ public sealed class OrganizationController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<OrganizationDto>> Create([FromBody] CreateOrganizationRequest request, CancellationToken ct)
     {
+        if(request is null) return BadRequest(new { message = _t["Errors.InvalidRequest"].Value });
+        if(request.Name!.Length > 100) return BadRequest(new { message = _t["Errors.OrgNameTooLong"].Value });
+
         var userId = GetUserIdFromClaims();
         if (userId is null) return Unauthorized(new { message = _t["Errors.Unauthorized"].Value });
 

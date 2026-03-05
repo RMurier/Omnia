@@ -149,6 +149,12 @@ public class AuthService : IAuth
         if (request.Password.Length < 6)
             throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.PasswordTooShort);
 
+        if (request.Name is not null && request.Name.Trim().Length > 100)
+            throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.FirstNameTooLong);
+
+        if (request.LastName is not null && request.LastName.Trim().Length > 100)
+            throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.LastNameTooLong);
+
         if (!request.TermsAccepted)
             throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.TermsNotAccepted);
 

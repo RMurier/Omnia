@@ -151,6 +151,9 @@ public sealed class OrganizationService : IOrganization
         if (name.Length < 2)
             throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.OrganizationNameTooShort);
 
+        if (name.Length > 100)
+            throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.OrgNameTooLong);
+
         var org = new Organization
         {
             Id = Guid.NewGuid(),
@@ -196,6 +199,9 @@ public sealed class OrganizationService : IOrganization
         var name = (request.Name ?? string.Empty).Trim();
         if (name.Length < 2)
             throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.OrganizationNameTooShort);
+
+        if (name.Length > 100)
+            throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.OrgNameTooLong);
 
         org.Name = name;
         await _db.SaveChangesAsync(ct);
