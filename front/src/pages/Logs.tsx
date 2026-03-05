@@ -4,6 +4,8 @@ import type { LogDto } from "../interfaces/LogDto";
 import type { LogGroupUi } from "../interfaces/LogGroupUi";
 import { authFetch } from "../utils/authFetch";
 import { useTranslation } from "react-i18next";
+import { useMediaQuery } from "../hooks/useMediaQuery";
+import { BREAKPOINTS } from "../hooks/breakpoints";
 
 function toDateInputValue(d: Date) {
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -29,9 +31,50 @@ function safeParseJson(s?: string | null): any | null {
 
 function extractStack(payloadJson?: string | null): string | null {
   const j = safeParseJson(payloadJson);
-  const stack = j?.error?.stack ?? j?.error?.stackTrace ?? j?.stack ?? j?.stackTrace ?? null;
-  if (!stack) return null;
-  return String(stack);
+  if (!j) return null;
+
+  // Common stack trace field names across languages
+  const stackFields = [
+    // JavaScript/Node.js
+    "stack",
+    "stackTrace",
+    // Python
+    "traceback",
+    "tb",
+    "exc_info",
+    // Ruby
+    "backtrace",
+    // PHP/Java
+    "trace",
+    // Go
+    "stacktrace",
+    // Generic
+    "exception",
+    "frames",
+  ];
+
+  // Check root level
+  for (const field of stackFields) {
+    if (j[field]) return String(j[field]);
+  }
+
+  // Check inside error/exception object
+  const errorObj = j.error ?? j.exception ?? j.err ?? j.exc ?? null;
+  if (errorObj && typeof errorObj === "object") {
+    for (const field of stackFields) {
+      if (errorObj[field]) return String(errorObj[field]);
+    }
+  }
+
+  // Check for array of frames (Sentry-style)
+  if (Array.isArray(j.frames)) {
+    return j.frames.map((f: any) => `  at ${f.function || f.method || "?"} (${f.filename || f.file || "?"}:${f.lineno || f.line || "?"})`).join("\n");
+  }
+  if (Array.isArray(errorObj?.frames)) {
+    return errorObj.frames.map((f: any) => `  at ${f.function || f.method || "?"} (${f.filename || f.file || "?"}:${f.lineno || f.line || "?"})`).join("\n");
+  }
+
+  return null;
 }
 
 function categoryLabel(t: (key: string) => string, c?: string | null) {
@@ -58,27 +101,6 @@ function categoryLabel(t: (key: string) => string, c?: string | null) {
     default:
       return c || "-";
   }
-}
-
-function useMediaQuery(query: string) {
-  const [matches, setMatches] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const m = window.matchMedia(query);
-    const onChange = () => setMatches(Boolean(m.matches));
-    onChange();
-
-    if ((m as any).addEventListener) (m as any).addEventListener("change", onChange);
-    else (m as any).addListener(onChange);
-
-    return () => {
-      if ((m as any).removeEventListener) (m as any).removeEventListener("change", onChange);
-      else (m as any).removeListener(onChange);
-    };
-  }, [query]);
-
-  return matches;
 }
 
 function sortGroups(items: LogGroupUi[], sortBy: "lastSeen" | "occurrences" | "firstSeen", sortDir: "desc" | "asc") {
@@ -129,7 +151,8 @@ export default function LogsPage() {
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
-  const isNarrow = useMediaQuery("(max-width: 980px)");
+  const isNarrow = useMediaQuery(BREAKPOINTS.narrow);
+  const isMobile = useMediaQuery(BREAKPOINTS.mobile);
   const canRefresh = useMemo(() => !loading && !busy, [loading, busy]);
 
   const appNameById = useMemo(() => {
@@ -278,51 +301,60 @@ export default function LogsPage() {
   }, [filteredLogs]);
 
   const styles: Record<string, React.CSSProperties> = {
-    page: { padding: 20, maxWidth: "min(99vw, 3600px)", margin: "0 auto" },
+    page: { padding: isMobile ? "12px 8px" : 20, maxWidth: "min(99vw, 3600px)" },
     topBar: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 12 },
-    title: { margin: 0, fontSize: 22, fontWeight: 900, color: "#111827" },
-    subtitle: { margin: "6px 0 0", color: "#6b7280", fontSize: 14 },
-    panel: { border: "1px solid #e5e7eb", borderRadius: 12, background: "#fff", padding: 14, marginBottom: 12 },
+    title: { margin: 0, fontSize: 22, fontWeight: 900, color: "var(--color-text-primary)" },
+    subtitle: { margin: "6px 0 0", color: "var(--color-text-muted)", fontSize: 14 },
+    panel: { border: "1px solid var(--color-border)", borderRadius: 12, background: "var(--color-surface)", padding: 14, marginBottom: 12 },
 
-    filtersGrid: { display: "grid", gridTemplateColumns: "repeat(12, minmax(0, 1fr))", gap: 14, alignItems: "end" },
-    filterBlock: { padding: 10, borderRadius: 12, border: "1px solid #eef2f7", background: "#fafafa", minWidth: 0 },
+    filtersGrid: { display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(12, minmax(0, 1fr))", gap: isMobile ? 8 : 14, alignItems: "end" },
+    filterBlock: { padding: 10, borderRadius: 12, border: "1px solid var(--color-border-subtle)", background: "var(--color-surface-raised)", minWidth: 0 },
     field: { display: "grid", gap: 6 },
     col3: { gridColumn: "span 3", minWidth: 0 },
     col2: { gridColumn: "span 2", minWidth: 0 },
     col3Mobile: { gridColumn: "span 6", minWidth: 0 },
     col2Mobile: { gridColumn: "span 6", minWidth: 0 },
 
-    label: { display: "block", fontSize: 12, fontWeight: 800, color: "#374151" },
-    input: { height: 40, borderRadius: 10, border: "1px solid #d1d5db", padding: "0 12px", outline: "none", fontSize: 14, width: "100%", background: "#fff", boxSizing: "border-box" },
+    label: { display: "block", fontSize: 12, fontWeight: 800, color: "var(--color-text-secondary)" },
+    input: { height: 40, borderRadius: 10, border: "1px solid var(--color-border-strong)", padding: "0 12px", outline: "none", fontSize: 14, width: "100%", background: "var(--color-surface)", boxSizing: "border-box" },
 
-    btn: { padding: "10px 12px", borderRadius: 10, border: "1px solid #d1d5db", background: "#fff", cursor: "pointer", fontWeight: 800, fontSize: 14, whiteSpace: "nowrap" },
-    btnSmall: { padding: "7px 10px", borderRadius: 10, border: "1px solid #d1d5db", background: "#fff", cursor: "pointer", fontWeight: 800, fontSize: 13, whiteSpace: "nowrap" },
+    btn: { padding: "10px 12px", borderRadius: 10, border: "1px solid var(--color-border-strong)", background: "var(--color-surface)", color: "var(--color-text-primary)", cursor: "pointer", fontWeight: 800, fontSize: 14, whiteSpace: "nowrap" },
+    btnSmall: { padding: "7px 10px", borderRadius: 10, border: "1px solid var(--color-border-strong)", background: "var(--color-surface)", color: "var(--color-text-primary)", cursor: "pointer", fontWeight: 800, fontSize: 13, whiteSpace: "nowrap" },
     disabled: { opacity: 0.6, cursor: "not-allowed" },
 
-    error: { border: "1px solid #ef4444", background: "#fef2f2", color: "#991b1b", padding: 12, borderRadius: 10, marginBottom: 12, fontSize: 14 },
+    error: { border: "1px solid var(--color-error)", background: "var(--color-error-bg)", color: "var(--color-error-text)", padding: 12, borderRadius: 10, marginBottom: 12, fontSize: 14 },
 
-    card: { border: "1px solid #e5e7eb", borderRadius: 12, background: "#fff", overflow: "hidden" },
-    listWrap: { overflow: "auto" },
+    card: { border: "1px solid var(--color-border)", borderRadius: 12, background: "var(--color-surface)", overflow: "hidden" },
+    listWrap: { overflow: "auto", background: "var(--color-surface)" },
 
     table: { width: "100%", borderCollapse: "collapse", tableLayout: "fixed", minWidth: 980 },
-    th: { position: "sticky", top: 0, zIndex: 2, textAlign: "left", fontSize: 12, letterSpacing: 0.4, textTransform: "uppercase", color: "#6b7280", padding: "12px 14px", borderBottom: "1px solid #e5e7eb", background: "#fafafa", whiteSpace: "nowrap" },
-    td: { padding: "12px 14px", borderBottom: "1px solid #f1f5f9", verticalAlign: "top", color: "#111827", fontSize: 14, overflow: "hidden", textOverflow: "ellipsis" },
-    tdMuted: { color: "#6b7280", fontSize: 12, marginTop: 6 },
+    th: { position: "sticky", top: 0, zIndex: 2, textAlign: "left", fontSize: 12, letterSpacing: 0.4, textTransform: "uppercase", color: "var(--color-text-secondary)", padding: "12px 14px", borderBottom: "1px solid var(--color-border)", background: "var(--color-surface-raised)", whiteSpace: "nowrap" },
+    td: { padding: "12px 14px", borderBottom: "1px solid var(--color-border-td)", verticalAlign: "top", color: "var(--color-text-primary)", fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", background: "var(--color-surface)" },
+    tdMuted: { color: "var(--color-text-muted)", fontSize: 12, marginTop: 6 },
 
     groupRow: { cursor: "pointer" },
-    expandedRow: { background: "#f8fafc" },
+    expandedRow: { background: "var(--color-skeleton-box)" },
 
-    badge: { display: "inline-flex", alignItems: "center", gap: 8, padding: "4px 10px", borderRadius: 999, fontSize: 12, fontWeight: 900, border: "1px solid #e5e7eb", background: "#fff", color: "#111827", whiteSpace: "nowrap" },
-    pillBad: { borderColor: "#ef4444", color: "#7f1d1d", background: "#fef2f2" },
-    pillWarn: { borderColor: "#f59e0b", color: "#7c2d12", background: "#fffbeb" },
-    pillOk: { borderColor: "#10b981", color: "#065f46", background: "#ecfdf5" },
+    badge: { display: "inline-flex", alignItems: "center", gap: 8, padding: "4px 10px", borderRadius: 999, fontSize: 12, fontWeight: 900, border: "1px solid var(--color-border)", background: "var(--color-surface)", color: "var(--color-text-primary)", whiteSpace: "nowrap" },
+    pillBad: { borderColor: "var(--color-error)", color: "var(--color-error-text-dark)", background: "var(--color-error-bg)" },
+    pillWarn: { borderColor: "var(--color-warning)", color: "var(--color-warning-text)", background: "var(--color-warning-bg)" },
+    pillOk: { borderColor: "var(--color-success)", color: "var(--color-success-text)", background: "var(--color-success-bg)" },
 
-    subRow: { background: "#ffffff" },
-    subCell: { padding: "10px 14px", borderBottom: "1px solid #eef2f7", fontSize: 13, color: "#111827" },
-    subCard: { border: "1px solid #e5e7eb", borderRadius: 12, background: "#fff", padding: 12, display: "grid", gap: 8 },
+    subRow: { background: "var(--color-surface)" },
+    subCell: { padding: "10px 14px", borderBottom: "1px solid var(--color-border-subtle)", fontSize: 13, color: "var(--color-text-primary)" },
+    subCard: { border: "1px solid var(--color-border)", borderRadius: 12, background: "var(--color-surface)", padding: 12, display: "grid", gap: 8 },
 
     mono: { fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" },
-    pre: { margin: 0, padding: 12, borderRadius: 12, border: "1px solid #e5e7eb", background: "#fafafa", overflowX: "auto", fontSize: 12, lineHeight: 1.5, color: "#111827" },
+    pre: { margin: 0, padding: 12, borderRadius: 12, border: "1px solid var(--color-border)", background: "var(--color-surface-raised)", overflowX: "auto", fontSize: 12, lineHeight: 1.5, color: "var(--color-text-primary)" },
+
+    // ── Mobile card list ─────────────────────────────────────────────────────
+    mobileList: { display: "grid", gap: 8, padding: 12 },
+    mobileEmpty: { padding: "20px 14px", color: "var(--color-text-muted)", fontSize: 14 },
+    mobileGroup: { border: "1px solid var(--color-border)", borderRadius: 12, background: "var(--color-surface)", overflow: "hidden" },
+    mobileGroupHeader: { display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 14px", cursor: "pointer" },
+    mobileGroupHeaderOpen: { background: "var(--color-surface-sunken)" },
+    mobileGroupActions: { padding: "8px 14px 12px", borderTop: "1px solid var(--color-border-subtle)" },
+    mobileOccurrences: { borderTop: "1px solid var(--color-border)", background: "var(--color-surface-sunken)", padding: "10px 12px", display: "grid", gap: 8 },
   };
 
   function categoryBadgeStyle(cat: string): React.CSSProperties {
@@ -337,8 +369,9 @@ export default function LogsPage() {
     return styles.badge;
   }
 
-  const col3 = isNarrow ? styles.col3Mobile : styles.col3;
-  const col2 = isNarrow ? styles.col2Mobile : styles.col2;
+  const col3 = isMobile ? { gridColumn: "span 2" } : isNarrow ? styles.col3Mobile : styles.col3;
+  const col2 = isMobile ? { gridColumn: "span 1" } : isNarrow ? styles.col2Mobile : styles.col2;
+  const colFull = isMobile ? { gridColumn: "span 2" } : isNarrow ? { gridColumn: "span 12" } : { gridColumn: "span 12" };
 
   async function patchMany(ids: string[], value: boolean) {
     await authFetch<LogDto[]>("/log/patch", {
@@ -419,7 +452,7 @@ export default function LogsPage() {
   }
 
   return (
-    <div style={styles.page}>
+    <div className="animate-page" style={styles.page}>
       <div style={styles.topBar}>
         <div>
           <h1 style={styles.title}>{t("logs.title")}</h1>
@@ -518,7 +551,7 @@ export default function LogsPage() {
             </div>
           </div>
 
-          <div style={col3}>
+          <div style={colFull}>
             <div style={styles.filterBlock}>
               <div style={styles.field}>
                 <label style={styles.label}>{t("logs.search")}</label>
@@ -557,104 +590,80 @@ export default function LogsPage() {
       {error && <div style={styles.error}>{error}</div>}
 
       <div style={styles.card}>
-        <div style={styles.listWrap}>
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th style={styles.th}></th>
-                <th style={styles.th}>{t("logs.tableCategory")}</th>
-                <th style={styles.th}>{t("logs.tableError")}</th>
-                <th style={styles.th}>{t("logs.app")}</th>
-                <th style={styles.th}>{t("logs.occurrences")}</th>
-                <th style={styles.th}>{t("logs.lastSeen")}</th>
-                <th style={{ ...styles.th, textAlign: "right" }}>{t("logs.patchGroup")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td style={styles.td} colSpan={7}>
-                    {t("logs.loading")}
-                  </td>
-                </tr>
-              ) : groups.length === 0 ? (
-                <tr>
-                  <td style={styles.td} colSpan={7}>
-                    {t("logs.none")}
-                  </td>
-                </tr>
-              ) : (
-                groups.flatMap((g) => {
-                  const isOpen = Boolean(expanded[g.key]);
-                  const appName = appNameById.get(g.refApplication) ?? g.refApplication;
+        {/* ── Mobile / narrow: card list ── */}
+        {isNarrow && (
+          <div style={styles.mobileList}>
+            {loading ? (
+              <div style={styles.mobileEmpty}>{t("logs.loading")}</div>
+            ) : groups.length === 0 ? (
+              <div style={styles.mobileEmpty}>{t("logs.none")}</div>
+            ) : groups.map((g) => {
+              const isOpen = Boolean(expanded[g.key]);
+              const appName = appNameById.get(g.refApplication) ?? g.refApplication;
 
-                  const groupRow = (
-                    <tr
-                      key={`g:${g.key}`}
-                      style={{ ...(styles.groupRow as any), ...(isOpen ? (styles.expandedRow as any) : {}) }}
-                      onClick={() => setExpanded((p) => ({ ...p, [g.key]: !p[g.key] }))}
-                    >
-                      <td style={styles.td}>{isOpen ? "▾" : "▸"}</td>
-                      <td style={styles.td}>
+              return (
+                <div key={g.key} style={styles.mobileGroup}>
+                  {/* Header row — clickable */}
+                  <div
+                    style={{ ...styles.mobileGroupHeader, ...(isOpen ? styles.mobileGroupHeaderOpen : {}) }}
+                    onClick={() => setExpanded((p) => ({ ...p, [g.key]: !p[g.key] }))}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", marginBottom: 6 }}>
                         <span style={categoryBadgeStyle(g.category)}>{categoryLabel(t, g.category)}</span>
-                      </td>
-                      <td style={styles.td} title={g.message}>
-                        <div style={{ fontWeight: 900, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{g.message}</div>
-                        <div style={styles.tdMuted}>
-                          <span style={styles.mono}>{g.fingerprint}</span>
-                        </div>
-                      </td>
-                      <td style={styles.td} title={appName}>
-                        <div style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{appName}</div>
-                      </td>
-                      <td style={styles.td}>{g.occurrences}</td>
-                      <td style={styles.td}>{new Date(g.lastSeenAtUtc).toLocaleString()}</td>
-                      <td style={{ ...styles.td, textAlign: "right" }}>
-                        <button
-                          type="button"
-                          style={{
-                            ...styles.btnSmall,
-                            ...(g.allPatched ? styles.pillOk : g.anyPatched ? styles.pillWarn : {}),
-                            ...(busy ? styles.disabled : {}),
-                          }}
-                          disabled={busy}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onPatchGroup(g, !g.allPatched);
-                          }}
-                        >
-                          {g.allPatched ? t("logs.allPatched") : g.anyPatched ? t("logs.partialPatched") : t("logs.nonePatched")}
-                        </button>
-                      </td>
-                    </tr>
-                  );
+                        <span style={{ fontSize: 12, color: "var(--color-text-muted)", fontWeight: 700 }}>{appName}</span>
+                      </div>
+                      <div style={{ fontWeight: 800, fontSize: 14, color: "var(--color-text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {g.message}
+                      </div>
+                      <div style={{ fontSize: 12, color: "var(--color-text-muted)", marginTop: 4, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <span>{g.occurrences} {t("logs.occurrences")}</span>
+                        <span>·</span>
+                        <span>{new Date(g.lastSeenAtUtc).toLocaleString()}</span>
+                      </div>
+                    </div>
+                    <span style={{ fontSize: 16, color: "var(--color-text-muted)", flexShrink: 0, marginTop: 2 }}>
+                      {isOpen ? "▾" : "▸"}
+                    </span>
+                  </div>
 
-                  if (!isOpen) return [groupRow];
+                  {/* Patch button */}
+                  <div style={styles.mobileGroupActions}>
+                    <button
+                      type="button"
+                      style={{
+                        ...styles.btnSmall,
+                        ...(g.allPatched ? styles.pillOk : g.anyPatched ? styles.pillWarn : {}),
+                        ...(busy ? styles.disabled : {}),
+                      }}
+                      disabled={busy}
+                      onClick={(e) => { e.stopPropagation(); onPatchGroup(g, !g.allPatched); }}
+                    >
+                      {g.allPatched ? t("logs.allPatched") : g.anyPatched ? t("logs.partialPatched") : t("logs.nonePatched")}
+                    </button>
+                  </div>
 
-                  const occurrenceRows = g.ids
-                    .map((id) => logsById.get(id))
-                    .filter(Boolean)
-                    .sort((a, b) => new Date((b as any).occurredAtUtc).getTime() - new Date((a as any).occurredAtUtc).getTime())
-                    .slice(0, 30)
-                    .map((l) => {
-                      const id = (l!.id as any) as string;
-                      const occurredAtUtc = (l!.occurredAtUtc as any) as string;
-                      const stack = extractStack((l!.payloadJson as any) as string);
-                      const isPatched = Boolean(l!.isPatched);
+                  {/* Expanded occurrences */}
+                  {isOpen && (
+                    <div style={styles.mobileOccurrences}>
+                      {g.ids
+                        .map((id) => logsById.get(id))
+                        .filter(Boolean)
+                        .sort((a, b) => new Date((b as any).occurredAtUtc).getTime() - new Date((a as any).occurredAtUtc).getTime())
+                        .slice(0, 30)
+                        .map((l) => {
+                          const id = (l!.id as any) as string;
+                          const occurredAtUtc = (l!.occurredAtUtc as any) as string;
+                          const stack = extractStack((l!.payloadJson as any) as string);
+                          const isPatched = Boolean(l!.isPatched);
 
-                      return (
-                        <tr key={`o:${g.key}:${id}`} style={styles.subRow}>
-                          <td style={styles.subCell} colSpan={7}>
-                            <div style={styles.subCard}>
-                              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-                                <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                          return (
+                            <div key={id} style={styles.subCard}>
+                              <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start", flexWrap: "wrap" }}>
+                                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                                   <span style={patchedBadgeStyle(isPatched)}>{isPatched ? t("logs.patched") : t("logs.notPatched")}</span>
-                                  <span style={{ color: "#6b7280", fontSize: 12 }}>{new Date(occurredAtUtc).toLocaleString()}</span>
-                                  <span style={{ color: "#6b7280", fontSize: 12 }}>
-                                    <span style={styles.mono}>{id}</span>
-                                  </span>
+                                  <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>{new Date(occurredAtUtc).toLocaleString()}</span>
                                 </div>
-
                                 <button
                                   type="button"
                                   style={{ ...styles.btnSmall, ...(isPatched ? styles.pillOk : {}), ...(busy ? styles.disabled : {}) }}
@@ -664,30 +673,138 @@ export default function LogsPage() {
                                   {isPatched ? t("logs.unpatch") : t("logs.patch")}
                                 </button>
                               </div>
-
-                              <div style={{ color: "#111827", fontSize: 13 }}>{(l!.message ?? "") as any}</div>
+                              <div style={{ fontSize: 13, color: "var(--color-text-primary)" }}>{(l!.message ?? "") as any}</div>
                               {stack ? <pre style={{ ...styles.pre, ...(styles.mono as any) }}>{stack}</pre> : null}
                             </div>
-                          </td>
-                        </tr>
-                      );
-                    });
+                          );
+                        })}
+                      {g.ids.length > 30 && (
+                        <div style={{ fontSize: 12, color: "var(--color-text-muted)" }}>{t("logs.limited", { count: g.ids.length })}</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
 
-                  const limitedNote =
-                    g.ids.length > 30 ? (
+        {/* ── Desktop: table ── */}
+        {!isNarrow && (
+          <div style={styles.listWrap}>
+            <table style={styles.table}>
+              <thead>
+                <tr>
+                  <th style={styles.th}></th>
+                  <th style={styles.th}>{t("logs.tableCategory")}</th>
+                  <th style={styles.th}>{t("logs.tableError")}</th>
+                  <th style={styles.th}>{t("logs.app")}</th>
+                  <th style={styles.th}>{t("logs.occurrences")}</th>
+                  <th style={styles.th}>{t("logs.lastSeen")}</th>
+                  <th style={{ ...styles.th, textAlign: "right" }}>{t("logs.patchGroup")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr><td style={styles.td} colSpan={7}>{t("logs.loading")}</td></tr>
+                ) : groups.length === 0 ? (
+                  <tr><td style={styles.td} colSpan={7}>{t("logs.none")}</td></tr>
+                ) : (
+                  groups.flatMap((g) => {
+                    const isOpen = Boolean(expanded[g.key]);
+                    const appName = appNameById.get(g.refApplication) ?? g.refApplication;
+
+                    const groupRow = (
+                      <tr
+                        key={`g:${g.key}`}
+                        style={{ ...(styles.groupRow as any), ...(isOpen ? (styles.expandedRow as any) : {}) }}
+                        onClick={() => setExpanded((p) => ({ ...p, [g.key]: !p[g.key] }))}
+                      >
+                        <td style={styles.td}>{isOpen ? "▾" : "▸"}</td>
+                        <td style={styles.td}>
+                          <span style={categoryBadgeStyle(g.category)}>{categoryLabel(t, g.category)}</span>
+                        </td>
+                        <td style={styles.td} title={g.message}>
+                          <div style={{ fontWeight: 900, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{g.message}</div>
+                          <div style={styles.tdMuted}><span style={styles.mono}>{g.fingerprint}</span></div>
+                        </td>
+                        <td style={styles.td} title={appName}>
+                          <div style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{appName}</div>
+                        </td>
+                        <td style={styles.td}>{g.occurrences}</td>
+                        <td style={styles.td}>{new Date(g.lastSeenAtUtc).toLocaleString()}</td>
+                        <td style={{ ...styles.td, textAlign: "right" }}>
+                          <button
+                            type="button"
+                            style={{
+                              ...styles.btnSmall,
+                              ...(g.allPatched ? styles.pillOk : g.anyPatched ? styles.pillWarn : {}),
+                              ...(busy ? styles.disabled : {}),
+                            }}
+                            disabled={busy}
+                            onClick={(e) => { e.stopPropagation(); onPatchGroup(g, !g.allPatched); }}
+                          >
+                            {g.allPatched ? t("logs.allPatched") : g.anyPatched ? t("logs.partialPatched") : t("logs.nonePatched")}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+
+                    if (!isOpen) return [groupRow];
+
+                    const occurrenceRows = g.ids
+                      .map((id) => logsById.get(id))
+                      .filter(Boolean)
+                      .sort((a, b) => new Date((b as any).occurredAtUtc).getTime() - new Date((a as any).occurredAtUtc).getTime())
+                      .slice(0, 30)
+                      .map((l) => {
+                        const id = (l!.id as any) as string;
+                        const occurredAtUtc = (l!.occurredAtUtc as any) as string;
+                        const stack = extractStack((l!.payloadJson as any) as string);
+                        const isPatched = Boolean(l!.isPatched);
+
+                        return (
+                          <tr key={`o:${g.key}:${id}`} style={styles.subRow}>
+                            <td style={styles.subCell} colSpan={7}>
+                              <div style={styles.subCard}>
+                                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                                  <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                                    <span style={patchedBadgeStyle(isPatched)}>{isPatched ? t("logs.patched") : t("logs.notPatched")}</span>
+                                    <span style={{ color: "var(--color-text-muted)", fontSize: 12 }}>{new Date(occurredAtUtc).toLocaleString()}</span>
+                                    <span style={{ color: "var(--color-text-muted)", fontSize: 12 }}><span style={styles.mono}>{id}</span></span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    style={{ ...styles.btnSmall, ...(isPatched ? styles.pillOk : {}), ...(busy ? styles.disabled : {}) }}
+                                    disabled={busy}
+                                    onClick={() => onPatchSingle(id, !isPatched)}
+                                  >
+                                    {isPatched ? t("logs.unpatch") : t("logs.patch")}
+                                  </button>
+                                </div>
+                                <div style={{ color: "var(--color-text-primary)", fontSize: 13 }}>{(l!.message ?? "") as any}</div>
+                                {stack ? <pre style={{ ...styles.pre, ...(styles.mono as any) }}>{stack}</pre> : null}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      });
+
+                    const limitedNote = g.ids.length > 30 ? (
                       <tr key={`limit:${g.key}`} style={styles.subRow}>
                         <td style={styles.subCell} colSpan={7}>
-                          <div style={{ color: "#6b7280", fontSize: 12 }}>{t("logs.limited", { count: g.ids.length })}.</div>
+                          <div style={{ color: "var(--color-text-muted)", fontSize: 12 }}>{t("logs.limited", { count: g.ids.length })}.</div>
                         </td>
                       </tr>
                     ) : null;
 
-                  return [groupRow, ...occurrenceRows, ...(limitedNote ? [limitedNote] : [])];
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                    return [groupRow, ...occurrenceRows, ...(limitedNote ? [limitedNote] : [])];
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

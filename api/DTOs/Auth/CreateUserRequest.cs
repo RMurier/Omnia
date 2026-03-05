@@ -6,5 +6,6 @@
         public string Password { get; set; } = string.Empty;
         public string? Name { get; set; }
         public string? LastName { get; set; }
+        public bool TermsAccepted { get; set; }
     }
 }

@@ -2,6 +2,7 @@
 using api.DTOs.Log;
 using api.Helper;
 using api.Interfaces;
+using api.Provider.Interface;
 using Data;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
@@ -16,12 +17,14 @@ namespace api.Services
     public sealed class LogService : ILog
     {
         private readonly AppDbContext _context;
+        private readonly IDataEncryptor _encryptor;
 
         private static readonly JsonSerializerOptions JsonOpts = new(JsonSerializerDefaults.Web);
 
-        public LogService(AppDbContext context)
+        public LogService(AppDbContext context, IDataEncryptor encryptor)
         {
             _context = context;
+            _encryptor = encryptor;
         }
 
         public async Task<IReadOnlyList<LogDto>> GetAll(
@@ -46,21 +49,26 @@ namespace api.Services
             if (!string.IsNullOrWhiteSpace(level)) q = q.Where(x => x.Level == level);
             if (isPatched.HasValue) q = q.Where(x => x.IsPatched == isPatched.Value);
 
-            return await q
-                .OrderByDescending(x => x.OccurredAtUtc)
-                .Select(x => new LogDto
+            var logs = await q.OrderByDescending(x => x.OccurredAtUtc).ToListAsync(ct);
+
+            var result = new List<LogDto>(logs.Count);
+            foreach (var x in logs)
+            {
+                result.Add(new LogDto
                 {
                     Id = x.Id,
                     RefApplication = x.RefApplication,
                     Category = x.Category,
                     Level = x.Level,
-                    Message = x.Message,
-                    PayloadJson = x.PayloadJson,
+                    Message = await _encryptor.DecryptAsync(x.Message, x.RefApplication, ct),
+                    PayloadJson = await _encryptor.DecryptAsync(x.PayloadJson, x.RefApplication, ct),
                     Fingerprint = x.Fingerprint,
                     IsPatched = x.IsPatched,
                     OccurredAtUtc = x.OccurredAtUtc
-                })
-                .ToListAsync(ct);
+                });
+            }
+
+            return result;
         }
 
         public async Task<LogDto?> GetById(Guid id, Guid userId, CancellationToken ct)
@@ -77,8 +85,8 @@ namespace api.Services
                 RefApplication = log.RefApplication,
                 Category = log.Category,
                 Level = log.Level,
-                Message = log.Message,
-                PayloadJson = log.PayloadJson,
+                Message = await _encryptor.DecryptAsync(log.Message, log.RefApplication, ct),
+                PayloadJson = await _encryptor.DecryptAsync(log.PayloadJson, log.RefApplication, ct),
                 Fingerprint = log.Fingerprint,
                 IsPatched = log.IsPatched,
                 OccurredAtUtc = log.OccurredAtUtc
@@ -88,18 +96,23 @@ namespace api.Services
         public async Task<LogDto> Create(AddLogDto dto, CancellationToken ct)
         {
             if (dto.RefApplication is null || dto.RefApplication == Guid.Empty)
-                throw new ApiException(StatusCodes.Status400BadRequest, Shared.Keys.Errors.RefApplicationRequired);
+                throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.RefApplicationRequired);
             if (string.IsNullOrWhiteSpace(dto.Message))
-                throw new ApiException(StatusCodes.Status400BadRequest, Shared.Keys.Errors.MessageRequired);
+                throw new ApiException(StatusCodes.Status400BadRequest, ErrorKeys.MessageRequired);
+
+            var appId = dto.RefApplication.Value;
+            var plainMessage = dto.Message.Trim();
+            var plainPayload = string.IsNullOrWhiteSpace(dto.PayloadJson) ? "{}" : dto.PayloadJson;
 
             var entity = new ErrorLog
             {
                 Id = Guid.NewGuid(),
-                RefApplication = dto.RefApplication.Value,
+                RefApplication = appId,
                 Category = dto.Category?.Trim(),
                 Level = dto.Level?.Trim(),
-                Message = dto.Message.Trim(),
-                PayloadJson = string.IsNullOrWhiteSpace(dto.PayloadJson) ? "{}" : dto.PayloadJson,
+                Message = await _encryptor.EncryptAsync(plainMessage, appId, ct),
+                PayloadJson = await _encryptor.EncryptAsync(plainPayload, appId, ct),
+                Fingerprint = ComputeFingerprint(appId, dto.Category?.Trim(), dto.Level?.Trim(), plainMessage, plainPayload),
                 OccurredAtUtc = dto.OccurredAtUtc ?? DateTime.UtcNow,
                 IsPatched = false
             };
@@ -113,8 +126,8 @@ namespace api.Services
                 RefApplication = entity.RefApplication,
                 Category = entity.Category,
                 Level = entity.Level,
-                Message = entity.Message,
-                PayloadJson = entity.PayloadJson,
+                Message = plainMessage,
+                PayloadJson = plainPayload,
                 Fingerprint = entity.Fingerprint,
                 IsPatched = entity.IsPatched,
                 OccurredAtUtc = entity.OccurredAtUtc
@@ -127,22 +140,48 @@ namespace api.Services
             if (entity is null) return null;
 
             if (!await ApplicationAccessHelper.CanMaintainApplicationAsync(_context, userId, entity.RefApplication, ct))
-                throw new ApiException(StatusCodes.Status403Forbidden, Shared.Keys.Errors.Forbidden);
+                throw new ApiException(StatusCodes.Status403Forbidden, ErrorKeys.Forbidden);
+
+            var appId = entity.RefApplication;
+            string? plainMessage = null;
+            string? plainPayload = null;
 
             if (dto.RefApplication.HasValue && dto.RefApplication.Value != Guid.Empty)
-                entity.RefApplication = dto.RefApplication.Value;
+            {
+                appId = dto.RefApplication.Value;
+                entity.RefApplication = appId;
+            }
 
             if (dto.Category is not null) entity.Category = dto.Category?.Trim();
             if (dto.Level is not null) entity.Level = dto.Level?.Trim();
-            if (dto.Message is not null) entity.Message = dto.Message.Trim();
-            if (dto.PayloadJson is not null) entity.PayloadJson = dto.PayloadJson;
+
+            if (dto.Message is not null)
+            {
+                plainMessage = dto.Message.Trim();
+                entity.Message = await _encryptor.EncryptAsync(plainMessage, appId, ct);
+            }
+            else
+            {
+                plainMessage = await _encryptor.DecryptAsync(entity.Message, appId, ct);
+            }
+
+            if (dto.PayloadJson is not null)
+            {
+                plainPayload = dto.PayloadJson;
+                entity.PayloadJson = await _encryptor.EncryptAsync(plainPayload, appId, ct);
+            }
+            else
+            {
+                plainPayload = await _encryptor.DecryptAsync(entity.PayloadJson, appId, ct);
+            }
+
             if (dto.OccurredAtUtc.HasValue) entity.OccurredAtUtc = dto.OccurredAtUtc.Value;
             if (dto.IsPatched.HasValue) entity.IsPatched = dto.IsPatched.Value;
 
             if (dto.Fingerprint is not null)
             {
                 entity.Fingerprint = string.IsNullOrWhiteSpace(dto.Fingerprint)
-                    ? ComputeFingerprint(entity.RefApplication, entity.Category, entity.Level, entity.Message, entity.PayloadJson)
+                    ? ComputeFingerprint(appId, entity.Category, entity.Level, plainMessage, plainPayload)
                     : dto.Fingerprint.Trim();
             }
 
@@ -154,8 +193,8 @@ namespace api.Services
                 RefApplication = entity.RefApplication,
                 Category = entity.Category,
                 Level = entity.Level,
-                Message = entity.Message,
-                PayloadJson = entity.PayloadJson,
+                Message = plainMessage,
+                PayloadJson = plainPayload,
                 Fingerprint = entity.Fingerprint,
                 IsPatched = entity.IsPatched,
                 OccurredAtUtc = entity.OccurredAtUtc
@@ -168,7 +207,7 @@ namespace api.Services
             if (entity is null) return false;
 
             if (!await ApplicationAccessHelper.CanMaintainApplicationAsync(_context, userId, entity.RefApplication, ct))
-                throw new ApiException(StatusCodes.Status403Forbidden, Shared.Keys.Errors.Forbidden);
+                throw new ApiException(StatusCodes.Status403Forbidden, ErrorKeys.Forbidden);
 
             _context.Log.Remove(entity);
             await _context.SaveChangesAsync(ct);
@@ -202,22 +241,42 @@ namespace api.Services
             if (!string.IsNullOrWhiteSpace(level)) q = q.Where(x => x.Level == level);
             if (isPatched.HasValue) q = q.Where(x => x.IsPatched == isPatched.Value);
 
-            return await q
-                .GroupBy(x => new { x.Fingerprint, x.RefApplication, x.Category, x.Level, x.Message })
-                .Select(g => new LogDto
+            var logs = await q.ToListAsync(ct);
+
+            var groups = logs
+                .GroupBy(x => new { x.Fingerprint, x.RefApplication, x.Category, x.Level })
+                .Select(g => new
                 {
-                    Fingerprint = g.Key.Fingerprint,
-                    RefApplication = g.Key.RefApplication,
-                    Category = g.Key.Category,
-                    Level = g.Key.Level,
-                    Message = g.Key.Message,
+                    g.Key.Fingerprint,
+                    g.Key.RefApplication,
+                    g.Key.Category,
+                    g.Key.Level,
+                    FirstMessage = g.First().Message,
                     Occurrences = g.LongCount(),
                     OccurredAtUtc = g.Max(x => x.OccurredAtUtc),
                     IsPatched = g.All(x => x.IsPatched)
                 })
                 .OrderByDescending(x => x.Occurrences)
                 .ThenByDescending(x => x.OccurredAtUtc)
-                .ToListAsync(ct);
+                .ToList();
+
+            var result = new List<LogDto>(groups.Count);
+            foreach (var g in groups)
+            {
+                result.Add(new LogDto
+                {
+                    Fingerprint = g.Fingerprint,
+                    RefApplication = g.RefApplication,
+                    Category = g.Category,
+                    Level = g.Level,
+                    Message = await _encryptor.DecryptAsync(g.FirstMessage, g.RefApplication, ct),
+                    Occurrences = g.Occurrences,
+                    OccurredAtUtc = g.OccurredAtUtc,
+                    IsPatched = g.IsPatched
+                });
+            }
+
+            return result;
         }
 
         public async Task<List<LogDto>> MarkPatched(IEnumerable<Guid> ids, bool isPatched, Guid userId, CancellationToken ct)
@@ -237,21 +296,99 @@ namespace api.Services
 
             await _context.SaveChangesAsync(ct);
 
-            return entities.Select(entity => new LogDto
+            var result = new List<LogDto>(entities.Count);
+            foreach (var entity in entities)
             {
-                Id = entity.Id,
-                RefApplication = entity.RefApplication,
-                Category = entity.Category,
-                Level = entity.Level,
-                Message = entity.Message,
-                PayloadJson = entity.PayloadJson,
-                Fingerprint = entity.Fingerprint,
-                IsPatched = entity.IsPatched,
-                OccurredAtUtc = entity.OccurredAtUtc
-            }).ToList();
+                result.Add(new LogDto
+                {
+                    Id = entity.Id,
+                    RefApplication = entity.RefApplication,
+                    Category = entity.Category,
+                    Level = entity.Level,
+                    Message = await _encryptor.DecryptAsync(entity.Message, entity.RefApplication, ct),
+                    PayloadJson = await _encryptor.DecryptAsync(entity.PayloadJson, entity.RefApplication, ct),
+                    Fingerprint = entity.Fingerprint,
+                    IsPatched = entity.IsPatched,
+                    OccurredAtUtc = entity.OccurredAtUtc
+                });
+            }
+
+            return result;
         }
 
-        private static string ComputeFingerprint(
+        public async Task<DashboardStatsDto> GetDashboard(Guid userId, CancellationToken ct)
+        {
+            var accessibleIds = await ApplicationAccessHelper.GetAccessibleApplicationIdsAsync(_context, userId, ct);
+
+            var fromUtc = DateTime.UtcNow.Date.AddDays(-6);
+
+            var logs = await _context.Log
+                .AsNoTracking()
+                .Where(x => accessibleIds.Contains(x.RefApplication) && x.OccurredAtUtc >= fromUtc)
+                .Select(x => new { x.RefApplication, x.OccurredAtUtc })
+                .ToListAsync(ct);
+
+            var apps = await _context.Application
+                .AsNoTracking()
+                .Where(a => accessibleIds.Contains(a.Id))
+                .ToDictionaryAsync(a => a.Id, a => a.Name ?? a.Id.ToString(), ct);
+
+            var dailySeries = logs
+                .GroupBy(x => new { Date = x.OccurredAtUtc.Date.ToString("yyyy-MM-dd"), x.RefApplication })
+                .Select(g => new DashboardDaySeriesDto
+                {
+                    Date = g.Key.Date,
+                    RefApplication = g.Key.RefApplication,
+                    Count = g.LongCount()
+                })
+                .ToList();
+
+            return new DashboardStatsDto { Apps = apps, DailySeries = dailySeries };
+        }
+
+        public async Task<DashboardStatsDto> GetOrgDashboard(Guid orgId, Guid userId, CancellationToken ct)
+        {
+            // Verify user has access to this org
+            bool hasAccess = await _context.OrganizationMember
+                .AsNoTracking()
+                .AnyAsync(m => m.RefOrganization == orgId && m.RefUser == userId, ct);
+
+            if (!hasAccess)
+                throw new ApiException(StatusCodes.Status403Forbidden, ErrorKeys.Forbidden);
+
+            var orgAppIds = await _context.Application
+                .AsNoTracking()
+                .Where(a => a.RefOrganization == orgId)
+                .Select(a => a.Id)
+                .ToListAsync(ct);
+
+            var fromUtc = DateTime.UtcNow.Date.AddDays(-6);
+
+            var logs = await _context.Log
+                .AsNoTracking()
+                .Where(x => orgAppIds.Contains(x.RefApplication) && x.OccurredAtUtc >= fromUtc)
+                .Select(x => new { x.RefApplication, x.OccurredAtUtc })
+                .ToListAsync(ct);
+
+            var apps = await _context.Application
+                .AsNoTracking()
+                .Where(a => orgAppIds.Contains(a.Id))
+                .ToDictionaryAsync(a => a.Id, a => a.Name ?? a.Id.ToString(), ct);
+
+            var dailySeries = logs
+                .GroupBy(x => new { Date = x.OccurredAtUtc.Date.ToString("yyyy-MM-dd"), x.RefApplication })
+                .Select(g => new DashboardDaySeriesDto
+                {
+                    Date = g.Key.Date,
+                    RefApplication = g.Key.RefApplication,
+                    Count = g.LongCount()
+                })
+                .ToList();
+
+            return new DashboardStatsDto { Apps = apps, DailySeries = dailySeries };
+        }
+
+        internal static string ComputeFingerprint(
             Guid refApplication,
             string? category,
             string? level,
@@ -266,7 +403,7 @@ namespace api.Services
             return Convert.ToHexString(bytes);
         }
 
-        private static string NormalizeMessage(string input)
+        internal static string NormalizeMessage(string input)
         {
             var s = input;
             s = Regex.Replace(s, @"\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b", "?", RegexOptions.IgnoreCase);
@@ -277,7 +414,7 @@ namespace api.Services
             return s;
         }
 
-        private static string[] TryExtractStackSignature(string payloadJson)
+        internal static string[] TryExtractStackSignature(string payloadJson)
         {
             try
             {
@@ -292,7 +429,7 @@ namespace api.Services
             return Array.Empty<string>();
         }
 
-        private static bool TryReadFrames(JsonElement el, out string[] frames)
+        internal static bool TryReadFrames(JsonElement el, out string[] frames)
         {
             frames = Array.Empty<string>();
 

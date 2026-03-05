@@ -635,6 +635,8 @@ sketch
 # End of https://www.toptal.com/developers/gitignore/api/csharp,react,java,visualstudio,visualstudiocode
 front/package-lock.json
 .claude/
+CLAUDE.md
+GEMINI.md
 
 # API settings (sensitive)
 api/Properties/launchSettings.json

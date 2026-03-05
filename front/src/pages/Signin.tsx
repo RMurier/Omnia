@@ -1,7 +1,9 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { signin } from "../utils/authFetch";
 import { useAuthStore } from "../stores/authStore";
 import { useTranslation } from "react-i18next";
+import { useMediaQuery } from "../hooks/useMediaQuery";
+import { BREAKPOINTS } from "../hooks/breakpoints";
 
 export default function SignIn() {
   const { t } = useTranslation();
@@ -11,10 +13,21 @@ export default function SignIn() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const hydrated = useAuthStore((s) => s.hydrated);
+
   const from = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get("from") || "/";
   }, []);
+
+  const isMobile = useMediaQuery(BREAKPOINTS.mobile);
+
+  useEffect(() => {
+    if (hydrated && isAuthenticated) {
+      window.location.replace("/");
+    }
+  }, [hydrated, isAuthenticated]);
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -33,58 +46,58 @@ export default function SignIn() {
   };
 
   const styles: Record<string, React.CSSProperties> = {
-    page: { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "40px" },
+    page: { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: isMobile ? "24px 12px" : "40px" },
     card: {
       width: "100%",
       maxWidth: 420,
       borderRadius: 12,
-      backgroundColor: "#ffffff",
-      border: "1px solid #e5e7eb",
-      boxShadow: "0 4px 15px rgba(0,0,0,0.08)",
-      padding: 32,
-      color: "#1f2937",
+      backgroundColor: "var(--color-surface)",
+      border: "1px solid var(--color-border)",
+      boxShadow: "0 4px 15px var(--color-shadow)",
+      padding: isMobile ? 16 : 32,
+      color: "var(--color-text-primary)",
     },
     header: { marginBottom: 16 },
     title: { margin: 0, fontSize: 24, fontWeight: 600, lineHeight: 1.2 },
-    subtitle: { margin: "8px 0 0 0", fontSize: 14, color: "#6b7280" },
+    subtitle: { margin: "8px 0 0 0", fontSize: 14, color: "var(--color-text-muted)" },
     form: { display: "grid", gap: 16 },
     field: { display: "grid", gap: 8 },
-    label: { fontSize: 14, color: "#374151", fontWeight: 500 },
+    label: { fontSize: 14, color: "var(--color-text-secondary)", fontWeight: 500 },
     input: {
       height: 42,
       borderRadius: 8,
-      border: "1px solid #d1d5db",
-      backgroundColor: "#ffffff",
-      color: "#111827",
+      border: "1px solid var(--color-border-strong)",
+      backgroundColor: "var(--color-surface)",
+      color: "var(--color-text-primary)",
       padding: "0 12px",
       outline: "none",
     },
-    help: { fontSize: 12, color: "#f59e0b" },
+    help: { fontSize: 12, color: "var(--color-warning-help)" },
     pwdRow: { display: "flex", gap: 12, alignItems: "center" },
     pwdInput: { flex: 1 },
     pwdBtn: {
       height: 42,
       padding: "0 12px",
       borderRadius: 8,
-      border: "1px solid #d1d5db",
-      backgroundColor: "#f3f4f6",
-      color: "#374151",
+      border: "1px solid var(--color-border-strong)",
+      backgroundColor: "var(--color-surface-sunken)",
+      color: "var(--color-text-secondary)",
       cursor: "pointer",
       fontSize: 14,
     },
     error: {
       padding: 12,
       borderRadius: 8,
-      border: "1px solid #ef4444",
-      backgroundColor: "#fef2f2",
-      color: "#991b1b",
+      border: "1px solid var(--color-error-border)",
+      backgroundColor: "var(--color-error-bg)",
+      color: "var(--color-error-text)",
       fontSize: 14,
     },
     btn: {
       height: 44,
       borderRadius: 8,
       border: "none",
-      backgroundColor: "#6366f1",
+      backgroundColor: "var(--color-primary)",
       color: "#ffffff",
       cursor: "pointer",
       fontWeight: 600,
@@ -93,7 +106,7 @@ export default function SignIn() {
   };
 
   return (
-    <div style={styles.page}>
+    <div className="animate-page" style={styles.page}>
       <div style={styles.card}>
         <div style={styles.header}>
           <h1 style={styles.title}>{t("signin.title")}</h1>
@@ -113,6 +126,7 @@ export default function SignIn() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder={t("signin.emailPlaceholder")}
+              maxLength={254}
               style={styles.input}
             />
           </div>
@@ -149,6 +163,15 @@ export default function SignIn() {
             {loading ? t("signin.loading") : t("signin.submit")}
           </button>
         </form>
+
+        <div style={{ textAlign: "center", marginTop: 16, fontSize: 14, color: "var(--color-text-muted)", display: "flex", flexDirection: "column", gap: 8 }}>
+          <a href="/forgot-password" style={{ color: "var(--color-primary)", textDecoration: "none" }}>
+            {t("signin.forgotPassword")}
+          </a>
+          <a href="/signup" style={{ color: "var(--color-primary)", textDecoration: "none" }}>
+            {t("signin.noAccount")}
+          </a>
+        </div>
       </div>
     </div>
   );

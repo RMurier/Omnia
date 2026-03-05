@@ -1,7 +1,11 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useAuthStore } from "../stores/authStore";
+import { useThemeStore } from "../stores/themeStore";
 import { signout } from "../utils/authFetch";
 import { useTranslation } from "react-i18next";
+import { Settings, Sun, Moon, Menu, X } from "lucide-react";
+import { useMediaQuery } from "../hooks/useMediaQuery";
+import { BREAKPOINTS } from "../hooks/breakpoints";
 
 
 type NavItem = {
@@ -14,18 +18,53 @@ type HeaderProps = {
 };
 
 export default function Header({ isAuthenticated = false }: HeaderProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const email = useAuthStore((s) => s.email);
   const name = useAuthStore((s) => s.name);
   const lastName = useAuthStore((s) => s.lastName);
+  const theme = useThemeStore((s) => s.theme);
+  const toggleTheme = useThemeStore((s) => s.toggleTheme);
+  const isMobile = useMediaQuery(BREAKPOINTS.mobile);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [isBeta, setIsBeta] = useState(false);
+
+  const settingsRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
+        setSettingsOpen(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const base = import.meta.env.VITE_API_BASE_URL ?? "/api";
+    fetch(`${base}/auth/beta-status`)
+      .then((r) => r.json())
+      .then((data) => setIsBeta(!!data.isBeta))
+      .catch(() => {});
+  }, []);
+
+  const currentLang = (i18n.language || "en").toLowerCase();
+  const isFr = currentLang.startsWith("fr");
 
   const navItems: NavItem[] = useMemo(
     () => [
       { label: t("nav.applications"), href: "/applications" },
+      { label: t("nav.organizations"), href: "/organizations" },
       { label: t("nav.logs"), href: "/logs" },
       { label: t("nav.activity"), href: "/activity" },
     ],
-    []
+    [t]
   );
 
   const displayName = name ? `${name}${lastName ? ` ${lastName}` : ""}` : email;
@@ -38,8 +77,8 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
       alignItems: "center",
       justifyContent: "space-between",
       padding: "0 24px",
-      borderBottom: "1px solid #e5e7eb",
-      backgroundColor: "#ffffff",
+      borderBottom: "1px solid var(--color-border)",
+      backgroundColor: "var(--color-surface)",
       position: "sticky",
       top: 0,
       zIndex: 50,
@@ -48,7 +87,7 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
     logo: {
       fontSize: 18,
       fontWeight: 600,
-      color: "#111827",
+      color: "var(--color-text-primary)",
       textDecoration: "none",
     },
     nav: { display: "flex", alignItems: "center", gap: 16 },
@@ -62,14 +101,14 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
     },
     link: {
       fontSize: 14,
-      color: "#374151",
+      color: "var(--color-text-secondary)",
       textDecoration: "none",
     },
     primaryButton: {
       padding: "8px 14px",
       borderRadius: 6,
       border: "none",
-      backgroundColor: "#6366f1",
+      backgroundColor: "var(--color-primary)",
       color: "#ffffff",
       cursor: "pointer",
       fontSize: 14,
@@ -84,11 +123,11 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
       listStyle: "none",
       padding: "6px 10px",
       borderRadius: 999,
-      border: "1px solid #d1d5db",
-      backgroundColor: "#ffffff",
+      border: "1px solid var(--color-border-strong)",
+      backgroundColor: "var(--color-surface)",
       cursor: "pointer",
       fontSize: 14,
-      color: "#111827",
+      color: "var(--color-text-primary)",
       display: "inline-flex",
       alignItems: "center",
       gap: 10,
@@ -99,12 +138,12 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
       width: 28,
       height: 28,
       borderRadius: 999,
-      backgroundColor: "#f3f4f6",
+      backgroundColor: "var(--color-surface-sunken)",
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
       fontWeight: 800,
-      color: "#374151",
+      color: "var(--color-text-secondary)",
       fontSize: 13,
       flex: "0 0 auto",
     },
@@ -113,7 +152,7 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
       height: 0,
       borderLeft: "5px solid transparent",
       borderRight: "5px solid transparent",
-      borderTop: "6px solid #6b7280",
+      borderTop: "6px solid var(--color-text-muted)",
       marginLeft: 2,
     },
     menu: {
@@ -122,26 +161,26 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
       top: "calc(100% + 8px)",
       minWidth: 200,
       borderRadius: 12,
-      border: "1px solid #e5e7eb",
-      background: "#ffffff",
-      boxShadow: "0 10px 28px rgba(0,0,0,0.10)",
+      border: "1px solid var(--color-border)",
+      background: "var(--color-surface)",
+      boxShadow: "0 10px 28px var(--color-shadow)",
       padding: 8,
       zIndex: 60,
     },
     menuHeader: {
       padding: "8px 10px",
-      borderBottom: "1px solid #f3f4f6",
+      borderBottom: "1px solid var(--color-surface-sunken)",
       marginBottom: 8,
     },
-    menuName: { fontWeight: 900, color: "#111827", fontSize: 14, margin: 0 },
-    menuSub: { color: "#6b7280", fontSize: 12, margin: "4px 0 0" },
+    menuName: { fontWeight: 900, color: "var(--color-text-primary)", fontSize: 14, margin: 0 },
+    menuSub: { color: "var(--color-text-muted)", fontSize: 12, margin: "4px 0 0" },
     itemLink: {
       width: "100%",
       display: "block",
       padding: "10px 10px",
       borderRadius: 10,
       textDecoration: "none",
-      color: "#111827",
+      color: "var(--color-text-primary)",
       fontWeight: 800,
       fontSize: 14,
     },
@@ -150,71 +189,404 @@ export default function Header({ isAuthenticated = false }: HeaderProps) {
       display: "block",
       padding: "10px 10px",
       borderRadius: 10,
-      border: "1px solid #fee2e2",
-      background: "#fef2f2",
-      color: "#991b1b",
+      border: "1px solid var(--color-error-btn-border)",
+      background: "var(--color-error-bg)",
+      color: "var(--color-error-btn-text)",
       fontWeight: 800,
       fontSize: 14,
       textAlign: "left",
       cursor: "pointer",
       marginTop: 6,
     },
+
+    /* Settings dropdown */
+    settingsBtn: {
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      width: 38,
+      height: 38,
+      borderRadius: 999,
+      border: "1px solid var(--color-border-strong)",
+      backgroundColor: "var(--color-surface)",
+      cursor: "pointer",
+      padding: 0,
+    },
+    settingsMenu: {
+      position: "absolute",
+      right: 0,
+      top: "calc(100% + 8px)",
+      minWidth: 220,
+      borderRadius: 12,
+      border: "1px solid var(--color-border)",
+      background: "var(--color-surface)",
+      boxShadow: "0 10px 28px var(--color-shadow)",
+      padding: 10,
+      zIndex: 60,
+    },
+    settingsRow: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 10,
+      padding: "8px 6px",
+    },
+    settingsLabel: {
+      fontSize: 13,
+      fontWeight: 800,
+      color: "var(--color-text-primary)",
+    },
+    themeToggle: {
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      width: 36,
+      height: 36,
+      borderRadius: 10,
+      border: "1px solid var(--color-border-strong)",
+      backgroundColor: "var(--color-surface-raised)",
+      cursor: "pointer",
+      padding: 0,
+    },
+    langPill: {
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 0,
+      borderRadius: 10,
+      border: "1px solid var(--color-border-strong)",
+      overflow: "hidden",
+    },
+    langBtn: {
+      padding: "6px 12px",
+      border: "none",
+      cursor: "pointer",
+      fontWeight: 800,
+      fontSize: 13,
+      background: "var(--color-surface)",
+      color: "var(--color-text-muted)",
+    },
+    langBtnActive: {
+      background: "var(--color-primary)",
+      color: "#ffffff",
+    },
+
+    betaBadge: {
+      fontSize: 10,
+      fontWeight: 700,
+      padding: "2px 6px",
+      borderRadius: 4,
+      backgroundColor: "var(--color-warning)",
+      color: "#000000",
+      letterSpacing: "0.07em",
+      textTransform: "uppercase" as const,
+      lineHeight: 1,
+    },
+
+    /* Mobile menu */
+    hamburger: {
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      width: 38,
+      height: 38,
+      borderRadius: 10,
+      border: "1px solid var(--color-border-strong)",
+      backgroundColor: "var(--color-surface)",
+      cursor: "pointer",
+      padding: 0,
+    },
+    mobilePanel: {
+      position: "absolute",
+      top: 64,
+      left: 0,
+      right: 0,
+      background: "var(--color-surface)",
+      borderBottom: "1px solid var(--color-border)",
+      boxShadow: "0 10px 28px var(--color-shadow)",
+      padding: 16,
+      zIndex: 49,
+      display: "grid",
+      gap: 8,
+    },
+    mobileLink: {
+      display: "block",
+      padding: "10px 12px",
+      borderRadius: 10,
+      textDecoration: "none",
+      color: "var(--color-text-primary)",
+      fontWeight: 700,
+      fontSize: 15,
+    },
+    mobileDivider: {
+      height: 1,
+      background: "var(--color-border)",
+      margin: "4px 0",
+    },
+    mobileSettingsRow: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 10,
+      padding: "6px 12px",
+    },
   };
 
+  /* ── Mobile layout ── */
+  if (isMobile) {
+    return (
+      <header style={styles.header}>
+        <div style={styles.left}>
+          <a href="/" style={styles.logo}>{t("app.name")}</a>
+          {isBeta && <span style={styles.betaBadge}>Beta</span>}
+        </div>
+
+        <button
+          type="button"
+          style={styles.hamburger}
+          onClick={() => setMobileMenuOpen((v) => !v)}
+          aria-label={t("header.toggleMenu")}
+        >
+          <div style={{ position: "relative", width: 20, height: 20 }}>
+            <span style={{
+              position: "absolute", inset: 0,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              transition: "opacity 0.2s ease, transform 0.2s ease",
+              opacity: mobileMenuOpen ? 0 : 1,
+              transform: mobileMenuOpen ? "rotate(90deg) scale(0.5)" : "rotate(0deg) scale(1)",
+            }}>
+              <Menu size={20} style={{ color: "var(--color-text-primary)" }} />
+            </span>
+            <span style={{
+              position: "absolute", inset: 0,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              transition: "opacity 0.2s ease, transform 0.2s ease",
+              opacity: mobileMenuOpen ? 1 : 0,
+              transform: mobileMenuOpen ? "rotate(0deg) scale(1)" : "rotate(-90deg) scale(0.5)",
+            }}>
+              <X size={20} style={{ color: "var(--color-text-primary)" }} />
+            </span>
+          </div>
+        </button>
+
+        {mobileMenuOpen && (
+          <div className="animate-dropdown" style={styles.mobilePanel}>
+            {/* Nav links */}
+            {isAuthenticated && navItems.map((item) => (
+              <a key={item.href} href={item.href} style={styles.mobileLink}>
+                {item.label}
+              </a>
+            ))}
+            <a href="/docs" style={styles.mobileLink}>
+              {t("nav.docs")}
+            </a>
+            <a href="/about" style={styles.mobileLink}>
+              {t("header.about")}
+            </a>
+
+            <div style={styles.mobileDivider} />
+
+            {/* Theme */}
+            <div style={styles.mobileSettingsRow}>
+              <span style={styles.settingsLabel}>{t("settings.theme")}</span>
+              <button
+                type="button"
+                style={styles.themeToggle}
+                onClick={toggleTheme}
+                aria-label={theme === "dark" ? t("settings.themeLight") : t("settings.themeDark")}
+              >
+                {theme === "dark"
+                  ? <Sun size={18} style={{ color: "var(--color-warning)" }} />
+                  : <Moon size={18} style={{ color: "var(--color-text-muted)" }} />
+                }
+              </button>
+            </div>
+
+            {/* Language */}
+            <div style={styles.mobileSettingsRow}>
+              <span style={styles.settingsLabel}>{t("settings.language")}</span>
+              <div style={styles.langPill}>
+                <button
+                  type="button"
+                  style={{ ...styles.langBtn, ...(!isFr ? styles.langBtnActive : {}) }}
+                  onClick={() => i18n.changeLanguage("en")}
+                >
+                  EN
+                </button>
+                <button
+                  type="button"
+                  style={{ ...styles.langBtn, ...(isFr ? styles.langBtnActive : {}) }}
+                  onClick={() => i18n.changeLanguage("fr")}
+                >
+                  FR
+                </button>
+              </div>
+            </div>
+
+            <div style={styles.mobileDivider} />
+
+            {/* User section */}
+            {!isAuthenticated ? (
+              <a href="/signin" style={{ ...styles.mobileLink, color: "var(--color-primary)", fontWeight: 800 }}>
+                {t("header.signin")}
+              </a>
+            ) : (
+              <>
+                <div style={{ padding: "6px 12px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={styles.dot}>{initial}</span>
+                    <div>
+                      <div style={{ fontWeight: 900, color: "var(--color-text-primary)", fontSize: 14 }}>{displayName ?? t("header.myAccount")}</div>
+                      <div style={{ color: "var(--color-text-muted)", fontSize: 12 }}>{t("header.manageProfile")}</div>
+                    </div>
+                  </div>
+                </div>
+                <a href="/me" style={styles.mobileLink}>{t("header.profile")}</a>
+                <button
+                  type="button"
+                  style={{ ...styles.itemBtn, margin: "0 12px", width: "auto" }}
+                  onClick={async () => {
+                    await signout();
+                    window.location.href = "/signin";
+                  }}
+                >
+                  {t("header.signoutButton")}
+                </button>
+              </>
+            )}
+
+            <div style={styles.mobileDivider} />
+            <a href="/terms" style={{ ...styles.mobileLink, fontSize: 13, color: "var(--color-text-muted)", fontWeight: 500 }}>
+              {t("header.terms")}
+            </a>
+          </div>
+        )}
+      </header>
+    );
+  }
+
+  /* ── Desktop layout ── */
   return (
     <header style={styles.header}>
       <div style={styles.left}>
         <a href="/" style={styles.logo}>{t("app.name")}</a>
+        {isBeta && <span style={styles.betaBadge}>Beta</span>}
       </div>
 
       <nav style={styles.nav} aria-label={t("header.mainNav")}>
-        {isAuthenticated && (
-          <ul style={styles.list}>
-            {navItems.map((item) => (
-              <li key={item.href}>
-                <a href={item.href} style={styles.link}>
-                  {item.label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        )}
+        <ul style={styles.list}>
+          {isAuthenticated && navItems.map((item) => (
+            <li key={item.href}>
+              <a href={item.href} style={styles.link}>
+                {item.label}
+              </a>
+            </li>
+          ))}
+          <li>
+            <a href="/docs" style={styles.link}>
+              {t("nav.docs")}
+            </a>
+          </li>
+          <li>
+            <a href="/about" style={styles.link}>
+              {t("header.about")}
+            </a>
+          </li>
+        </ul>
+
+        {/* Settings dropdown */}
+        <div ref={settingsRef} style={styles.details}>
+          <button type="button" style={styles.settingsBtn} onClick={() => setSettingsOpen((v) => !v)}>
+            <Settings size={18} style={{ color: "var(--color-text-muted)" }} />
+          </button>
+
+          {settingsOpen && (
+            <div style={styles.settingsMenu}>
+              {/* Theme toggle */}
+              <div style={styles.settingsRow}>
+                <span style={styles.settingsLabel}>{t("settings.theme")}</span>
+                <button
+                  type="button"
+                  style={styles.themeToggle}
+                  onClick={toggleTheme}
+                  aria-label={theme === "dark" ? t("settings.themeLight") : t("settings.themeDark")}
+                >
+                  {theme === "dark"
+                    ? <Sun size={18} style={{ color: "var(--color-warning)" }} />
+                    : <Moon size={18} style={{ color: "var(--color-text-muted)" }} />
+                  }
+                </button>
+              </div>
+
+              {/* Language selector */}
+              <div style={styles.settingsRow}>
+                <span style={styles.settingsLabel}>{t("settings.language")}</span>
+                <div style={styles.langPill}>
+                  <button
+                    type="button"
+                    style={{ ...styles.langBtn, ...(!isFr ? styles.langBtnActive : {}) }}
+                    onClick={() => i18n.changeLanguage("en")}
+                  >
+                    EN
+                  </button>
+                  <button
+                    type="button"
+                    style={{ ...styles.langBtn, ...(isFr ? styles.langBtnActive : {}) }}
+                    onClick={() => i18n.changeLanguage("fr")}
+                  >
+                    FR
+                  </button>
+                </div>
+              </div>
+
+              {/* Terms */}
+              <div style={{ height: 1, background: "var(--color-border)", margin: "6px 0 2px" }} />
+              <a
+                href="/terms"
+                style={{ display: "block", padding: "6px 6px", fontSize: 13, color: "var(--color-text-muted)", textDecoration: "none", borderRadius: 6 }}
+              >
+                {t("header.terms")}
+              </a>
+            </div>
+          )}
+        </div>
 
         {!isAuthenticated ? (
           <a href="/signin" style={styles.primaryButton}>
             {t("header.signin")}
           </a>
         ) : (
-          <details style={styles.details}>
-            <summary style={styles.summary}>
+          <div ref={userMenuRef} style={styles.details}>
+            <button type="button" style={styles.summary} onClick={() => setUserMenuOpen((v) => !v)}>
               <span style={styles.dot}>{initial}</span>
               <span>{displayName ?? t("header.myAccount")}</span>
               <span style={styles.caret} />
-            </summary>
+            </button>
 
-            <div style={styles.menu} role="menu" aria-label={t("header.userMenu")}>
-              <div style={styles.menuHeader}>
-                <p style={styles.menuName}>{displayName ?? t("header.myAccount")}</p>
-                <p style={styles.menuSub}>{t("header.manageProfile")}</p>
+            {userMenuOpen && (
+              <div style={styles.menu} role="menu" aria-label={t("header.userMenu")}>
+                <div style={styles.menuHeader}>
+                  <p style={styles.menuName}>{displayName ?? t("header.myAccount")}</p>
+                  <p style={styles.menuSub}>{t("header.manageProfile")}</p>
+                </div>
+
+                <a href="/me" style={styles.itemLink} role="menuitem">
+                  {t("header.profile")}
+                </a>
+
+                <button
+                  type="button"
+                  style={styles.itemBtn}
+                  role="menuitem"
+                  onClick={async () => {
+                    await signout();
+                    window.location.href = "/signin";
+                  }}
+                >
+                  {t("header.signoutButton")}
+                </button>
               </div>
-
-              <a href="/me" style={styles.itemLink} role="menuitem">
-                {t("header.profile")}
-              </a>
-
-              <button
-                type="button"
-                style={styles.itemBtn}
-                role="menuitem"
-                onClick={async () => {
-                  await signout();
-                  window.location.href = "/signin";
-                }}
-              >
-                {t("header.signoutButton")}
-              </button>
-            </div>
-          </details>
+            )}
+          </div>
         )}
       </nav>
     </header>

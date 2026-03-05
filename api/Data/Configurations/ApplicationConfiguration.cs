@@ -23,21 +23,47 @@ namespace api.Data.Configurations
                 .IsRequired();
 
             builder.Property(x => x.Description)
-                .HasColumnName("DESCRIPTION");
+                .HasColumnName("DESCRIPTION")
+                .HasMaxLength(500);
 
             builder.Property(x => x.IsActive)
                 .HasColumnName("IS_ACTIVE")
                 .IsRequired();
 
             builder.Property(x => x.Name)
-                .HasColumnName("NAME");
+                .HasColumnName("NAME")
+                .HasMaxLength(100);
 
             builder.Property(x => x.Url)
-                .HasColumnName("URL");
+                .HasColumnName("URL")
+                .HasMaxLength(2048);
 
             builder.Property(x => x.CreatedAt)
                 .HasColumnName("CREATED_AT")
                 .IsRequired();
+
+            builder.Property(x => x.LogRetentionValue)
+                .HasColumnName("LOG_RETENTION_VALUE")
+                .IsRequired()
+                .HasDefaultValue(7);
+
+            builder.Property(x => x.LogRetentionUnit)
+                .HasColumnName("LOG_RETENTION_UNIT")
+                .HasMaxLength(10)
+                .IsRequired()
+                .HasDefaultValue("days");
+
+            builder.Property(x => x.RefOrganization)
+                .HasColumnName("REF_ORGANIZATION")
+                .IsRequired(false);
+
+            // FK to Organization
+            builder.HasOne(x => x.Organization)
+                .WithMany(o => o.Applications)
+                .HasForeignKey(x => x.RefOrganization)
+                .HasConstraintName("FK_APPLICATION_ORGANIZATION")
+                .OnDelete(DeleteBehavior.SetNull)
+                .IsRequired(false);
 
             // FK to Owner (User)
             builder.HasOne(x => x.Owner)
@@ -60,7 +86,9 @@ namespace api.Data.Configurations
                     Description = "Application centrale",
                     IsActive = true,
                     Name = "Omnia",
-                    CreatedAt = new DateTime(2026, 01, 09, 17, 00, 00)
+                    CreatedAt = new DateTime(2026, 01, 09, 17, 00, 00),
+                    LogRetentionValue = 7,
+                    LogRetentionUnit = "days"
                 });
         }
     }

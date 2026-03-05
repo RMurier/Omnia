@@ -60,26 +60,49 @@ namespace api.Data.Migrations
                         .HasColumnName("CREATED_AT");
 
                     b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
                         .HasColumnName("DESCRIPTION");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit")
                         .HasColumnName("IS_ACTIVE");
 
+                    b.Property<string>("LogRetentionUnit")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasDefaultValue("days")
+                        .HasColumnName("LOG_RETENTION_UNIT");
+
+                    b.Property<int>("LogRetentionValue")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(7)
+                        .HasColumnName("LOG_RETENTION_VALUE");
+
                     b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
                         .HasColumnName("NAME");
+
+                    b.Property<Guid?>("RefOrganization")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("REF_ORGANIZATION");
 
                     b.Property<Guid>("RefOwner")
                         .HasColumnType("uniqueidentifier")
                         .HasColumnName("REF_OWNER");
 
                     b.Property<string>("Url")
-                        .HasColumnType("nvarchar(max)")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)")
                         .HasColumnName("URL");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("RefOrganization");
 
                     b.HasIndex("RefOwner");
 
@@ -92,6 +115,8 @@ namespace api.Data.Migrations
                             CreatedAt = new DateTime(2026, 1, 9, 17, 0, 0, 0, DateTimeKind.Unspecified),
                             Description = "Application centrale",
                             IsActive = true,
+                            LogRetentionUnit = "days",
+                            LogRetentionValue = 7,
                             Name = "Omnia",
                             RefOwner = new Guid("1c7850fa-2cf8-4716-9991-b26d4f169d21")
                         });
@@ -124,6 +149,56 @@ namespace api.Data.Migrations
                         .HasDatabaseName("UX_APPLICATION_ENCRYPTION_KEY_REF_APPLICATION");
 
                     b.ToTable("T_APPLICATION_ENCRYPTION_KEY", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d"),
+                            CreatedAt = new DateTime(2026, 1, 9, 17, 0, 0, 0, DateTimeKind.Utc),
+                            KeyEnc = "IQfYMxIc4RqfMOeZyj/1wtpyS/8EB0kMHkuKF4f40tXzEAXDCpaVLpCfuVHkXmtXQKl8TEa6VCTaZUOv",
+                            RefApplication = new Guid("6932a69e-eaa0-4e9c-b4cf-d7a9c6524e4c")
+                        });
+                });
+
+            modelBuilder.Entity("api.Data.Models.ApplicationInvitation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("ID");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("CREATED_AT");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)")
+                        .HasColumnName("EMAIL");
+
+                    b.Property<Guid>("InvitedBy")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("INVITED_BY");
+
+                    b.Property<Guid>("RefApplication")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("REF_APPLICATION");
+
+                    b.Property<Guid>("RefRoleApplication")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("REF_ROLE_APPLICATION");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InvitedBy");
+
+                    b.HasIndex("RefRoleApplication");
+
+                    b.HasIndex("RefApplication", "Email")
+                        .IsUnique()
+                        .HasDatabaseName("UX_APPLICATION_INVITATION_APP_EMAIL");
+
+                    b.ToTable("T_APPLICATION_INVITATION", (string)null);
                 });
 
             modelBuilder.Entity("api.Data.Models.ApplicationMember", b =>
@@ -254,8 +329,7 @@ namespace api.Data.Migrations
 
                     b.Property<string>("Message")
                         .IsRequired()
-                        .HasMaxLength(1024)
-                        .HasColumnType("nvarchar(1024)")
+                        .HasColumnType("nvarchar(max)")
                         .HasColumnName("Message");
 
                     b.Property<DateTime>("OccurredAtUtc")
@@ -313,6 +387,204 @@ namespace api.Data.Migrations
                     b.ToTable("T_HMAC_NONCE", (string)null);
                 });
 
+            modelBuilder.Entity("api.Data.Models.MailLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("ID")
+                        .HasDefaultValueSql("NEWID()");
+
+                    b.Property<string>("AttachmentsJson")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("nvarchar(max)")
+                        .HasDefaultValue("[]")
+                        .HasColumnName("ATTACHMENTS_JSON");
+
+                    b.Property<string>("BccAddresses")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("BCC_ADDRESSES");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("BODY");
+
+                    b.Property<string>("CcAddresses")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("CC_ADDRESSES");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("ERROR_MESSAGE");
+
+                    b.Property<string>("Fingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("FINGERPRINT");
+
+                    b.Property<string>("FromAddress")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("FROM_ADDRESS");
+
+                    b.Property<bool>("IsPatched")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false)
+                        .HasColumnName("IS_PATCHED");
+
+                    b.Property<Guid>("RefApplication")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("REF_APPLICATION");
+
+                    b.Property<DateTime>("SentAtUtc")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("SENT_AT_UTC");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(16)")
+                        .HasColumnName("STATUS");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("SUBJECT");
+
+                    b.Property<string>("ToAddresses")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("nvarchar(max)")
+                        .HasDefaultValue("[]")
+                        .HasColumnName("TO_ADDRESSES");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RefApplication");
+
+                    b.ToTable("T_MAIL_LOG", (string)null);
+                });
+
+            modelBuilder.Entity("api.Data.Models.Organization", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("ID");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("CREATED_AT");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true)
+                        .HasColumnName("IS_ACTIVE");
+
+                    b.Property<DateTime?>("LastActiveAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("LAST_ACTIVE_AT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("NAME");
+
+                    b.Property<Guid>("RefOwner")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("REF_OWNER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RefOwner");
+
+                    b.ToTable("T_ORGANIZATION", (string)null);
+                });
+
+            modelBuilder.Entity("api.Data.Models.OrganizationInvitation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("ID");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("CREATED_AT");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)")
+                        .HasColumnName("EMAIL");
+
+                    b.Property<Guid>("InvitedBy")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("INVITED_BY");
+
+                    b.Property<Guid>("RefOrganization")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("REF_ORGANIZATION");
+
+                    b.Property<Guid>("RefRoleOrganization")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("REF_ROLE_ORGANIZATION");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InvitedBy");
+
+                    b.HasIndex("RefRoleOrganization");
+
+                    b.HasIndex("RefOrganization", "Email")
+                        .IsUnique()
+                        .HasDatabaseName("UX_ORGANIZATION_INVITATION_ORG_EMAIL");
+
+                    b.ToTable("T_ORGANIZATION_INVITATION", (string)null);
+                });
+
+            modelBuilder.Entity("api.Data.Models.OrganizationMember", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("ID");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("CREATED_AT");
+
+                    b.Property<Guid>("RefOrganization")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("REF_ORGANIZATION");
+
+                    b.Property<Guid>("RefRoleOrganization")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("REF_ROLE_ORGANIZATION");
+
+                    b.Property<Guid>("RefUser")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("REF_USER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RefRoleOrganization");
+
+                    b.HasIndex("RefUser");
+
+                    b.HasIndex("RefOrganization", "RefUser")
+                        .IsUnique()
+                        .HasDatabaseName("UX_ORGANIZATION_MEMBER_ORG_USER");
+
+                    b.ToTable("T_ORGANIZATION_MEMBER", (string)null);
+                });
+
             modelBuilder.Entity("api.Data.Models.RoleApplication", b =>
                 {
                     b.Property<Guid>("Id")
@@ -360,6 +632,115 @@ namespace api.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("api.Data.Models.RoleOrganization", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("ID");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("DESCRIPTION");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("NAME");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("UX_ROLE_ORGANIZATION_NAME");
+
+                    b.ToTable("T_ROLE_ORGANIZATION", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a"),
+                            Description = "Full access. Can manage members, apps and delete the organization.",
+                            Name = "Owner"
+                        },
+                        new
+                        {
+                            Id = new Guid("e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b"),
+                            Description = "Can create and manage apps. Cannot manage organization members.",
+                            Name = "Maintainer"
+                        },
+                        new
+                        {
+                            Id = new Guid("f6a7b8c9-d0e1-4f2a-3b4c-5d6e7f8a9b0c"),
+                            Description = "Read-only access to all organization apps, logs and activities.",
+                            Name = "Viewer"
+                        });
+                });
+
+            modelBuilder.Entity("api.Data.Models.SystemMailLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("ID")
+                        .HasDefaultValueSql("NEWID()");
+
+                    b.Property<string>("BccAddresses")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("BCC_ADDRESSES");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("BODY");
+
+                    b.Property<string>("CcAddresses")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("CC_ADDRESSES");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("ERROR_MESSAGE");
+
+                    b.Property<string>("Fingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("FINGERPRINT");
+
+                    b.Property<string>("FromAddress")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("FROM_ADDRESS");
+
+                    b.Property<DateTime>("SentAtUtc")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("SENT_AT_UTC");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(16)")
+                        .HasColumnName("STATUS");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("SUBJECT");
+
+                    b.Property<string>("ToAddresses")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("TO_ADDRESSES");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("T_SYSTEM_MAIL_LOG", (string)null);
+                });
+
             modelBuilder.Entity("api.Data.Models.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -372,6 +753,17 @@ namespace api.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)")
                         .HasColumnName("EMAIL");
+
+                    b.Property<string>("EmailConfirmationToken")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)")
+                        .HasColumnName("EMAIL_CONFIRMATION_TOKEN");
+
+                    b.Property<bool>("EmailConfirmed")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false)
+                        .HasColumnName("EMAIL_CONFIRMED");
 
                     b.Property<string>("LastName")
                         .HasColumnType("nvarchar(max)")
@@ -386,10 +778,49 @@ namespace api.Data.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("PASSWORD");
 
+                    b.Property<string>("PasswordChangeToken")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)")
+                        .HasColumnName("PASSWORD_CHANGE_TOKEN");
+
+                    b.Property<DateTime?>("PasswordChangeTokenExpiresAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("PASSWORD_CHANGE_TOKEN_EXPIRES_AT");
+
+                    b.Property<DateTime?>("PasswordChangedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("PASSWORD_CHANGED_AT");
+
+                    b.Property<string>("PasswordResetToken")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)")
+                        .HasColumnName("PASSWORD_RESET_TOKEN");
+
+                    b.Property<DateTime?>("PasswordResetTokenExpiresAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("PASSWORD_RESET_TOKEN_EXPIRES_AT");
+
+                    b.Property<string>("PendingPassword")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("PENDING_PASSWORD");
+
+                    b.Property<string>("PendingSalt")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("PENDING_SALT");
+
                     b.Property<string>("Salt")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("SALT");
+
+                    b.Property<DateTime?>("TermsAcceptedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("TERMS_ACCEPTED_AT");
+
+                    b.Property<string>("TermsVersion")
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)")
+                        .HasColumnName("TERMS_VERSION");
 
                     b.HasKey("Id");
 
@@ -404,10 +835,13 @@ namespace api.Data.Migrations
                         {
                             Id = new Guid("1c7850fa-2cf8-4716-9991-b26d4f169d21"),
                             Email = "MGxkV2lfdkupgorWnMHpeyIT9IX5GIDcQctl6JHkwo0=",
+                            EmailConfirmed = true,
                             LastName = "7mKmhERhwYiFtwf2l6BJMQ==",
                             Name = "c8Tpx9kHQj0Xio6wAidnkg==",
                             Password = "wWwFqHINsN9P0TzRMd1d5yJQ9pz1nvw5ck0uRuVJu/D2kPPH/U/HylErGpB9g5RXA4mS8FqnAgdhXSuOgpabNQ==",
-                            Salt = "vhLKoFuOfVK46NC4W056EkXEEsYAQogvnd/kOg4HU80="
+                            Salt = "vhLKoFuOfVK46NC4W056EkXEEsYAQogvnd/kOg4HU80=",
+                            TermsAcceptedAt = new DateTime(2026, 3, 5, 0, 55, 30, 375, DateTimeKind.Utc).AddTicks(381),
+                            TermsVersion = "1.0"
                         });
                 });
 
@@ -424,12 +858,20 @@ namespace api.Data.Migrations
 
             modelBuilder.Entity("api.Data.Models.Application", b =>
                 {
+                    b.HasOne("api.Data.Models.Organization", "Organization")
+                        .WithMany("Applications")
+                        .HasForeignKey("RefOrganization")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("FK_APPLICATION_ORGANIZATION");
+
                     b.HasOne("api.Data.Models.User", "Owner")
                         .WithMany("OwnedApplications")
                         .HasForeignKey("RefOwner")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("FK_APPLICATION_OWNER");
+
+                    b.Navigation("Organization");
 
                     b.Navigation("Owner");
                 });
@@ -444,6 +886,36 @@ namespace api.Data.Migrations
                         .HasConstraintName("FK_APPLICATION_ENCRYPTION_KEY_REF_APPLICATION");
 
                     b.Navigation("Application");
+                });
+
+            modelBuilder.Entity("api.Data.Models.ApplicationInvitation", b =>
+                {
+                    b.HasOne("api.Data.Models.User", "InvitedByUser")
+                        .WithMany()
+                        .HasForeignKey("InvitedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_APPLICATION_INVITATION_INVITEDBY");
+
+                    b.HasOne("api.Data.Models.Application", "Application")
+                        .WithMany()
+                        .HasForeignKey("RefApplication")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_APPLICATION_INVITATION_APPLICATION");
+
+                    b.HasOne("api.Data.Models.RoleApplication", "RoleApplication")
+                        .WithMany()
+                        .HasForeignKey("RefRoleApplication")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_APPLICATION_INVITATION_ROLE");
+
+                    b.Navigation("Application");
+
+                    b.Navigation("InvitedByUser");
+
+                    b.Navigation("RoleApplication");
                 });
 
             modelBuilder.Entity("api.Data.Models.ApplicationMember", b =>
@@ -510,6 +982,89 @@ namespace api.Data.Migrations
                     b.Navigation("Application");
                 });
 
+            modelBuilder.Entity("api.Data.Models.MailLog", b =>
+                {
+                    b.HasOne("api.Data.Models.Application", "Application")
+                        .WithMany()
+                        .HasForeignKey("RefApplication")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Application");
+                });
+
+            modelBuilder.Entity("api.Data.Models.Organization", b =>
+                {
+                    b.HasOne("api.Data.Models.User", "Owner")
+                        .WithMany("OwnedOrganizations")
+                        .HasForeignKey("RefOwner")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_ORGANIZATION_OWNER");
+
+                    b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("api.Data.Models.OrganizationInvitation", b =>
+                {
+                    b.HasOne("api.Data.Models.User", "InvitedByUser")
+                        .WithMany()
+                        .HasForeignKey("InvitedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_ORGANIZATION_INVITATION_INVITEDBY");
+
+                    b.HasOne("api.Data.Models.Organization", "Organization")
+                        .WithMany()
+                        .HasForeignKey("RefOrganization")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_ORGANIZATION_INVITATION_ORGANIZATION");
+
+                    b.HasOne("api.Data.Models.RoleOrganization", "RoleOrganization")
+                        .WithMany()
+                        .HasForeignKey("RefRoleOrganization")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_ORGANIZATION_INVITATION_ROLE");
+
+                    b.Navigation("InvitedByUser");
+
+                    b.Navigation("Organization");
+
+                    b.Navigation("RoleOrganization");
+                });
+
+            modelBuilder.Entity("api.Data.Models.OrganizationMember", b =>
+                {
+                    b.HasOne("api.Data.Models.Organization", "Organization")
+                        .WithMany("Members")
+                        .HasForeignKey("RefOrganization")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_ORGANIZATION_MEMBER_ORGANIZATION");
+
+                    b.HasOne("api.Data.Models.RoleOrganization", "RoleOrganization")
+                        .WithMany("OrganizationMembers")
+                        .HasForeignKey("RefRoleOrganization")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_ORGANIZATION_MEMBER_ROLE");
+
+                    b.HasOne("api.Data.Models.User", "User")
+                        .WithMany("OrganizationMemberships")
+                        .HasForeignKey("RefUser")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_ORGANIZATION_MEMBER_USER");
+
+                    b.Navigation("Organization");
+
+                    b.Navigation("RoleOrganization");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("api.Data.Models.Application", b =>
                 {
                     b.Navigation("Members");
@@ -517,16 +1072,32 @@ namespace api.Data.Migrations
                     b.Navigation("Secrets");
                 });
 
+            modelBuilder.Entity("api.Data.Models.Organization", b =>
+                {
+                    b.Navigation("Applications");
+
+                    b.Navigation("Members");
+                });
+
             modelBuilder.Entity("api.Data.Models.RoleApplication", b =>
                 {
                     b.Navigation("ApplicationMembers");
+                });
+
+            modelBuilder.Entity("api.Data.Models.RoleOrganization", b =>
+                {
+                    b.Navigation("OrganizationMembers");
                 });
 
             modelBuilder.Entity("api.Data.Models.User", b =>
                 {
                     b.Navigation("ApplicationMemberships");
 
+                    b.Navigation("OrganizationMemberships");
+
                     b.Navigation("OwnedApplications");
+
+                    b.Navigation("OwnedOrganizations");
                 });
 #pragma warning restore 612, 618
         }

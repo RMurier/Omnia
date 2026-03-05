@@ -1,0 +1,53 @@
+namespace api
+{
+    public static class ErrorKeys
+    {
+        public const string NotFound = "Errors.NotFound";
+        public const string Unauthorized = "Errors.Unauthorized";
+        public const string Forbidden = "Errors.Forbidden";
+        public const string RequiredFields = "Errors.RequiredFields";
+        public const string PasswordTooShort = "Errors.PasswordTooShort";
+        public const string InvalidCredentials = "Errors.InvalidCredentials";
+        public const string UsernamePasswordRequired = "Errors.UsernamePasswordRequired";
+        public const string UsernameAlreadyUsed = "Errors.UsernameAlreadyUsed";
+        public const string EmailPasswordRequired = "Errors.EmailPasswordRequired";
+        public const string EmailAlreadyUsed = "Errors.EmailAlreadyUsed";
+        public const string UserNotFound = "Errors.UserNotFound";
+        public const string CurrentPasswordInvalid = "Errors.CurrentPasswordInvalid";
+        public const string ApplicationNameTooShort = "Errors.ApplicationNameTooShort";
+        public const string ApplicationNameExists = "Errors.ApplicationNameExists";
+        public const string ApplicationNotFound = "Errors.ApplicationNotFound";
+        public const string SecretInvalid = "Errors.SecretInvalid";
+        public const string RefApplicationRequired = "Errors.RefApplicationRequired";
+        public const string AnonymousUserIdRequired = "Errors.AnonymousUserIdRequired";
+        public const string MessageRequired = "Errors.MessageRequired";
+        public const string SubjectRequired = "Errors.SubjectRequired";
+        public const string BetaRegistrationDisabled = "Errors.BetaRegistrationDisabled";
+        public const string EmailNotConfirmed = "Errors.EmailNotConfirmed";
+        public const string InvalidConfirmationToken = "Errors.InvalidConfirmationToken";
+        public const string MemberAlreadyExists = "Errors.MemberAlreadyExists";
+        public const string CannotRemoveLastOwner = "Errors.CannotRemoveLastOwner";
+        public const string InvalidRole = "Errors.InvalidRole";
+        public const string InvitationAlreadyPending = "Errors.InvitationAlreadyPending";
+        public const string InvalidResetToken = "Errors.InvalidResetToken";
+        public const string InvalidPasswordChangeToken = "Errors.InvalidPasswordChangeToken";
+        public const string InvalidRetentionUnit = "Errors.InvalidRetentionUnit";
+        public const string TermsNotAccepted = "Errors.TermsNotAccepted";
+        public const string OrganizationNotFound = "Errors.OrganizationNotFound";
+        public const string OrganizationNameTooShort = "Errors.OrganizationNameTooShort";
+        public const string NotOrgOwner = "Errors.NotOrgOwner";
+        public const string NotOrgMaintainerOrOwner = "Errors.NotOrgMaintainerOrOwner";
+        public const string OrgMemberAlreadyExists = "Errors.OrgMemberAlreadyExists";
+        public const string OrgInvitationAlreadyPending = "Errors.OrgInvitationAlreadyPending";
+        public const string AppNotPersonal = "Errors.AppNotPersonal";
+        public const string AppAlreadyInOrg = "Errors.AppAlreadyInOrg";
+        public const string NotAppOwner = "Errors.NotAppOwner";
+        public const string CannotTransferToSelf = "Errors.CannotTransferToSelf";
+        public const string OrgNameTooLong = "Errors.OrgNameTooLong";
+        public const string ApplicationNameTooLong = "Errors.ApplicationNameTooLong";
+        public const string DescriptionTooLong = "Errors.DescriptionTooLong";
+        public const string UrlTooLong = "Errors.UrlTooLong";
+        public const string FirstNameTooLong = "Errors.FirstNameTooLong";
+        public const string LastNameTooLong = "Errors.LastNameTooLong";
+    }
+}
