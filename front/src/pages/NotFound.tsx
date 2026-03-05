@@ -133,7 +133,7 @@ export default function NotFound() {
         <div style={styles.discordRow}>
           <p style={styles.discordText}>{t("notFound.discordPrompt")}</p>
           <a
-            href="https://discord.gg/KtM9hD5VPn"
+            href="https://discord.gg/v947VjM9Rk"
             target="_blank"
             rel="noopener noreferrer"
             style={styles.discordBtn}
