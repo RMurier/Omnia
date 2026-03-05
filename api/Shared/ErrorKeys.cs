@@ -43,5 +43,11 @@ namespace api
         public const string AppAlreadyInOrg = "Errors.AppAlreadyInOrg";
         public const string NotAppOwner = "Errors.NotAppOwner";
         public const string CannotTransferToSelf = "Errors.CannotTransferToSelf";
+        public const string OrgNameTooLong = "Errors.OrgNameTooLong";
+        public const string ApplicationNameTooLong = "Errors.ApplicationNameTooLong";
+        public const string DescriptionTooLong = "Errors.DescriptionTooLong";
+        public const string UrlTooLong = "Errors.UrlTooLong";
+        public const string FirstNameTooLong = "Errors.FirstNameTooLong";
+        public const string LastNameTooLong = "Errors.LastNameTooLong";
     }
 }

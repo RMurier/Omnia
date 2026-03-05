@@ -23,17 +23,20 @@ namespace api.Data.Configurations
                 .IsRequired();
 
             builder.Property(x => x.Description)
-                .HasColumnName("DESCRIPTION");
+                .HasColumnName("DESCRIPTION")
+                .HasMaxLength(500);
 
             builder.Property(x => x.IsActive)
                 .HasColumnName("IS_ACTIVE")
                 .IsRequired();
 
             builder.Property(x => x.Name)
-                .HasColumnName("NAME");
+                .HasColumnName("NAME")
+                .HasMaxLength(100);
 
             builder.Property(x => x.Url)
-                .HasColumnName("URL");
+                .HasColumnName("URL")
+                .HasMaxLength(2048);
 
             builder.Property(x => x.CreatedAt)
                 .HasColumnName("CREATED_AT")

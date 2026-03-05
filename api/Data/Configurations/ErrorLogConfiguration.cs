@@ -34,7 +34,7 @@ namespace api.Data.Configurations
             b.Property(x => x.Message)
                 .HasColumnName("Message")
                 .IsRequired()
-                .HasMaxLength(1024);
+                .HasColumnType("nvarchar(max)");
 
             b.Property(x => x.Fingerprint)
                 .IsRequired()

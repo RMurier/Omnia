@@ -509,6 +509,7 @@ export default function OrganizationSettingsPage() {
                       onChange={(e) => { setInviteEmail(e.target.value); setCheckResult(null); }}
                       onBlur={() => handleCheckEmail(inviteEmail)}
                       type="email"
+                      maxLength={254}
                     />
                     {checking && <div style={{ fontSize: 12, color: "var(--color-text-secondary)", marginTop: 4 }}>{t("organizations.checkingEmail")}</div>}
                     {checkResult?.exists && (
@@ -626,6 +627,7 @@ export default function OrganizationSettingsPage() {
                 placeholder={t("applications.urlPlaceholder")}
                 value={createAppUrl}
                 onChange={(e) => setCreateAppUrl(e.target.value)}
+                maxLength={2048}
               />
               <label style={s.label}>{t("applications.description")}</label>
               <input
@@ -633,7 +635,7 @@ export default function OrganizationSettingsPage() {
                 placeholder={t("applications.shortDescriptionPlaceholder")}
                 value={createAppDesc}
                 onChange={(e) => setCreateAppDesc(e.target.value)}
-                maxLength={200}
+                maxLength={500}
               />
               <div style={s.modalFooter}>
                 <button type="button" style={s.secondaryBtn} onClick={() => setIsCreateAppOpen(false)}>
