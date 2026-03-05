@@ -60,7 +60,9 @@ namespace api.Controllers
 
             if (latestVersion is null) return NoContent();
 
-            var sec = await _secretProvider.GetSecretAsync(OmniaAppId, latestVersion.Value, ct);
+            (string secretBase64, bool isActive)? sec;
+            try { sec = await _secretProvider.GetSecretAsync(OmniaAppId, latestVersion.Value, ct); }
+            catch { return NoContent(); }
             if (sec is null || !sec.Value.isActive) return NoContent();
 
             byte[] secretBytes;

@@ -43,7 +43,7 @@ public sealed class ApplicationSecretConfiguration : IEntityTypeConfiguration<Ap
             RefApplication = new Guid("6932A69E-EAA0-4E9C-B4CF-D7A9C6524E4C"),
             Version = 1,
             IsActive = true,
-            SecretEnc = "CfDJ8ApD0cbs3XhCviRx30E9Yehc-ljT-BV7IqeJrOqH-RMOzRbjJIVFzUjwlPBco3x7SN0XbRUYKPnRHNALG-iTWGke2lKD45HQ5VPjbgjugC9WOIfLhg0C7G4yN3JHpKojtt0w2LOo4ge8TaXJIVurrhWhzyXUqSu33DnC9Zf-LtIr",
+            SecretEnc = "OBQKQeJ4BzCOYgCVIZOcz0sRgvDcgVbdIf6kgOWG+I6uqYdJBYByOEf15wLZgr4X0TjtH+zVXARToacA8pWCu8q2U8l5THaa",
             CreatedAt = new DateTime(2026, 01, 10, 19, 00, 00)
         });
 
