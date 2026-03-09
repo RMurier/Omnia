@@ -28,6 +28,9 @@ import AboutPage from "./pages/About.tsx";
 import OrganizationsPage from "./pages/Organizations.tsx";
 import OrganizationHomePage from "./pages/OrganizationHome.tsx";
 import OrganizationSettingsPage from "./pages/OrganizationSettings.tsx";
+import OrgActivityPage from "./pages/OrgActivityPage.tsx";
+import OrgLogsPage from "./pages/OrgLogsPage.tsx";
+import OrgAppOverviewPage from "./pages/OrgAppOverviewPage.tsx";
 import BetaBanner from "./components/BetaBanner.tsx";
 import { trackVisit } from "./utils/activityTracker.ts";
 
@@ -84,6 +87,9 @@ function Root() {
             <Route path="/organizations" element={<OrganizationsPage />} />
             <Route path="/organizations/:id" element={<OrganizationHomePage />} />
             <Route path="/organizations/:id/settings" element={<OrganizationSettingsPage />} />
+            <Route path="/organizations/:id/activity" element={<OrgActivityPage />} />
+            <Route path="/organizations/:id/logs" element={<OrgLogsPage />} />
+            <Route path="/organizations/:orgId/apps/:appId" element={<OrgAppOverviewPage />} />
             <Route path="/docs" element={<Documentation />} />
             <Route path="/terms" element={<TermsPage />} />
             <Route path="/about" element={<AboutPage />} />

@@ -391,7 +391,13 @@
     "transferToOrgSuccess": "App transferred to organization successfully.",
     "transferOwnershipHint": "Transfer ownership of this app to another member. You will become a Maintainer.",
     "confirmTransferOwnership": "Transfer ownership of this app? You will become a Maintainer.",
-    "transferOwnershipSuccess": "App ownership transferred successfully."
+    "transferOwnershipSuccess": "App ownership transferred successfully.",
+    "activityBtn": "Activity",
+    "logsBtn": "Logs",
+    "appOverviewBtn": "Overview",
+    "tabActivity": "Activity",
+    "tabLogs": "Logs",
+    "orgReadOnly": "You have read-only access to logs."
   },
   "logs": {
     "title": "Logs",

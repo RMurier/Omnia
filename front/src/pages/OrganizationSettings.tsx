@@ -596,6 +596,7 @@ export default function OrganizationSettingsPage() {
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontWeight: 600, color: "var(--color-text-primary)", fontSize: 14 }}>{app.name}</div>
                   {app.url && <div style={{ fontSize: 12, color: "var(--color-text-secondary)", marginTop: 2 }}>{app.url}</div>}
+                  <div style={{ fontFamily: "monospace", fontSize: 11, color: "var(--color-text-muted)", marginTop: 2, userSelect: "all" }}>{app.id}</div>
                 </div>
                 <button style={s.iconBtn} onClick={() => navigate(`/applications/${app.id}/settings`)}>
                   <Settings size={13} /> {t("organizations.openApp")}
