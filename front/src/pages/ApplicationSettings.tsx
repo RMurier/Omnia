@@ -463,9 +463,9 @@ inviteBox: { border: "1px dashed var(--color-border-strong)", borderRadius: 10, 
     <div className="animate-page" style={s.page}>
       {/* Header */}
       <div style={s.header}>
-        <button style={s.backBtn} onClick={() => navigate("/applications")}>
+        <button style={s.backBtn} onClick={() => app.refOrganization ? navigate(`/organizations/${app.refOrganization}/settings`) : navigate("/applications")}>
           <ArrowLeft size={14} />
-          {t("applications.title")}
+          {app.refOrganization ? t("organizations.title") : t("applications.title")}
         </button>
         <div style={s.headerInfo}>
           <h1 style={s.appName}>{app.name}</h1>

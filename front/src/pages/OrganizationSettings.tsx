@@ -28,6 +28,7 @@ type PendingInv = { id: string; email?: string | null; role?: RoleItem | null; c
 type CheckEmailResult = { exists: boolean; name?: string | null; lastName?: string | null };
 type OrgApp = { id: string; name?: string | null; url?: string | null; isActive?: boolean };
 type CreateAppResult = { application: OrgApp; secretBase64: string; version: { version: number } };
+type AppVersion = { id: string; version: number; isActive: boolean; createdAt: string };
 
 type Tab = "general" | "members" | "apps";
 
@@ -97,6 +98,12 @@ export default function OrganizationSettingsPage() {
   const [createdSecret, setCreatedSecret] = useState<string | null>(null);
   const [createdAppName, setCreatedAppName] = useState<string | null>(null);
   const [createdVersion, setCreatedVersion] = useState<number | null>(null);
+
+  // Versions panel
+  const [versionsOpenFor, setVersionsOpenFor] = useState<string | null>(null);
+  const [versions, setVersions] = useState<Record<string, AppVersion[]>>({});
+  const [versionsLoading, setVersionsLoading] = useState<string | null>(null);
+  const [addingVersionFor, setAddingVersionFor] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -272,6 +279,65 @@ export default function OrganizationSettingsPage() {
       toast.error(apiError(e?.message));
     } finally {
       setCreatingApp(false);
+    }
+  }
+
+  async function toggleVersionsPanel(app: OrgApp) {
+    if (versionsOpenFor === app.id) {
+      setVersionsOpenFor(null);
+      return;
+    }
+    setVersionsOpenFor(app.id);
+    if (!versions[app.id]) {
+      setVersionsLoading(app.id);
+      try {
+        const data = await authFetch<AppVersion[]>(`/application/${app.id}/versions`);
+        setVersions((prev) => ({ ...prev, [app.id]: data ?? [] }));
+      } catch {
+        setVersions((prev) => ({ ...prev, [app.id]: [] }));
+      } finally {
+        setVersionsLoading(null);
+      }
+    }
+  }
+
+  async function handleAddVersion(app: OrgApp) {
+    if (addingVersionFor === app.id) return;
+    setAddingVersionFor(app.id);
+    try {
+      const result = await authFetch<{ secretBase64: string; version: { version: number } }>(
+        `/application/${app.id}/versions`,
+        { method: "POST" }
+      );
+      // Refresh versions list
+      const data = await authFetch<AppVersion[]>(`/application/${app.id}/versions`);
+      setVersions((prev) => ({ ...prev, [app.id]: data ?? [] }));
+      // Show one-time secret modal
+      setCreatedAppName(app.name ?? null);
+      setCreatedVersion(result.version?.version ?? null);
+      setCreatedSecret(result.secretBase64);
+      setSecretModalOpen(true);
+    } catch (e: any) {
+      toast.error(apiError(e?.message));
+    } finally {
+      setAddingVersionFor(null);
+    }
+  }
+
+  async function handleToggleVersionActive(appId: string, version: number, isActive: boolean) {
+    try {
+      await authFetch<void>(
+        `/application/${appId}/versions/${version}/active?isActive=${!isActive}`,
+        { method: "PATCH" }
+      );
+      setVersions((prev) => ({
+        ...prev,
+        [appId]: (prev[appId] ?? []).map((v) =>
+          v.version === version ? { ...v, isActive: !isActive } : v
+        ),
+      }));
+    } catch (e: any) {
+      toast.error(apiError(e?.message));
     }
   }
 
@@ -598,10 +664,86 @@ export default function OrganizationSettingsPage() {
                   {app.url && <div style={{ fontSize: 12, color: "var(--color-text-secondary)", marginTop: 2 }}>{app.url}</div>}
                   <div style={{ fontFamily: "monospace", fontSize: 11, color: "var(--color-text-muted)", marginTop: 2, userSelect: "all" }}>{app.id}</div>
                 </div>
-                <button style={s.iconBtn} onClick={() => navigate(`/applications/${app.id}/settings`)}>
-                  <Settings size={13} /> {t("organizations.openApp")}
-                </button>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" as const }}>
+                  <button style={s.iconBtn} onClick={() => toggleVersionsPanel(app)}>
+                    {t("organizations.versionsBtn")}
+                  </button>
+                  <button style={s.iconBtn} onClick={() => navigate(`/applications/${app.id}/settings`)}>
+                    <Settings size={13} /> {t("organizations.openApp")}
+                  </button>
+                </div>
               </div>
+
+              {versionsOpenFor === app.id && (
+                <div style={{
+                  borderTop: "1px solid var(--color-border)",
+                  marginTop: 8,
+                  paddingTop: 12,
+                  background: "var(--color-surface-sunken)",
+                  borderRadius: 6,
+                  padding: "10px 12px",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                    <div style={{ fontWeight: 600, fontSize: 13, color: "var(--color-text-secondary)" }}>
+                      {t("organizations.versionsTitle")}
+                    </div>
+                    {isMaintainerOrOwner && (
+                      <button
+                        style={{ ...s.iconBtn, fontSize: 12 }}
+                        onClick={() => handleAddVersion(app)}
+                        disabled={addingVersionFor === app.id}
+                      >
+                        {addingVersionFor === app.id ? t("organizations.addingVersion") : t("organizations.addVersion")}
+                      </button>
+                    )}
+                  </div>
+
+                  {versionsLoading === app.id && (
+                    <div style={{ fontSize: 13, color: "var(--color-text-secondary)" }}>{t("common.loading")}</div>
+                  )}
+
+                  {versionsLoading !== app.id && (versions[app.id] ?? []).length === 0 && (
+                    <div style={{ fontSize: 13, color: "var(--color-text-secondary)" }}>{t("organizations.versionsEmpty")}</div>
+                  )}
+
+                  {(versions[app.id] ?? []).map((v) => (
+                    <div key={v.id} style={{
+                      display: "flex", alignItems: "center", justifyContent: "space-between",
+                      flexWrap: "wrap" as const, gap: 8,
+                      padding: "6px 0", borderBottom: "1px solid var(--color-border-subtle)",
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text-primary)" }}>
+                          v{v.version}
+                        </span>
+                        <span style={{
+                          fontSize: 11, fontWeight: 600, padding: "2px 7px", borderRadius: 10,
+                          background: v.isActive ? "var(--color-success-bg)" : "var(--color-error-bg)",
+                          color: v.isActive ? "var(--color-success)" : "var(--color-error)",
+                        }}>
+                          {v.isActive ? t("organizations.versionActive") : t("organizations.versionInactive")}
+                        </span>
+                        <span style={{ fontSize: 11, color: "var(--color-text-muted)" }}>
+                          {new Date(v.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      {isMaintainerOrOwner && (
+                        <button
+                          style={{
+                            ...s.iconBtn,
+                            fontSize: 12,
+                            borderColor: v.isActive ? "var(--color-error-border)" : "var(--color-border-strong)",
+                            color: v.isActive ? "var(--color-error-text)" : "var(--color-text-primary)",
+                          }}
+                          onClick={() => handleToggleVersionActive(app.id, v.version, v.isActive)}
+                        >
+                          {v.isActive ? t("organizations.disableVersion") : t("organizations.enableVersion")}
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </>

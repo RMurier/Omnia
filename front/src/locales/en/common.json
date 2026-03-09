@@ -397,7 +397,16 @@
     "appOverviewBtn": "Overview",
     "tabActivity": "Activity",
     "tabLogs": "Logs",
-    "orgReadOnly": "You have read-only access to logs."
+    "orgReadOnly": "You have read-only access to logs.",
+    "versionsBtn": "Versions",
+    "versionsTitle": "Versions",
+    "versionsEmpty": "No versions yet.",
+    "addVersion": "+ Add version",
+    "addingVersion": "Adding...",
+    "versionActive": "Active",
+    "versionInactive": "Inactive",
+    "enableVersion": "Enable",
+    "disableVersion": "Disable"
   },
   "logs": {
     "title": "Logs",
