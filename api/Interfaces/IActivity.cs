@@ -13,6 +13,15 @@ namespace api.Interfaces
             Guid userId,
             CancellationToken ct);
 
+        Task<IReadOnlyList<SeriesPointActivityDto>> GetOrgSeries(
+            Guid orgId,
+            Granularity granularity,
+            Guid? applicationId,
+            DateTime? fromUtc,
+            DateTime? toUtc,
+            Guid userId,
+            CancellationToken ct);
+
         Task<ActivityDto> Create(ActivityDto dto, CancellationToken ct);
     }
 }

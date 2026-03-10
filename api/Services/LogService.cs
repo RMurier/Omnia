@@ -388,6 +388,63 @@ namespace api.Services
             return new DashboardStatsDto { Apps = apps, DailySeries = dailySeries };
         }
 
+        public async Task<IReadOnlyList<LogDto>> GetOrgAll(
+            Guid orgId,
+            Guid? refApplication,
+            DateTime? fromUtc,
+            DateTime? toUtc,
+            string? category,
+            string? level,
+            bool? isPatched,
+            Guid userId,
+            CancellationToken ct)
+        {
+            bool hasAccess = await _context.OrganizationMember
+                .AsNoTracking()
+                .AnyAsync(m => m.RefOrganization == orgId && m.RefUser == userId, ct);
+
+            if (!hasAccess)
+                throw new ApiException(StatusCodes.Status403Forbidden, ErrorKeys.Forbidden);
+
+            var orgAppIds = await _context.Application
+                .AsNoTracking()
+                .Where(a => a.RefOrganization == orgId)
+                .Select(a => a.Id)
+                .ToListAsync(ct);
+
+            IQueryable<ErrorLog> q = _context.Log.AsQueryable()
+                .Where(x => orgAppIds.Contains(x.RefApplication));
+
+            if (refApplication.HasValue && orgAppIds.Contains(refApplication.Value))
+                q = q.Where(x => x.RefApplication == refApplication.Value);
+            if (fromUtc.HasValue) q = q.Where(x => x.OccurredAtUtc >= fromUtc.Value);
+            if (toUtc.HasValue) q = q.Where(x => x.OccurredAtUtc <= toUtc.Value);
+            if (!string.IsNullOrWhiteSpace(category)) q = q.Where(x => x.Category == category);
+            if (!string.IsNullOrWhiteSpace(level)) q = q.Where(x => x.Level == level);
+            if (isPatched.HasValue) q = q.Where(x => x.IsPatched == isPatched.Value);
+
+            var logs = await q.OrderByDescending(x => x.OccurredAtUtc).ToListAsync(ct);
+
+            var result = new List<LogDto>(logs.Count);
+            foreach (var x in logs)
+            {
+                result.Add(new LogDto
+                {
+                    Id = x.Id,
+                    RefApplication = x.RefApplication,
+                    Category = x.Category,
+                    Level = x.Level,
+                    Message = await _encryptor.DecryptAsync(x.Message, x.RefApplication, ct),
+                    PayloadJson = await _encryptor.DecryptAsync(x.PayloadJson, x.RefApplication, ct),
+                    Fingerprint = x.Fingerprint,
+                    IsPatched = x.IsPatched,
+                    OccurredAtUtc = x.OccurredAtUtc
+                });
+            }
+
+            return result;
+        }
+
         internal static string ComputeFingerprint(
             Guid refApplication,
             string? category,

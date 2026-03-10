@@ -147,6 +147,32 @@ namespace api.Controllers
             return Ok(stats);
         }
 
+        [HttpGet("org/{orgId:guid}")]
+        public async Task<ActionResult<IReadOnlyList<LogDto>>> GetOrgAll(
+            [FromRoute] Guid orgId,
+            [FromQuery] Guid? refApplication,
+            [FromQuery] DateTime? fromUtc,
+            [FromQuery] DateTime? toUtc,
+            [FromQuery] string? category,
+            [FromQuery] string? level,
+            [FromQuery] bool? isPatched,
+            CancellationToken ct)
+        {
+            var userId = GetUserIdFromClaims();
+            if (userId is null)
+                return Unauthorized(new { message = _t["Errors.Unauthorized"].Value });
+
+            try
+            {
+                var items = await _log.GetOrgAll(orgId, refApplication, fromUtc, toUtc, category, level, isPatched, userId.Value, ct);
+                return Ok(items);
+            }
+            catch (ApiException ex)
+            {
+                return StatusCode(ex.StatusCode, new { message = _t[ex.Key].Value });
+            }
+        }
+
         [HttpGet("org-dashboard/{orgId:guid}")]
         public async Task<ActionResult<DashboardStatsDto>> GetOrgDashboard([FromRoute] Guid orgId, CancellationToken ct)
         {

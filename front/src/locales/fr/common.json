@@ -391,7 +391,22 @@
     "transferToOrgSuccess": "App transférée vers l'organisation avec succès.",
     "transferOwnershipHint": "Transférez la propriété de cette app à un autre membre. Vous deviendrez Mainteneur.",
     "confirmTransferOwnership": "Transférer la propriété de cette app ? Vous deviendrez Mainteneur.",
-    "transferOwnershipSuccess": "Propriété de l'app transférée avec succès."
+    "transferOwnershipSuccess": "Propriété de l'app transférée avec succès.",
+    "activityBtn": "Activité",
+    "logsBtn": "Logs",
+    "appOverviewBtn": "Vue d'ensemble",
+    "tabActivity": "Activité",
+    "tabLogs": "Logs",
+    "orgReadOnly": "Vous avez un accès en lecture seule aux logs.",
+    "versionsBtn": "Versions",
+    "versionsTitle": "Versions",
+    "versionsEmpty": "Aucune version.",
+    "addVersion": "+ Ajouter une version",
+    "addingVersion": "Ajout...",
+    "versionActive": "Active",
+    "versionInactive": "Inactive",
+    "enableVersion": "Activer",
+    "disableVersion": "Désactiver"
   },
   "logs": {
     "title": "Logs",

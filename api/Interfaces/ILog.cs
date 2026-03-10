@@ -21,5 +21,7 @@ namespace api.Interfaces
         Task<DashboardStatsDto> GetDashboard(Guid userId, CancellationToken ct);
 
         Task<DashboardStatsDto> GetOrgDashboard(Guid orgId, Guid userId, CancellationToken ct);
+
+        Task<IReadOnlyList<LogDto>> GetOrgAll(Guid orgId, Guid? refApplication, DateTime? fromUtc, DateTime? toUtc, string? category, string? level, bool? isPatched, Guid userId, CancellationToken ct);
     }
 }
