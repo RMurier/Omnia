@@ -139,5 +139,100 @@ namespace api.Services
 
             return results;
         }
+
+        public async Task<IReadOnlyList<SeriesPointActivityDto>> GetOrgSeries(
+            Guid orgId,
+            Granularity granularity,
+            Guid? applicationId,
+            DateTime? fromUtc,
+            DateTime? toUtc,
+            Guid userId,
+            CancellationToken ct)
+        {
+            bool hasAccess = await _db.OrganizationMember
+                .AsNoTracking()
+                .AnyAsync(m => m.RefOrganization == orgId && m.RefUser == userId, ct);
+
+            if (!hasAccess)
+                throw new ApiException(StatusCodes.Status403Forbidden, ErrorKeys.Forbidden);
+
+            var orgAppIds = await _db.Application
+                .AsNoTracking()
+                .Where(a => a.RefOrganization == orgId)
+                .Select(a => a.Id)
+                .ToListAsync(ct);
+
+            var q = _db.Activity.AsNoTracking().AsQueryable()
+                .Where(x => orgAppIds.Contains(x.RefApplication));
+
+            if (applicationId.HasValue && applicationId.Value != Guid.Empty && orgAppIds.Contains(applicationId.Value))
+                q = q.Where(x => x.RefApplication == applicationId.Value);
+
+            if (fromUtc.HasValue)
+                q = q.Where(x => x.ConnectedAtUtc >= DateTime.SpecifyKind(fromUtc.Value, DateTimeKind.Utc));
+
+            if (toUtc.HasValue)
+                q = q.Where(x => x.ConnectedAtUtc <= DateTime.SpecifyKind(toUtc.Value, DateTimeKind.Utc));
+
+            var epoch = new DateTime(1970, 1, 5, 0, 0, 0, DateTimeKind.Utc);
+
+            var aggregated = granularity switch
+            {
+                Granularity.minute => await q
+                    .GroupBy(x => new { x.RefApplication, x.ConnectedAtUtc.Year, x.ConnectedAtUtc.Month, x.ConnectedAtUtc.Day, x.ConnectedAtUtc.Hour, x.ConnectedAtUtc.Minute })
+                    .Select(g => new { g.Key.RefApplication, g.Key.Year, g.Key.Month, g.Key.Day, g.Key.Hour, g.Key.Minute, WeekBucket = 0, Count = g.Count() })
+                    .ToListAsync(ct),
+
+                Granularity.hour => await q
+                    .GroupBy(x => new { x.RefApplication, x.ConnectedAtUtc.Year, x.ConnectedAtUtc.Month, x.ConnectedAtUtc.Day, x.ConnectedAtUtc.Hour })
+                    .Select(g => new { g.Key.RefApplication, g.Key.Year, g.Key.Month, g.Key.Day, g.Key.Hour, Minute = 0, WeekBucket = 0, Count = g.Count() })
+                    .ToListAsync(ct),
+
+                Granularity.day => await q
+                    .GroupBy(x => new { x.RefApplication, x.ConnectedAtUtc.Year, x.ConnectedAtUtc.Month, x.ConnectedAtUtc.Day })
+                    .Select(g => new { g.Key.RefApplication, g.Key.Year, g.Key.Month, g.Key.Day, Hour = 0, Minute = 0, WeekBucket = 0, Count = g.Count() })
+                    .ToListAsync(ct),
+
+                Granularity.week => await q
+                    .GroupBy(x => new { x.RefApplication, WeekBucket = EF.Functions.DateDiffDay(epoch, x.ConnectedAtUtc) / 7 })
+                    .Select(g => new { g.Key.RefApplication, Year = 0, Month = 0, Day = 0, Hour = 0, Minute = 0, g.Key.WeekBucket, Count = g.Count() })
+                    .ToListAsync(ct),
+
+                Granularity.month => await q
+                    .GroupBy(x => new { x.RefApplication, x.ConnectedAtUtc.Year, x.ConnectedAtUtc.Month })
+                    .Select(g => new { g.Key.RefApplication, g.Key.Year, g.Key.Month, Day = 0, Hour = 0, Minute = 0, WeekBucket = 0, Count = g.Count() })
+                    .ToListAsync(ct),
+
+                Granularity.year => await q
+                    .GroupBy(x => new { x.RefApplication, x.ConnectedAtUtc.Year })
+                    .Select(g => new { g.Key.RefApplication, g.Key.Year, Month = 0, Day = 0, Hour = 0, Minute = 0, WeekBucket = 0, Count = g.Count() })
+                    .ToListAsync(ct),
+
+                _ => await q
+                    .GroupBy(x => new { x.RefApplication, x.ConnectedAtUtc.Year, x.ConnectedAtUtc.Month, x.ConnectedAtUtc.Day })
+                    .Select(g => new { g.Key.RefApplication, g.Key.Year, g.Key.Month, g.Key.Day, Hour = 0, Minute = 0, WeekBucket = 0, Count = g.Count() })
+                    .ToListAsync(ct),
+            };
+
+            return aggregated.Select(r => new SeriesPointActivityDto
+            {
+                RefApplication = r.RefApplication,
+                Connections = r.Count,
+                PeriodStartUtc = granularity == Granularity.week
+                    ? epoch.AddDays(r.WeekBucket * 7)
+                    : granularity switch
+                    {
+                        Granularity.minute => new DateTime(r.Year, r.Month, r.Day, r.Hour, r.Minute, 0, DateTimeKind.Utc),
+                        Granularity.hour   => new DateTime(r.Year, r.Month, r.Day, r.Hour, 0, 0, DateTimeKind.Utc),
+                        Granularity.day    => new DateTime(r.Year, r.Month, r.Day, 0, 0, 0, DateTimeKind.Utc),
+                        Granularity.month  => new DateTime(r.Year, r.Month, 1, 0, 0, 0, DateTimeKind.Utc),
+                        Granularity.year   => new DateTime(r.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                        _                  => new DateTime(r.Year, r.Month, r.Day, 0, 0, 0, DateTimeKind.Utc),
+                    }
+            })
+            .OrderBy(x => x.PeriodStartUtc)
+            .ThenBy(x => x.RefApplication)
+            .ToList();
+        }
     }
 }

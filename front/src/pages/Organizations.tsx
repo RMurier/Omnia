@@ -307,13 +307,22 @@ export default function OrganizationsPage() {
                   <div style={{ minWidth: 0 }}>
                     <div style={styles.appName}>{app.name}</div>
                     {app.url && <div style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>{app.url}</div>}
+                    <div style={{ fontFamily: "monospace", fontSize: 11, color: "var(--color-text-muted)", marginTop: 2, userSelect: "all" }}>{app.id}</div>
                   </div>
-                  <button
-                    style={styles.iconBtn}
-                    onClick={() => navigate(`/applications/${app.id}/settings`)}
-                  >
-                    <Settings size={13} /> {t("organizations.openApp")}
-                  </button>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    <button
+                      style={styles.iconBtn}
+                      onClick={() => navigate(`/organizations/${org.id}/apps/${app.id}`)}
+                    >
+                      {t("organizations.appOverviewBtn")}
+                    </button>
+                    <button
+                      style={styles.iconBtn}
+                      onClick={() => navigate(`/applications/${app.id}/settings`)}
+                    >
+                      <Settings size={13} /> {t("organizations.openApp")}
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

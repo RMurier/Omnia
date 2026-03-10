@@ -82,6 +82,31 @@ namespace api.Controllers
             return Ok(series);
         }
 
+        [HttpGet("org-series/{orgId:guid}")]
+        [Authorize(AuthenticationSchemes = "Bearer")]
+        public async Task<ActionResult<IReadOnlyList<SeriesPointActivityDto>>> GetOrgSeries(
+            [FromRoute] Guid orgId,
+            [FromQuery] Granularity granularity = Granularity.hour,
+            [FromQuery] Guid? applicationId = null,
+            [FromQuery] DateTime? fromUtc = null,
+            [FromQuery] DateTime? toUtc = null,
+            CancellationToken ct = default)
+        {
+            var userId = GetUserIdFromClaims();
+            if (userId is null)
+                return Unauthorized(new { message = _t["Errors.Unauthorized"].Value });
+
+            try
+            {
+                var series = await _activity.GetOrgSeries(orgId, granularity, applicationId, fromUtc, toUtc, userId.Value, ct);
+                return Ok(series);
+            }
+            catch (ApiException ex)
+            {
+                return StatusCode(ex.StatusCode, new { message = _t[ex.Key].Value });
+            }
+        }
+
         [HttpPost]
         [Authorize(AuthenticationSchemes = "Hmac")]
         public async Task<ActionResult<ActivityDto>> Create([FromBody] ActivityDto dto, CancellationToken ct)

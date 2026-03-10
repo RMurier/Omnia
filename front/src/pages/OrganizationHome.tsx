@@ -363,9 +363,17 @@ export default function OrganizationHomePage() {
           <h1 style={styles.title}>{org.name}</h1>
           {org.myRole && <span style={styles.roleBadge}>{org.myRole}</span>}
         </div>
-        <button style={styles.settingsBtn} onClick={() => navigate(`/organizations/${id}/settings`)}>
-          {t("organizations.settingsBtn")}
-        </button>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button style={styles.settingsBtn} onClick={() => navigate(`/organizations/${id}/activity`)}>
+            {t("organizations.activityBtn")}
+          </button>
+          <button style={styles.settingsBtn} onClick={() => navigate(`/organizations/${id}/logs`)}>
+            {t("organizations.logsBtn")}
+          </button>
+          <button style={styles.settingsBtn} onClick={() => navigate(`/organizations/${id}/settings`)}>
+            {t("organizations.settingsBtn")}
+          </button>
+        </div>
       </div>
 
       {dashLoading && <p style={styles.muted}>{t("me.dashboardLoading")}</p>}

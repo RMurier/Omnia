@@ -391,7 +391,22 @@
     "transferToOrgSuccess": "App transferred to organization successfully.",
     "transferOwnershipHint": "Transfer ownership of this app to another member. You will become a Maintainer.",
     "confirmTransferOwnership": "Transfer ownership of this app? You will become a Maintainer.",
-    "transferOwnershipSuccess": "App ownership transferred successfully."
+    "transferOwnershipSuccess": "App ownership transferred successfully.",
+    "activityBtn": "Activity",
+    "logsBtn": "Logs",
+    "appOverviewBtn": "Overview",
+    "tabActivity": "Activity",
+    "tabLogs": "Logs",
+    "orgReadOnly": "You have read-only access to logs.",
+    "versionsBtn": "Versions",
+    "versionsTitle": "Versions",
+    "versionsEmpty": "No versions yet.",
+    "addVersion": "+ Add version",
+    "addingVersion": "Adding...",
+    "versionActive": "Active",
+    "versionInactive": "Inactive",
+    "enableVersion": "Enable",
+    "disableVersion": "Disable"
   },
   "logs": {
     "title": "Logs",
